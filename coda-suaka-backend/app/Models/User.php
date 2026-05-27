@@ -2,31 +2,48 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    // UUID Setup
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    // Matikan updated_at karena di desainmu hanya ada created_at
+    const UPDATED_AT = null;
+
+    protected $fillable = [
+        'nomor_telp', 
+        'email',
+        'password', 
+        'role', 
+        'is_active'
+    ];
+
+    protected $hidden = [
+        'password',
+    ];
+
+    // Relasi ke tabel profil (perhatikan foreign key 'id_pengguna' disebutkan eksplisit)
+    public function pemilik()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(Pemilik::class, 'id_pengguna');
+    }
+
+    public function karyawan()
+    {
+        return $this->hasOne(Karyawan::class, 'id_pengguna');
+    }
+
+    public function pembeli()
+    {
+        return $this->hasOne(Pembeli::class, 'id_pengguna');
     }
 }
