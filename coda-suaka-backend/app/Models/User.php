@@ -29,4 +29,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    protected $fillable = [
+        'name', // Bawaan Laravel
+        'email',
+        'password',
+        'role_id',     // TAMBAHKAN INI
+        'instansi_id', // TAMBAHKAN INI
+        'outlet_id',   // TAMBAHKAN INI
+    ];
 }
