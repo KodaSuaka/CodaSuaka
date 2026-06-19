@@ -46,7 +46,7 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => 'Registrasi Owner dan Instansi berhasil',
             'data' => [
-                'user' => $user->load('role'), 
+                'user' => $user->load('role'),
                 'access_token' => $token,
                 'token_type' => 'Bearer'
             ]
@@ -72,7 +72,7 @@ class AuthController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
-                    'role' => $user->role->nama_role, 
+                    'role' => $user->role->nama_role,
                     'instansi_id' => $user->instansi_id,
                     'outlet_id' => $user->outlet_id,
                     'nama_lengkap' => $profil ? $profil->nama_lengkap : 'User'
@@ -80,6 +80,15 @@ class AuthController extends Controller
                 'access_token' => $token,
                 'token_type' => 'Bearer'
             ]
+        ], 200);
+    }
+
+    public function logout(Request $request){
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Logout berhasil'
         ], 200);
     }
 }

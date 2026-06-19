@@ -4,18 +4,17 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -29,12 +28,18 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
     protected $fillable = [
-        'name', // Bawaan Laravel
+        'name',
         'email',
         'password',
-        'role_id',     // TAMBAHKAN INI
-        'instansi_id', // TAMBAHKAN INI
-        'outlet_id',   // TAMBAHKAN INI
+        'role_id',
+        'instansi_id',
+        'outlet_id',
     ];
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
 }

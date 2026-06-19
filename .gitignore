@@ -1,0 +1,10 @@
+# Ignore helper and issue folders
+/Helper/
+/issue/
+
+# Node modules (jika ada)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db

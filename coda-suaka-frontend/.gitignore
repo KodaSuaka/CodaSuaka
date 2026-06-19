@@ -13,3 +13,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Gradle cache & build artifacts
+/gradle/caches/
+/gradle/daemon/
+/gradle/native/
+/gradle/kotlin-profile/
+/gradle/wrapper/dists/
+
+# Kotlin build artifacts
+.kotlin/
+
+# Gradle wrapper jar (keep wrapper properties)
+/gradle/wrapper/gradle-wrapper.jar
