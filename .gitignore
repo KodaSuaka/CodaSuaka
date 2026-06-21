@@ -1,6 +1,7 @@
 # Ignore helper and issue folders
 /Helper/
 /issue/
+prototype view/
 
 # Node modules (jika ada)
 node_modules/
