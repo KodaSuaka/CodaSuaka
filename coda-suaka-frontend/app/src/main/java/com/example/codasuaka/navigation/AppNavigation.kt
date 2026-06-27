@@ -14,8 +14,16 @@ import androidx.navigation.compose.composable
 import org.koin.androidx.compose.koinViewModel
 import com.example.codasuaka.ui.auth.AuthScreen
 import com.example.codasuaka.ui.auth.AuthViewModel
-import com.example.codasuaka.ui.kelola_outlet.KelolaOutletScreen
-import com.example.codasuaka.ui.kelola_outlet.KelolaOutletViewModel
+import com.example.codasuaka.ui.screen.divisi.DivisiScreen
+import com.example.codasuaka.ui.screen.divisi.DivisiViewModel
+import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletScreen
+import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletViewModel
+import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanScreen
+import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
+import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranScreen
+import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
+import com.example.codasuaka.ui.screen.kalender.KalenderScreen
+import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
 import com.example.codasuaka.ui.screen.dashboard.DashboardScreen
 import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
@@ -30,6 +38,9 @@ object Routes {
     const val REGISTER = "register"
     const val DASHBOARD = "dashboard"
     const val KELOLA_OUTLET = "kelola_outlet"
+    const val KELOLA_KARYAWAN = "kelola_karyawan"
+    const val KALENDER = "kalender"
+    const val RIWAYAT_KEHADIRAN = "riwayat_kehadiran"
     const val LOG_ABSENSI = "log_absensi"
     const val LAPORAN_KEUANGAN = "laporan_keuangan"
     const val STATUS_KARYAWAN = "status_karyawan"
@@ -124,6 +135,33 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
+        // ── Kelola Karyawan ──
+        composable(Routes.KELOLA_KARYAWAN) {
+            val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
+            KelolaKaryawanScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = kelolaKaryawanViewModel
+            )
+        }
+
+        // ── Kalender / Jadwal ──
+        composable(Routes.KALENDER) {
+            val kalenderViewModel: KalenderViewModel = koinViewModel()
+            KalenderScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = kalenderViewModel
+            )
+        }
+
+        // ── Riwayat Kehadiran ──
+        composable(Routes.RIWAYAT_KEHADIRAN) {
+            val riwayatKehadiranViewModel: RiwayatKehadiranViewModel = koinViewModel()
+            RiwayatKehadiranScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = riwayatKehadiranViewModel
+            )
+        }
+
         // ── Placeholder screens untuk fitur lainnya ──
         composable(Routes.LOG_ABSENSI) {
             PlaceholderScreen(title = "Log Absensi")
@@ -141,13 +179,21 @@ fun AppNavigation(navController: NavHostController) {
             PlaceholderScreen(title = "Pesan")
         }
         composable(Routes.DIVISI) {
-            PlaceholderScreen(title = "Divisi")
+            val divisiViewModel: DivisiViewModel = koinViewModel()
+            DivisiScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = divisiViewModel
+            )
         }
         composable(Routes.DATA_PERSETUJUAN) {
             PlaceholderScreen(title = "Data Persetujuan")
         }
         composable(Routes.TAMBAH_KARYAWAN) {
-            PlaceholderScreen(title = "Tambah Karyawan")
+            val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
+            KelolaKaryawanScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = kelolaKaryawanViewModel
+            )
         }
         composable(Routes.KELOLA_SHIFT) {
             PlaceholderScreen(title = "Kelola Shift")

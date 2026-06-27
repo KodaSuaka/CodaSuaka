@@ -166,11 +166,13 @@ fun DashboardScreen(
                     title = "Menu Utama",
                     items = listOf(
                         MenuItem("Kelola Outlet", Icons.Default.Store, Primary),
+                        MenuItem("Jadwal", Icons.Default.CalendarMonth, Primary),
                         MenuItem("Log Absensi", Icons.Default.FactCheck, Secondary)
                     ),
                     onItemClick = { label ->
                         when (label) {
                             "Kelola Outlet" -> onNavigateTo("kelola_outlet")
+                            "Jadwal" -> onNavigateTo("kalender")
                             "Log Absensi" -> onNavigateTo("log_absensi")
                         }
                     }

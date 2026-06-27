@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.kelola_outlet
+package com.example.codasuaka.ui.screen.kelola_outlet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
