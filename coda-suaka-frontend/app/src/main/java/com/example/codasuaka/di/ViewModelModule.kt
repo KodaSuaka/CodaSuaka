@@ -6,6 +6,7 @@ import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
 import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
 import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
+import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanViewModel
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -19,6 +20,7 @@ val viewModelModule = module {
     viewModel { RegisterViewModel(registerUseCase = get()) }
     viewModel { AuthViewModel(tokenManager = get()) }
     viewModel { DashboardViewModel() }
+    viewModel { DashboardKaryawanViewModel() }
     viewModel { KelolaOutletViewModel() }
     viewModel { KelolaKaryawanViewModel() }
     viewModel { RiwayatKehadiranViewModel() }

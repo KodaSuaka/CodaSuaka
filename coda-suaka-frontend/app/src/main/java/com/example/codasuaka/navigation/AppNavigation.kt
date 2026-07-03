@@ -26,6 +26,8 @@ import com.example.codasuaka.ui.screen.kalender.KalenderScreen
 import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
 import com.example.codasuaka.ui.screen.dashboard.DashboardScreen
 import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
+import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanScreen
+import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -37,6 +39,7 @@ object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val DASHBOARD = "dashboard"
+    const val DASHBOARD_KARYAWAN = "dashboard_karyawan"
     const val KELOLA_OUTLET = "kelola_outlet"
     const val KELOLA_KARYAWAN = "kelola_karyawan"
     const val KALENDER = "kalender"
@@ -50,6 +53,11 @@ object Routes {
     const val DATA_PERSETUJUAN = "data_persetujuan"
     const val TAMBAH_KARYAWAN = "tambah_karyawan"
     const val KELOLA_SHIFT = "kelola_shift"
+    const val PENGAJUAN = "pengajuan"
+    const val DETAIL_KINERJA = "detail_kinerja"
+    const val SISA_CUTI = "sisa_cuti"
+    const val PELATIHAN = "pelatihan"
+    const val PENGHARGAAN = "penghargaan"
 }
 
 @Composable
@@ -198,6 +206,31 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.KELOLA_SHIFT) {
             PlaceholderScreen(title = "Kelola Shift")
         }
+
+        // ── Dashboard Karyawan ──
+        composable(Routes.DASHBOARD_KARYAWAN) {
+            val dashboardKaryawanViewModel: DashboardKaryawanViewModel = koinViewModel()
+            DashboardKaryawanScreen(
+                onNavigateTo = { route ->
+                    navController.navigate(route)
+                },
+                onLogout = {
+                    val authViewModel: AuthViewModel = koinViewModel()
+                    authViewModel.logout()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                viewModel = dashboardKaryawanViewModel
+            )
+        }
+
+        // ── Placeholder screens untuk fitur Dashboard Karyawan ──
+        composable(Routes.PENGAJUAN) { PlaceholderScreen(title = "Pengajuan") }
+        composable(Routes.DETAIL_KINERJA) { PlaceholderScreen(title = "Detail Kinerja") }
+        composable(Routes.SISA_CUTI) { PlaceholderScreen(title = "Sisa Cuti") }
+        composable(Routes.PELATIHAN) { PlaceholderScreen(title = "Pelatihan") }
+        composable(Routes.PENGHARGAAN) { PlaceholderScreen(title = "Penghargaan") }
     }
 }
 
