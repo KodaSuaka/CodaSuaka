@@ -3,64 +3,88 @@
 namespace App\Http\Controllers;
 
 use App\Models\paket;
-use App\Http\Requests\StorepaketRequest;
-use App\Http\Requests\UpdatepaketRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class PaketController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum');
+    }
+
     /**
-     * Display a listing of the resource.
+     * GET /api/pakets
+     * Semua paket aktif
      */
     public function index()
     {
-        //
+        $pakets = paket::where('is_active', true)->orderBy('harga', 'asc')->get();
+        return response()->json(['status' => 'success', 'data' => $pakets]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * POST /api/pakets
      */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'nama_paket' => 'required|string|max:255',
+            'harga' => 'required|numeric|min:0',
+            'deskripsi' => 'nullable|string',
+            'fitur' => 'nullable|string',
+            'durasi_hari' => 'required|integer|min:1',
+            'max_outlet' => 'nullable|integer|min:1',
+            'max_karyawan_per_outlet' => 'nullable|integer|min:1',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        $paket = paket::create($request->all());
+        return response()->json(['status' => 'success', 'message' => 'Paket berhasil ditambahkan', 'data' => $paket], 201);
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StorepaketRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
+     * GET /api/pakets/{paket}
      */
     public function show(paket $paket)
     {
-        //
+        return response()->json(['status' => 'success', 'data' => $paket]);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * PUT /api/pakets/{paket}
      */
-    public function edit(paket $paket)
+    public function update(Request $request, paket $paket)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'nama_paket' => 'sometimes|required|string|max:255',
+            'harga' => 'sometimes|required|numeric|min:0',
+            'deskripsi' => 'nullable|string',
+            'fitur' => 'nullable|string',
+            'durasi_hari' => 'sometimes|required|integer|min:1',
+            'max_outlet' => 'nullable|integer|min:1',
+            'max_karyawan_per_outlet' => 'nullable|integer|min:1',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        $paket->update($request->all());
+        return response()->json(['status' => 'success', 'message' => 'Paket berhasil diperbarui', 'data' => $paket]);
     }
 
     /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdatepaketRequest $request, paket $paket)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
+     * DELETE /api/pakets/{paket}
      */
     public function destroy(paket $paket)
     {
-        //
+        $paket->update(['is_active' => false]);
+        return response()->json(['status' => 'success', 'message' => 'Paket berhasil dinonaktifkan']);
     }
 }

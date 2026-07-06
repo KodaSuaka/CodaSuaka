@@ -16,11 +16,6 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -40,30 +35,51 @@ class User extends Authenticatable
 
     public function role()
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(role::class);
     }
 
-    /**
-     * Profil karyawan yang terkait dengan user ini.
-     */
+    public function instansi()
+    {
+        return $this->belongsTo(instansi::class, 'instansi_id');
+    }
+
+    public function outlet()
+    {
+        return $this->belongsTo(outlet::class, 'outlet_id');
+    }
+
     public function profilKaryawan()
     {
-        return $this->hasOne(Karyawan::class, 'user_id');
+        return $this->hasOne(karyawan::class, 'user_id');
     }
 
-    /**
-     * Pesan yang dikirim oleh user ini.
-     */
     public function pesanDikirim()
     {
         return $this->hasMany(Chat::class, 'pengirim_id');
     }
 
-    /**
-     * Pesan yang diterima oleh user ini.
-     */
     public function pesanDiterima()
     {
         return $this->hasMany(Chat::class, 'penerima_id');
+    }
+
+    public function attandences()
+    {
+        return $this->hasMany(attandence::class);
+    }
+
+    public function pengajuans()
+    {
+        return $this->hasMany(pengajuan::class);
+    }
+
+    public function penugasanDibuat()
+    {
+        return $this->hasMany(penugasan::class, 'created_by');
+    }
+
+    public function jadwalDibuat()
+    {
+        return $this->hasMany(jadwal::class, 'created_by');
     }
 }

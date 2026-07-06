@@ -3,64 +3,129 @@
 namespace App\Http\Controllers;
 
 use App\Models\penugasan;
-use App\Http\Requests\StorepenugasanRequest;
-use App\Http\Requests\UpdatepenugasanRequest;
+use App\Models\Divisi;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class PenugasanController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        //
+        $this->middleware('auth:sanctum');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * GET /api/penugasans?divisi_id=xxx&status=xxx&penanggung_jawab_id=xxx
      */
-    public function create()
+    public function index(Request $request)
     {
-        //
+        $user = $request->user();
+        $query = penugasan::with(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+        // Owner/Admin lihat semua di instansi, karyawan lihat tugas sendiri
+        if ($user->role_id !== 1) {
+            $karyawan = $user->profilKaryawan;
+            if ($karyawan) {
+                $query->where('penanggung_jawab_id', $karyawan->id);
+            }
+        }
+
+        if ($request->has('divisi_id')) {
+            $query->where('divisi_id', $request->divisi_id);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('penanggung_jawab_id')) {
+            $query->where('penanggung_jawab_id', $request->penanggung_jawab_id);
+        }
+
+        $penugasans = $query->orderBy('created_at', 'desc')->get();
+        return response()->json(['status' => 'success', 'data' => $penugasans]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * POST /api/penugasans
      */
-    public function store(StorepenugasanRequest $request)
+    public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'judul' => 'required|string|max:200',
+            'deskripsi' => 'nullable|string',
+            'penanggung_jawab_id' => 'required|exists:karyawans,id',
+            'divisi_id' => 'nullable|exists:divisis,id',
+            'tenggat' => 'nullable|date',
+            'status' => 'sometimes|in:belum,proses,selesai,batal',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        $penugasan = penugasan::create([
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'penanggung_jawab_id' => $request->penanggung_jawab_id,
+            'divisi_id' => $request->divisi_id,
+            'tenggat' => $request->tenggat,
+            'status' => $request->status ?? 'belum',
+            'created_by' => $request->user()->id,
+        ]);
+
+        $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Tugas berhasil ditambahkan',
+            'data' => $penugasan
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * GET /api/penugasans/{penugasan}
      */
     public function show(penugasan $penugasan)
     {
-        //
+        $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+        return response()->json(['status' => 'success', 'data' => $penugasan]);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * PUT /api/penugasans/{penugasan}
      */
-    public function edit(penugasan $penugasan)
+    public function update(Request $request, penugasan $penugasan)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'judul' => 'sometimes|required|string|max:200',
+            'deskripsi' => 'nullable|string',
+            'penanggung_jawab_id' => 'sometimes|required|exists:karyawans,id',
+            'divisi_id' => 'nullable|exists:divisis,id',
+            'tenggat' => 'nullable|date',
+            'status' => 'sometimes|in:belum,proses,selesai,batal',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        $penugasan->update($request->only(['judul', 'deskripsi', 'penanggung_jawab_id', 'divisi_id', 'tenggat', 'status']));
+        $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Tugas berhasil diperbarui',
+            'data' => $penugasan
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdatepenugasanRequest $request, penugasan $penugasan)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
+     * DELETE /api/penugasans/{penugasan}
      */
     public function destroy(penugasan $penugasan)
     {
-        //
+        $penugasan->delete();
+        return response()->json(['status' => 'success', 'message' => 'Tugas berhasil dihapus']);
     }
 }

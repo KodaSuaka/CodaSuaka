@@ -3,64 +3,89 @@
 namespace App\Http\Controllers;
 
 use App\Models\role_permission;
-use App\Http\Requests\Storerole_permissionRequest;
-use App\Http\Requests\Updaterole_permissionRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class RolePermissionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        //
+        $this->middleware('auth:sanctum');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function index(Request $request)
     {
-        //
+        $query = role_permission::with('role');
+        if ($request->has('role_id')) {
+            $query->where('role_id', $request->role_id);
+        }
+        $permissions = $query->orderBy('role_id')->get();
+        return response()->json(['status' => 'success', 'data' => $permissions]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Storerole_permissionRequest $request)
+    public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'role_id' => 'required|exists:roles,id',
+            'permission' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        // Cek unique
+        $exists = role_permission::where('role_id', $request->role_id)
+            ->where('permission', $request->permission)
+            ->exists();
+        if ($exists) {
+            return response()->json(['status' => 'error', 'message' => 'Permission sudah ada untuk role ini'], 409);
+        }
+
+        $perm = role_permission::create([
+            'role_id' => $request->role_id,
+            'permission' => $request->permission,
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Permission berhasil ditambahkan', 'data' => $perm], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(role_permission $role_permission)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(role_permission $role_permission)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Updaterole_permissionRequest $request, role_permission $role_permission)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(role_permission $role_permission)
     {
-        //
+        $role_permission->delete();
+        return response()->json(['status' => 'success', 'message' => 'Permission berhasil dihapus']);
+    }
+
+    /**
+     * POST /api/role-permissions/sync
+     * Sinkronisasi permissions untuk suatu role (replace all)
+     */
+    public function sync(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'role_id' => 'required|exists:roles,id',
+            'permissions' => 'required|array',
+            'permissions.*' => 'string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        role_permission::where('role_id', $request->role_id)->delete();
+
+        $newPermissions = [];
+        foreach ($request->permissions as $perm) {
+            $newPermissions[] = role_permission::create([
+                'role_id' => $request->role_id,
+                'permission' => $perm,
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Permissions berhasil disinkronisasi',
+            'data' => $newPermissions
+        ]);
     }
 }

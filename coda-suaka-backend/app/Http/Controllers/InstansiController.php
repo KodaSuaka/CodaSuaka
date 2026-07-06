@@ -3,64 +3,50 @@
 namespace App\Http\Controllers;
 
 use App\Models\instansi;
-use App\Http\Requests\StoreinstansiRequest;
-use App\Http\Requests\UpdateinstansiRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class InstansiController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        //
+        $this->middleware('auth:sanctum');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * GET /api/instansi
+     * Profil instansi user yang sedang login
      */
-    public function create()
+    public function show(Request $request)
     {
-        //
+        $instansi = instansi::with(['paket'])
+            ->where('id', $request->user()->instansi_id)
+            ->first();
+
+        if (!$instansi) {
+            return response()->json(['status' => 'error', 'message' => 'Instansi tidak ditemukan'], 404);
+        }
+
+        return response()->json(['status' => 'success', 'data' => $instansi]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * PUT /api/instansi
+     * Update data instansi
      */
-    public function store(StoreinstansiRequest $request)
+    public function update(Request $request)
     {
-        //
-    }
+        $instansi = instansi::findOrFail($request->user()->instansi_id);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(instansi $instansi)
-    {
-        //
-    }
+        $validator = Validator::make($request->all(), [
+            'nama_instansi' => 'sometimes|required|string|max:255',
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(instansi $instansi)
-    {
-        //
-    }
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateinstansiRequest $request, instansi $instansi)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(instansi $instansi)
-    {
-        //
+        $instansi->update($request->only(['nama_instansi']));
+        return response()->json(['status' => 'success', 'message' => 'Instansi berhasil diperbarui', 'data' => $instansi]);
     }
 }

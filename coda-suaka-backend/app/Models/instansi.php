@@ -13,4 +13,24 @@ class instansi extends Model
         'nama_instansi',
         'paket_id',
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function outlets()
+    {
+        return $this->hasMany(outlet::class);
+    }
+
+    public function transaksiPakets()
+    {
+        return $this->hasMany(transaksi_paket::class);
+    }
+
+    public function paket()
+    {
+        return $this->belongsTo(paket::class, 'paket_id');
+    }
 }
