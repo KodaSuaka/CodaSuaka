@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Karyawan</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      padding: 30px;
+    }
+
+    /* ─── Phone Frame ─── */
+    .phone-frame {
+      width: 393px;
+      min-height: 852px;
+      background: #F7FAFC;
+      border-radius: 44px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    /* ─── Top Bar ─── */
+    .top-bar {
+      background: #1A365D;
+      color: white;
+      padding: 48px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .top-bar-title { font-weight: 600; font-size: 18px; }
+    .top-bar-actions { display: flex; gap: 16px; }
+    .top-bar-actions svg { width: 24px; height: 24px; fill: white; }
+
+    /* ─── Scroll Area ─── */
+    .scroll-area {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 650px;
+      overflow-y: auto;
+    }
+    .scroll-area::-webkit-scrollbar { width: 3px; }
+    .scroll-area::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 99px; }
+
+    /* ─── Card ─── */
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card-clickable { cursor: pointer; transition: 0.15s; }
+    .card-clickable:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-left: 4px;
+    }
+
+    /* ─── Employee ─── */
+    .employee-row { display: flex; align-items: center; gap: 16px; }
+    .avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: #1A365D;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .avatar svg { width: 36px; height: 36px; fill: white; }
+    .employee-details { flex: 1; min-width: 0; }
+    .employee-name { font-size: 20px; font-weight: 700; color: #1A202C; }
+    .employee-role { font-size: 14px; color: #718096; margin-top: 2px; }
+    .score-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .score-bar-bg { width: 80px; height: 8px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 99px; background: #10B981; transition: width 0.6s ease; }
+    .score-label { font-size: 13px; font-weight: 600; color: #10B981; }
+
+    /* ═══ Presensi Card ═══ */
+    .presensi-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+    .presensi-date { font-size: 14px; font-weight: 600; color: #1A365D; margin-bottom: 14px; }
+    .presensi-date svg { width: 18px; height: 18px; fill: #1A365D; vertical-align: middle; margin-right: 8px; }
+    .shift-info {
+      background: #E0F2FE;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .shift-icon { width: 40px; height: 40px; border-radius: 50%; background: #BAE6FD; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .shift-icon svg { width: 22px; height: 22px; fill: #1A365D; }
+    .shift-detail { flex: 1; }
+    .shift-label { font-size: 14px; font-weight: 600; color: #1A202C; }
+    .shift-time { font-size: 12px; color: #475569; margin-top: 2px; }
+    .shift-badge { font-size: 11px; font-weight: 600; color: #0369A1; background: #BAE6FD; padding: 2px 10px; border-radius: 99px; }
+    .presensi-divider { height: 1px; background: #E2E8F0; margin: 14px 0; }
+    .presensi-status-row { display: flex; align-items: center; justify-content: space-between; }
+    .presensi-status-left { display: flex; align-items: center; gap: 10px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #10B981; flex-shrink: 0; }
+    .status-dot.checked-out { background: #94A3B8; }
+    .status-text { font-size: 14px; font-weight: 500; color: #1A202C; }
+    .status-time { font-size: 12px; color: #64748B; }
+    .btn-checkout { background: #F43F5E; color: white; border: none; padding: 8px 20px; border-radius: 99px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.15s; font-family: inherit; }
+    .btn-checkout:hover { background: #E11D48; transform: scale(1.03); }
+    .btn-checkin { background: #10B981; color: white; border: none; padding: 8px 20px; border-radius: 99px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.15s; font-family: inherit; }
+    .btn-checkin:hover { background: #059669; transform: scale(1.03); }
+
+    /* ─── Presensi Footer Buttons ─── */
+    .presensi-footer { display: flex; gap: 10px; margin-top: 14px; }
+    .presensi-footer-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 8px; border-radius: 12px; border: none; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+    .presensi-footer-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .presensi-footer-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .presensi-footer-btn.primary { background: #1A365D; color: white; }
+    .presensi-footer-btn.primary svg { fill: white; }
+    .presensi-footer-btn.secondary { background: #E0F2FE; color: #1A365D; }
+    .presensi-footer-btn.secondary svg { fill: #1A365D; }
+
+    /* ─── Event inline ─── */
+    .event-inline { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; background: #FEF3C7; border-radius: 10px; }
+    .event-inline svg { width: 18px; height: 18px; fill: #F59E0B; flex-shrink: 0; }
+    .event-inline span { font-size: 12px; color: #92400E; font-weight: 500; line-height: 1.3; }
+
+    /* ─── Role ─── */
+    .role-grid { display: flex; gap: 12px; margin-top: 8px; }
+    .role-card {
+      flex: 1;
+      background: white;
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: 0.15s;
+      border: none;
+      font-family: inherit;
+    }
+    .role-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .icon-circle { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .icon-circle svg { width: 24px; height: 24px; }
+    .role-label { font-size: 12px; font-weight: 500; color: #1A202C; margin-top: 6px; text-align: center; }
+
+    /* ─── Kinerja ─── */
+    .kinerja-row { display: flex; align-items: center; justify-content: space-between; }
+    .kinerja-label { font-size: 13px; color: #718096; }
+    .kinerja-score { display: flex; align-items: baseline; gap: 4px; }
+    .kinerja-num { font-size: 32px; font-weight: 700; color: #10B981; line-height: 1; }
+    .kinerja-denom { font-size: 13px; color: #718096; }
+
+    /* ─── Cuti ─── */
+    .cuti-row { display: flex; align-items: center; gap: 16px; }
+    .cuti-icon-circle { width: 48px; height: 48px; border-radius: 50%; background: #E0F2FE; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cuti-icon-circle svg { width: 24px; height: 24px; fill: #1A365D; }
+    .cuti-info { flex: 1; }
+    .cuti-label { font-size: 13px; color: #718096; }
+    .cuti-value { display: flex; align-items: baseline; gap: 4px; }
+    .cuti-num { font-size: 24px; font-weight: 700; color: #1A365D; line-height: 1.2; }
+    .cuti-unit { font-size: 13px; color: #718096; }
+
+    /* ─── Bottom Nav ─── */
+    .bottom-nav { display: flex; background: white; padding: 8px 0 12px; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); border-top: 1px solid #E2E8F0; }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; cursor: pointer; border: none; background: none; font-family: inherit; color: #718096; transition: 0.15s; }
+    .nav-item.active { color: #1A365D; }
+    .nav-item svg { width: 24px; height: 24px; fill: currentColor; }
+    .nav-item span { font-size: 11px; font-weight: 500; }
+    .nav-indicator { width: 4px; height: 4px; border-radius: 50%; background: #1A365D; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // ─── Icons ──────────────────────────────────────────────
+    const Icons = {
+      Person: () => <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>,
+      Notifications: () => <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>,
+      Login: () => <svg viewBox="0 0 24 24"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg>,
+      Logout: () => <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>,
+      Schedule: () => <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>,
+      DateRange: () => <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>,
+      Celebration: () => <svg viewBox="0 0 24 24"><path d="M2 22l4-4 4 4-4 4-4-4zm7.5-7.5L7 17l-2.5-2.5L7 12l2.5 2.5zm9-9L14 8l-2.5-2.5L14 3l2.5 2.5zm3 3L17 11l-2.5-2.5L17 6l2.5 2.5zM12 2l-1.5 1.5L12 5l1.5-1.5L12 2zM8 6l-1.5 1.5L8 9l1.5-1.5L8 6zm10 10l-1.5 1.5L18 19l1.5-1.5L18 16z"/></svg>,
+      Description: () => <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>,
+      BeachAccess: () => <svg viewBox="0 0 24 24"><path d="M13.127 14.56l1.43-1.43 6.44 6.443L19.57 21zm4.293-5.73l2.86-2.86c-3.95-3.95-10.35-3.96-14.3-.02 3.93-1.3 8.31-.25 11.44 2.88zM5.95 5.98c-3.94 3.95-3.93 10.35.02 14.3l2.86-2.86C5.7 14.29 4.65 9.91 5.95 5.98zm.02-.02l-.01.01c-.38 3.01 1.17 6.88 4.3 10.02l5.73-5.73c-3.13-3.13-7.01-4.68-10.02-4.3z"/></svg>,
+      ChevronRight: () => <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>,
+      Home: () => <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>,
+      Email: () => <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>,
+      School: () => <svg viewBox="0 0 24 24"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>,
+      EmojiEvents: () => <svg viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>,
+    };
+
+    const colors = {
+      primary: '#1A365D', onPrimary: '#FFFFFF', tertiary: '#F7FAFC',
+      surface: '#FFFFFF', onSurface: '#1A202C', onSurfaceVariant: '#718096',
+      neutral: '#E2E8F0', amber: '#F59E0B', amberLight: '#FEF3C7',
+      softBlue: '#E0F2FE', coral: '#F43F5E', scoreGreen: '#10B981', scoreGreenLight: '#D1FAE5',
+      indigo: '#6366F1', indigoLight: '#E0E7FF', purple: '#8B5CF6', purpleLight: '#EDE9FE',
+    };
+
+    const dummyData = {
+      employee: { nama: 'Ahmad Fauzi', jabatan: 'Staff Operasional', poinPerforma: 85 },
+      poinKinerja: 85,
+      sisaCuti: 12,
+      roleMenuItems: [
+        { id:'laporan', label:'Laporan', icon:'Description' },
+        { id:'absensi', label:'Riwayat Absensi', icon:'Login' },
+        { id:'tugas', label:'Tugas Tim', icon:'Description' },
+      ],
+    };
+
+    const mapIcon = (name) => ({
+      Description: Icons.Description, Login: Icons.Login,
+      Assignment: Icons.Description, School: Icons.School, EmojiEvents: Icons.EmojiEvents,
+    }[name] || Icons.Description);
+
+    // ═══════════════════════════════════════════════════════════
+    // APP — Dashboard Karyawan
+    // ═══════════════════════════════════════════════════════════
+    function App() {
+      const [absStatus, setAbsStatus] = React.useState('CHECKED_IN');
+      const [absTime, setAbsTime] = React.useState('07:45');
+      const [bottomNav, setBottomNav] = React.useState(0);
+
+      const handleAbs = () => {
+        if (absStatus === 'CHECKED_OUT') { setAbsStatus('CHECKED_IN'); setAbsTime('07:45'); }
+        else { setAbsStatus('CHECKED_OUT'); setAbsTime('16:30'); }
+      };
+
+      const isCheckedIn = absStatus === 'CHECKED_IN';
+
+      return (
+        <div className="phone-frame">
+          <div className="top-bar">
+            <div className="top-bar-title">Dashboard Karyawan</div>
+            <div className="top-bar-actions">
+              <Icons.Notifications />
+            </div>
+          </div>
+          <div className="scroll-area">
+
+            {/* 1. Data Diri */}
+            <div className="card" style={{borderRadius:20}}>
+              <div className="employee-row">
+                <div className="avatar"><Icons.Person /></div>
+                <div className="employee-details">
+                  <div className="employee-name">{dummyData.employee.nama}</div>
+                  <div className="employee-role">{dummyData.employee.jabatan}</div>
+                  <div className="score-row">
+                    <div className="score-bar-bg"><div className="score-bar-fill" style={{width:`${dummyData.employee.poinPerforma}%`}}></div></div>
+                    <span className="score-label">{dummyData.employee.poinPerforma} Poin</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Presensi Hari Ini */}
+            <div>
+              <div className="section-label">Presensi Hari Ini</div>
+              <div className="presensi-card" style={{marginTop:8}}>
+                <div className="presensi-date">
+                  <Icons.DateRange />
+                  Senin, 7 Juli 2026
+                </div>
+                <div className="shift-info">
+                  <div className="shift-icon"><Icons.Schedule /></div>
+                  <div className="shift-detail">
+                    <div className="shift-label">Shift Pagi</div>
+                    <div className="shift-time">07:00 - 15:00 WIB</div>
+                  </div>
+                  <span className="shift-badge">Lihat Jadwal</span>
+                </div>
+                <div className="presensi-divider"></div>
+                <div className="presensi-status-row">
+                  <div className="presensi-status-left">
+                    <div className={`status-dot${isCheckedIn?'':' checked-out'}`}></div>
+                    <div>
+                      <div className="status-text">
+                        {isCheckedIn ? 'Sudah Check-in' : 'Belum Check-in'}
+                      </div>
+                      <div className="status-time">
+                        {isCheckedIn ? `Masuk pukul ${absTime} WIB` : 'Belum ada catatan'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    className={isCheckedIn ? 'btn-checkout' : 'btn-checkin'}
+                    onClick={handleAbs}
+                  >
+                    {isCheckedIn ? 'Check-out' : 'Check-in'}
+                  </button>
+                </div>
+                <div className="event-inline">
+                  <Icons.Celebration />
+                  <span>Hari Jadi Outlet ke-3 — Diskon 20%</span>
+                </div>
+                <div className="presensi-footer">
+                  <button className="presensi-footer-btn primary">
+                    <Icons.Description />
+                    Riwayat Presensi
+                  </button>
+                  <button className="presensi-footer-btn secondary">
+                    <Icons.Schedule />
+                    Jadwal Shift
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Menu Jabatan */}
+            <div>
+              <div className="section-label">Menu Jabatan</div>
+              <div className="role-grid">
+                {dummyData.roleMenuItems.map(item => (
+                  <button key={item.id} className="role-card">
+                    <div className="icon-circle" style={{width:44,height:44,background:colors.indigoLight}}>
+                      <span style={{color:colors.indigo,display:'flex'}}>{mapIcon(item.icon)}</span>
+                    </div>
+                    <div className="role-label">{item.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Poin Kinerja */}
+            <div>
+              <div className="section-label">Kinerja</div>
+              <div style={{marginTop:8}}>
+                <div className="card card-clickable">
+                  <div className="kinerja-row">
+                    <div>
+                      <div className="kinerja-label">Poin Kinerja</div>
+                      <div className="kinerja-score">
+                        <span className="kinerja-num">{dummyData.poinKinerja}</span>
+                        <span className="kinerja-denom">/ 100</span>
+                      </div>
+                    </div>
+                    <Icons.ChevronRight />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Sisa Cuti */}
+            <div>
+              <div className="section-label">Cuti</div>
+              <div style={{marginTop:8}}>
+                <div className="card card-clickable">
+                  <div className="cuti-row">
+                    <div className="cuti-icon-circle"><Icons.BeachAccess /></div>
+                    <div className="cuti-info">
+                      <div className="cuti-label">Sisa Cuti Tahunan</div>
+                      <div className="cuti-value">
+                        <span className="cuti-num">{dummyData.sisaCuti}</span>
+                        <span className="cuti-unit">hari</span>
+                      </div>
+                    </div>
+                    <Icons.ChevronRight />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{height:8}}></div>
+          </div>
+          <div className="bottom-nav">
+            {[{icon:Icons.Home,label:'Dashboard',i:0},{icon:Icons.Description,label:'Pengajuan',i:1},{icon:Icons.Email,label:'Pesan',i:2}].map(item => (
+              <button key={item.i} className={`nav-item${bottomNav===item.i?' active':''}`} onClick={()=>setBottomNav(item.i)}>
+                <item.icon /><span>{item.label}</span>
+                {bottomNav===item.i && <div className="nav-indicator"></div>}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Render ───────────────────────────────────────────
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

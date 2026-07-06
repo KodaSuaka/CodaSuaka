@@ -14,6 +14,8 @@ import androidx.navigation.compose.composable
 import org.koin.androidx.compose.koinViewModel
 import com.example.codasuaka.ui.auth.AuthScreen
 import com.example.codasuaka.ui.auth.AuthViewModel
+import com.example.codasuaka.ui.pengajuan.PengajuanScreen
+import com.example.codasuaka.ui.pengajuan.PengajuanViewModel
 import com.example.codasuaka.ui.screen.divisi.DivisiScreen
 import com.example.codasuaka.ui.screen.divisi.DivisiViewModel
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletScreen
@@ -24,6 +26,10 @@ import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranScreen
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
 import com.example.codasuaka.ui.screen.kalender.KalenderScreen
 import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
+import com.example.codasuaka.ui.chat.ChatContactListScreen
+import com.example.codasuaka.ui.chat.ChatContactViewModel
+import com.example.codasuaka.ui.chat.ChatDetailScreen
+import com.example.codasuaka.ui.chat.ChatDetailViewModel
 import com.example.codasuaka.ui.screen.dashboard.DashboardScreen
 import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanScreen
@@ -33,6 +39,7 @@ import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import com.example.codasuaka.ui.theme.Primary
+import org.koin.core.parameter.parametersOf
 
 object Routes {
     const val AUTH = "auth"
@@ -49,6 +56,8 @@ object Routes {
     const val STATUS_KARYAWAN = "status_karyawan"
     const val TUGAS_TIM = "tugas_tim"
     const val PESAN = "pesan"
+    const val CONTACT_LIST = "contact_list"
+    const val CHAT_DETAIL = "chat_detail/{userId}/{userName}"
     const val DIVISI = "divisi"
     const val DATA_PERSETUJUAN = "data_persetujuan"
     const val TAMBAH_KARYAWAN = "tambah_karyawan"
@@ -183,6 +192,30 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.TUGAS_TIM) {
             PlaceholderScreen(title = "Tugas Tim")
         }
+        composable(Routes.CONTACT_LIST) {
+            val chatContactViewModel: ChatContactViewModel = koinViewModel()
+            ChatContactListScreen(
+                onBack = { navController.popBackStack() },
+                onContactClick = { userId, userName ->
+                    navController.navigate("chat_detail/$userId/$userName")
+                },
+                viewModel = chatContactViewModel
+            )
+        }
+
+        // ── Chat Detail ──
+        composable(Routes.CHAT_DETAIL) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")?.toIntOrNull() ?: return@composable
+            val userName = backStackEntry.arguments?.getString("userName") ?: "User"
+            val chatDetailViewModel: ChatDetailViewModel = koinViewModel(
+                parameters = { parametersOf(userId, userName) }
+            )
+            ChatDetailScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = chatDetailViewModel
+            )
+        }
+
         composable(Routes.PESAN) {
             PlaceholderScreen(title = "Pesan")
         }
@@ -225,8 +258,14 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        // ── Placeholder screens untuk fitur Dashboard Karyawan ──
-        composable(Routes.PENGAJUAN) { PlaceholderScreen(title = "Pengajuan") }
+        // ── Pengajuan (Cuti/Izin) ──
+        composable(Routes.PENGAJUAN) {
+            val pengajuanViewModel: PengajuanViewModel = koinViewModel()
+            PengajuanScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = pengajuanViewModel
+            )
+        }
         composable(Routes.DETAIL_KINERJA) { PlaceholderScreen(title = "Detail Kinerja") }
         composable(Routes.SISA_CUTI) { PlaceholderScreen(title = "Sisa Cuti") }
         composable(Routes.PELATIHAN) { PlaceholderScreen(title = "Pelatihan") }

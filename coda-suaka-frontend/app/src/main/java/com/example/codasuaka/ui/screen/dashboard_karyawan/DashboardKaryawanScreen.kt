@@ -1,7 +1,7 @@
 package com.example.codasuaka.ui.screen.dashboard_karyawan
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.codasuaka.ui.theme.*
 
-// ─── Color Palette Tambahan (dari Helper/asset/image.png) ─────
+// ─── Color Palette Tambahan ─────
 private val Teal = Color(0xFF0D9488)
 private val TealLight = Color(0xFFCCFBF1)
 private val Amber = Color(0xFFF59E0B)
@@ -83,7 +83,7 @@ fun DashboardKaryawanScreen(
                     when (index) {
                         0 -> { /* already on dashboard */ }
                         1 -> onNavigateTo("pengajuan")
-                        2 -> onNavigateTo("pesan")
+                        2 -> onNavigateTo("contact_list")
                     }
                 }
             )
@@ -127,26 +127,27 @@ fun DashboardKaryawanScreen(
             }
 
             // ══════════════════════════════════════════════════
-            // SECTION ATAS — Data Diri Karyawan
+            // 1. Data Diri Karyawan
             // ══════════════════════════════════════════════════
             SectionEmployeeInfo(
                 employee = uiState.employeeInfo
             )
 
             // ══════════════════════════════════════════════════
-            // SECTION TENGAH PERSONAL — Absensi, Jadwal, Event
+            // 2. Presensi Hari Ini (1 kartu terpadu)
             // ══════════════════════════════════════════════════
-            SectionPersonalMenu(
+            SectionPresensiToday(
                 absensiStatus = uiState.absensiStatus,
                 absensiTime = uiState.absensiTime,
                 specialEvent = uiState.specialEvent,
                 showSpecialEvent = uiState.showSpecialEvent,
-                onAbsensiClick = { viewModel.toggleAbsensi() },
+                onCheckClick = { viewModel.toggleAbsensi() },
+                onRiwayatPresensiClick = { onNavigateTo("riwayat_kehadiran") },
                 onJadwalShiftClick = { onNavigateTo("kalender") }
             )
 
             // ══════════════════════════════════════════════════
-            // SECTION TENGAH JABATAN — Tombol Role Permission
+            // 3. Menu Jabatan
             // ══════════════════════════════════════════════════
             SectionRoleMenu(
                 items = uiState.roleMenuItems,
@@ -156,33 +157,19 @@ fun DashboardKaryawanScreen(
             )
 
             // ══════════════════════════════════════════════════
-            // SECTION BAWAH 1 — Detail Kinerja & Daftar Tugas
+            // 4. Poin Kinerja
             // ══════════════════════════════════════════════════
             SectionPerformance(
                 poinKinerja = uiState.poinKinerja,
-                totalTugas = uiState.totalTugas,
-                tugasSelesai = uiState.tugasSelesai,
                 onDetailKinerjaClick = { onNavigateTo("detail_kinerja") }
             )
 
-            // Daftar Tugas (visible jika ada)
-            if (uiState.daftarTugas.isNotEmpty()) {
-                SectionTaskList(
-                    tasks = uiState.daftarTugas,
-                    onLihatSemuaClick = { onNavigateTo("tugas_tim") }
-                )
-            }
-
             // ══════════════════════════════════════════════════
-            // SECTION BAWAH 2 — Sisa Cuti & Konten Tambahan
+            // 5. Sisa Cuti
             // ══════════════════════════════════════════════════
-            SectionLeaveAndAdditional(
+            SectionLeave(
                 sisaCuti = uiState.sisaCuti,
-                additionalItems = uiState.additionalContent,
-                onSisaCutiClick = { onNavigateTo("sisa_cuti") },
-                onAdditionalItemClick = { route ->
-                    if (route != null) onNavigateTo(route)
-                }
+                onSisaCutiClick = { onNavigateTo("sisa_cuti") }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -191,7 +178,7 @@ fun DashboardKaryawanScreen(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION ATAS — Data Diri Karyawan
+// 1. Data Diri Karyawan
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
@@ -254,7 +241,6 @@ private fun SectionEmployeeInfo(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Progress indicator
                     val scoreFraction = (employee.poinPerforma / 100f).coerceIn(0f, 1f)
                     val scoreColor = when {
                         employee.poinPerforma >= 80 -> ScoreGreen
@@ -291,210 +277,245 @@ private fun SectionEmployeeInfo(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION TENGAH PERSONAL
+// 2. Presensi Hari Ini (1 kartu terpadu)
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-private fun SectionPersonalMenu(
+private fun SectionPresensiToday(
     absensiStatus: AbsensiStatus,
     absensiTime: String?,
     specialEvent: String?,
     showSpecialEvent: Boolean,
-    onAbsensiClick: () -> Unit,
+    onCheckClick: () -> Unit,
+    onRiwayatPresensiClick: () -> Unit,
     onJadwalShiftClick: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val isCheckedIn = absensiStatus == AbsensiStatus.CHECKED_IN
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Judul Section
         Text(
-            text = "Menu Personal",
+            text = "Presensi Hari Ini",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = OnSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp)
         )
 
-        // Baris 1: Absensi & Jadwal Shift
-        Row(
+        // 1 kartu terpadu
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
-            // Absensi (Checkin/Checkout)
-            CardAbsensi(
-                modifier = Modifier.weight(1f),
-                absensiStatus = absensiStatus,
-                absensiTime = absensiTime,
-                onClick = onAbsensiClick
-            )
-
-            // Jadwal Shift
-            CardJadwalShift(
-                modifier = Modifier.weight(1f),
-                onClick = onJadwalShiftClick
-            )
-        }
-
-        // Special Event (kadang muncul)
-        if (showSpecialEvent && specialEvent != null) {
-            CardSpecialEvent(
-                event = specialEvent
-            )
-        }
-    }
-}
-
-@Composable
-private fun CardAbsensi(
-    modifier: Modifier = Modifier,
-    absensiStatus: AbsensiStatus,
-    absensiTime: String?,
-    onClick: () -> Unit
-) {
-    val isCheckedIn = absensiStatus == AbsensiStatus.CHECKED_IN
-    val bgColor = if (isCheckedIn) ScoreGreenLight else AmberLight
-    val iconColor = if (isCheckedIn) ScoreGreen else Amber
-    val statusText = if (isCheckedIn) "Checkout" else "Checkin"
-    val statusIcon = if (isCheckedIn) Icons.Default.Logout else Icons.Default.Login
-
-    Card(
-        onClick = onClick,
-        modifier = modifier.height(120.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Icon
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(bgColor),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Icon(
-                    imageVector = statusIcon,
-                    contentDescription = statusText,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
-                )
+                // ── Tanggal ──
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Senin, 7 Juli 2026",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Primary
+                    )
+                }
+
+                // ── Jadwal Shift Info ──
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SoftBlue)
+                        .padding(12.dp, 12.dp, 16.dp, 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(SoftBlue.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = Primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Shift Pagi",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = OnSurface
+                        )
+                        Text(
+                            text = "07:00 - 15:00 WIB",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = OnSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = "Lihat Jadwal",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(SoftBlue.copy(alpha = 0.6f))
+                            .padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+                }
+
+                HorizontalDivider(color = Neutral)
+
+                // ── Status Absensi ──
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(if (isCheckedIn) ScoreGreen else OnSurfaceVariant)
+                        )
+                        Column {
+                            Text(
+                                text = if (isCheckedIn) "Sudah Check-in" else "Belum Check-in",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = OnSurface
+                            )
+                            Text(
+                                text = if (isCheckedIn) "Masuk pukul ${absensiTime ?: "-"} WIB" else "Belum ada catatan",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = OnSurfaceVariant
+                            )
+                        }
+                    }
+                    Button(
+                        onClick = onCheckClick,
+                        shape = RoundedCornerShape(99.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isCheckedIn) Coral else ScoreGreen
+                        ),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = if (isCheckedIn) "Check-out" else "Check-in",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+
+                // ── Event Spesial (kadang muncul) ──
+                if (showSpecialEvent && specialEvent != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AmberLight)
+                            .padding(10.dp, 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Celebration,
+                            contentDescription = null,
+                            tint = Amber,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = specialEvent,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF92400E),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // ── Footer Buttons ──
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = onRiwayatPresensiClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Primary
+                        ),
+                        contentPadding = PaddingValues(vertical = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Riwayat Presensi",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = onJadwalShiftClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Primary
+                        ),
+                        border = BorderStroke(1.dp, Primary),
+                        contentPadding = PaddingValues(vertical = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Jadwal Shift",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = OnSurface
-            )
-
-            if (absensiTime != null) {
-                Text(
-                    text = absensiTime,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CardJadwalShift(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.height(120.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Icon
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(SoftBlue),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CalendarMonth,
-                    contentDescription = "Jadwal Shift",
-                    tint = Primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Jadwal\nShift",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = OnSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
-        }
-    }
-}
-
-@Composable
-private fun CardSpecialEvent(
-    event: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = AmberLight
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Celebration,
-                contentDescription = null,
-                tint = Amber,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Text(
-                text = event,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = OnSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
         }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION TENGAH JABATAN — Tombol Role Permission
+// 3. Menu Jabatan
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
@@ -580,19 +601,17 @@ private fun RoleMenuCard(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION BAWAH 1 — Detail Kinerja & Daftar Tugas
+// 4. Poin Kinerja
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun SectionPerformance(
     poinKinerja: Int,
-    totalTugas: Int,
-    tugasSelesai: Int,
     onDetailKinerjaClick: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Kinerja",
+            text = "Poin Kinerja",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = OnSurfaceVariant,
@@ -613,16 +632,9 @@ private fun SectionPerformance(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Ringkasan Kinerja
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = "Poin Kinerja",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurfaceVariant
-                    )
-
                     Row(
                         verticalAlignment = Alignment.Bottom,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -640,18 +652,8 @@ private fun SectionPerformance(
                             color = OnSurfaceVariant
                         )
                     }
-
-                    // Progress tugas
-                    if (totalTugas > 0) {
-                        Text(
-                            text = "Tugas: $tugasSelesai / $totalTugas selesai",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = OnSurfaceVariant
-                        )
-                    }
                 }
 
-                // Arrow icon
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = "Detail",
@@ -663,118 +665,24 @@ private fun SectionPerformance(
     }
 }
 
-@Composable
-private fun SectionTaskList(
-    tasks: List<TugasItem>,
-    onLihatSemuaClick: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Header dengan tombol "Lihat Semua"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Daftar Tugas",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = OnSurfaceVariant
-            )
-
-            Text(
-                text = "Lihat Semua",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
-                color = Primary,
-                modifier = Modifier.clickable(onClick = onLihatSemuaClick)
-            )
-        }
-
-        // Daftar tugas (max 3 item)
-        tasks.take(3).forEach { tugas ->
-            TaskItemCard(tugas = tugas)
-        }
-    }
-}
-
-@Composable
-private fun TaskItemCard(
-    tugas: TugasItem
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (tugas.isSelesai) ScoreGreenLight else Surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Checkbox / status icon
-            Icon(
-                imageVector = if (tugas.isSelesai)
-                    Icons.Default.CheckCircle
-                else
-                    Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (tugas.isSelesai) "Selesai" else "Belum",
-                tint = if (tugas.isSelesai) ScoreGreen else OnSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-
-            // Detail tugas
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = tugas.judul,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = OnSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Text(
-                    text = "Tenggat: ${tugas.tenggat}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
 // ═══════════════════════════════════════════════════════════════
-// SECTION BAWAH 2 — Sisa Cuti & Konten Tambahan
+// 5. Sisa Cuti
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-private fun SectionLeaveAndAdditional(
+private fun SectionLeave(
     sisaCuti: Int,
-    additionalItems: List<AdditionalMenuItem>,
-    onSisaCutiClick: () -> Unit,
-    onAdditionalItemClick: (String?) -> Unit
+    onSisaCutiClick: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Cuti & Lainnya",
+            text = "Sisa Cuti",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = OnSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp)
         )
 
-        // Sisa Cuti
         Card(
             onClick = onSisaCutiClick,
             modifier = Modifier.fillMaxWidth(),
@@ -789,7 +697,6 @@ private fun SectionLeaveAndAdditional(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Icon
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -839,73 +746,6 @@ private fun SectionLeaveAndAdditional(
                     modifier = Modifier.size(28.dp)
                 )
             }
-        }
-
-        // Konten Tambahan (terikat role)
-        if (additionalItems.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                additionalItems.forEach { item ->
-                    AdditionalCard(
-                        modifier = Modifier.weight(1f),
-                        item = item,
-                        onClick = { onAdditionalItemClick(item.route) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdditionalCard(
-    modifier: Modifier = Modifier,
-    item: AdditionalMenuItem,
-    onClick: () -> Unit
-) {
-    val icon = mapIcon(item.iconResName)
-
-    Card(
-        onClick = onClick,
-        modifier = modifier.height(90.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(PurpleLight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = item.label,
-                    tint = Purple,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = item.label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                color = OnSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
         }
     }
 }

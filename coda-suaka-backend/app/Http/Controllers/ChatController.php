@@ -1,0 +1,197 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Chat;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class ChatController extends Controller
+{
+    use \App\Traits\ApiResponse;
+
+    /**
+     * GET /api/chat/contacts
+     * Ambil daftar kontak dalam satu instansi (UMKM) yang sama,
+     * dikelompokkan berdasarkan role.
+     */
+    public function contacts(Request $request)
+    {
+        $user = $request->user();
+        $instansiId = $user->instansi_id;
+
+        // Ambil semua user dalam instansi yang sama, kecuali user yang login
+        $users = User::where('instansi_id', $instansiId)
+            ->where('id', '!=', $user->id)
+            ->with(['role', 'profilKaryawan'])
+            ->get();
+
+        // Hitung unread count per kontak
+        $contacts = $users->map(function ($kontak) use ($user) {
+            $unreadCount = Chat::where('pengirim_id', $kontak->id)
+                ->where('penerima_id', $user->id)
+                ->where('is_read', false)
+                ->count();
+
+            // Ambil pesan terakhir
+            $lastMessage = Chat::where(function ($q) use ($user, $kontak) {
+                $q->where('pengirim_id', $kontak->id)->where('penerima_id', $user->id);
+            })->orWhere(function ($q) use ($user, $kontak) {
+                $q->where('pengirim_id', $user->id)->where('penerima_id', $kontak->id);
+            })->latest()->first();
+
+            return [
+                'id' => $kontak->id,
+                'name' => $kontak->name,
+                'email' => $kontak->email,
+                'role' => $kontak->role ? $kontak->role->nama_role : 'Unknown',
+                'role_id' => $kontak->role_id,
+                'nama_lengkap' => $kontak->profilKaryawan ? $kontak->profilKaryawan->nama_lengkap : $kontak->name,
+                'foto_profil' => $kontak->profilKaryawan ? $kontak->profilKaryawan->foto_profil : null,
+                'unread_count' => $unreadCount,
+                'last_message' => $lastMessage ? $lastMessage->pesan : null,
+                'last_message_time' => $lastMessage ? $lastMessage->created_at->diffForHumans() : null,
+            ];
+        });
+
+        // Kelompokkan berdasarkan role
+        $grouped = $contacts->groupBy('role')->map(function ($items, $role) {
+            return [
+                'role' => $role,
+                'contacts' => $items->sortByDesc('last_message_time')->values()->toArray(),
+            ];
+        })->values();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $grouped,
+        ]);
+    }
+
+    /**
+     * GET /api/chat/messages/{user}
+     * Ambil riwayat chat dengan user tertentu.
+     */
+    public function messages(Request $request, User $user)
+    {
+        $currentUser = $request->user();
+
+        // Validasi: pastikan satu instansi
+        if ($currentUser->instansi_id !== $user->instansi_id) {
+            return $this->errorResponse('User tidak dalam instansi yang sama.', 403);
+        }
+
+        // Ambil pesan antara kedua user
+        $messages = Chat::where(function ($q) use ($currentUser, $user) {
+            $q->where('pengirim_id', $currentUser->id)
+              ->where('penerima_id', $user->id);
+        })->orWhere(function ($q) use ($currentUser, $user) {
+            $q->where('pengirim_id', $user->id)
+              ->where('penerima_id', $currentUser->id);
+        })->orderBy('created_at', 'asc')->get();
+
+        // Tandai semua pesan dari user tersebut sebagai sudah dibaca
+        Chat::where('pengirim_id', $user->id)
+            ->where('penerima_id', $currentUser->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        // Format waktu
+        $messages = $messages->map(function ($msg) {
+            return [
+                'id' => $msg->id,
+                'pengirim_id' => $msg->pengirim_id,
+                'penerima_id' => $msg->penerima_id,
+                'pesan' => $msg->pesan,
+                'is_read' => $msg->is_read,
+                'created_at' => $msg->created_at->toDateTimeString(),
+                'waktu' => $msg->created_at->diffForHumans(),
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $messages,
+        ]);
+    }
+
+    /**
+     * POST /api/chat/send
+     * Kirim pesan ke user tertentu.
+     */
+    public function send(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'penerima_id' => 'required|exists:users,id',
+            'pesan' => 'required|string|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors()->first(), 422);
+        }
+
+        $currentUser = $request->user();
+        $penerima = User::find($request->penerima_id);
+
+        if (!$penerima) {
+            return $this->errorResponse('Penerima tidak ditemukan.', 404);
+        }
+
+        // Validasi: pastikan satu instansi
+        if ($currentUser->instansi_id !== $penerima->instansi_id) {
+            return $this->errorResponse('Penerima tidak dalam instansi yang sama.', 403);
+        }
+
+        $chat = Chat::create([
+            'pengirim_id' => $currentUser->id,
+            'penerima_id' => $request->penerima_id,
+            'pesan' => $request->pesan,
+            'is_read' => false,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pesan berhasil dikirim.',
+            'data' => [
+                'id' => $chat->id,
+                'pengirim_id' => $chat->pengirim_id,
+                'penerima_id' => $chat->penerima_id,
+                'pesan' => $chat->pesan,
+                'is_read' => $chat->is_read,
+                'created_at' => $chat->created_at->toDateTimeString(),
+                'waktu' => $chat->created_at->diffForHumans(),
+            ],
+        ], 201);
+    }
+
+    /**
+     * PUT /api/chat/read/{user}
+     * Tandai semua pesan dari user tertentu sebagai sudah dibaca.
+     */
+    public function markAsRead(Request $request, User $user)
+    {
+        $currentUser = $request->user();
+
+        Chat::where('pengirim_id', $user->id)
+            ->where('penerima_id', $currentUser->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pesan ditandai sudah dibaca.',
+        ]);
+    }
+
+    /**
+     * Response error helper.
+     */
+    private function errorResponse(string $message, int $code)
+    {
+        return response()->json([
+            'status' => 'error',
+            'message' => $message,
+        ], $code);
+    }
+}

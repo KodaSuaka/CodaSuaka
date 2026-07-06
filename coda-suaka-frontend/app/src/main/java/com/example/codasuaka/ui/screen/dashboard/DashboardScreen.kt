@@ -105,7 +105,7 @@ fun DashboardScreen(
                         when (index) {
                             0 -> { /* already on dashboard */ }
                             1 -> onNavigateTo("tugas_tim")
-                            2 -> onNavigateTo("pesan")
+                            2 -> onNavigateTo("contact_list")
                             3 -> onNavigateTo("divisi")
                         }
                     }

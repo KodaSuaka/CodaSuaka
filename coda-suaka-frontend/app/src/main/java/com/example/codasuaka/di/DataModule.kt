@@ -5,7 +5,9 @@ import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.data.remote.ApiService
 import com.example.codasuaka.data.remote.interceptor.AuthInterceptor
 import com.example.codasuaka.data.repository.AuthRepositoryImpl
+import com.example.codasuaka.data.repository.ChatRepositoryImpl
 import com.example.codasuaka.domain.repository.AuthRepository
+import com.example.codasuaka.domain.repository.ChatRepository
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
@@ -59,5 +61,10 @@ val dataModule = module {
             apiService = get(),
             tokenManager = get()
         )
+    }
+
+    // Chat Repository
+    single<ChatRepository> {
+        ChatRepositoryImpl(apiService = get())
     }
 }

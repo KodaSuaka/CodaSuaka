@@ -42,4 +42,28 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
+
+    /**
+     * Profil karyawan yang terkait dengan user ini.
+     */
+    public function profilKaryawan()
+    {
+        return $this->hasOne(Karyawan::class, 'user_id');
+    }
+
+    /**
+     * Pesan yang dikirim oleh user ini.
+     */
+    public function pesanDikirim()
+    {
+        return $this->hasMany(Chat::class, 'pengirim_id');
+    }
+
+    /**
+     * Pesan yang diterima oleh user ini.
+     */
+    public function pesanDiterima()
+    {
+        return $this->hasMany(Chat::class, 'penerima_id');
+    }
 }

@@ -15,4 +15,12 @@ class karyawan extends Model
         'kontak',
         'foto_profil',
     ];
+
+    /**
+     * User yang memiliki profil karyawan ini.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

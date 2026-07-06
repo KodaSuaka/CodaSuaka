@@ -1,6 +1,10 @@
 package com.example.codasuaka.di
 
+import com.example.codasuaka.domain.repository.ChatRepository
 import com.example.codasuaka.ui.auth.AuthViewModel
+import com.example.codasuaka.ui.chat.ChatContactViewModel
+import com.example.codasuaka.ui.chat.ChatDetailViewModel
+import com.example.codasuaka.ui.pengajuan.PengajuanViewModel
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletViewModel
 import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
@@ -25,4 +29,15 @@ val viewModelModule = module {
     viewModel { KelolaKaryawanViewModel() }
     viewModel { RiwayatKehadiranViewModel() }
     viewModel { KalenderViewModel() }
+    viewModel { PengajuanViewModel() }
+
+    // Chat ViewModels
+    viewModel { ChatContactViewModel(chatRepository = get()) }
+    viewModel { params ->
+        ChatDetailViewModel(
+            userId = params.get(),
+            userName = params.get(),
+            chatRepository = get<ChatRepository>()
+        )
+    }
 }
