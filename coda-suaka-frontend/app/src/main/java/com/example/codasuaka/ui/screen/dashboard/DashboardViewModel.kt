@@ -47,9 +47,9 @@ class DashboardViewModel(
      */
     private fun loadUserData() {
         viewModelScope.launch {
-            val name = tokenManager.name.first() ?: "Nama Pengguna"
-            val email = tokenManager.email.first() ?: ""
-            val role = tokenManager.role.first() ?: ""
+            val name = tokenManager.userName.first() ?: "Nama Pengguna"
+            val email = tokenManager.userEmail.first() ?: ""
+            val role = tokenManager.userRole.first() ?: ""
             _uiState.value = _uiState.value.copy(
                 userNamaLengkap = name,
                 userEmail = email,
