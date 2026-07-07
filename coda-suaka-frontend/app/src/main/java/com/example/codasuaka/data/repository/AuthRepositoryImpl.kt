@@ -64,8 +64,10 @@ class AuthRepositoryImpl(
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 val token = body.data?.accessToken ?: ""
+                // Ekstrak userId dari response user (Gson parse sebagai LinkedTreeMap)
+                val userId = (body.data?.user as? Map<*, *>)?.get("id")?.toString() ?: ""
                 val user = User(
-                    id = 0,
+                    id = userId.toIntOrNull() ?: 0,
                     email = email,
                     namaLengkap = namaPemilik,
                     role = "Owner",
@@ -78,7 +80,7 @@ class AuthRepositoryImpl(
                     email = email,
                     name = namaPemilik,
                     role = "Owner",
-                    userId = ""
+                    userId = userId
                 )
                 Result.success(user)
             } else {

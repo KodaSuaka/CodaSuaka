@@ -22,16 +22,16 @@ import com.example.codasuaka.ui.theme.*
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (role: String) -> Unit,
     onNavigateToRegister: () -> Unit,
     viewModel: LoginViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.loginSuccess) {
-        if (uiState.loginSuccess) {
-            onLoginSuccess()
+    LaunchedEffect(uiState.loginSuccess, uiState.userRole) {
+        if (uiState.loginSuccess && uiState.userRole != null) {
+            onLoginSuccess(uiState.userRole!!)
         }
     }
 

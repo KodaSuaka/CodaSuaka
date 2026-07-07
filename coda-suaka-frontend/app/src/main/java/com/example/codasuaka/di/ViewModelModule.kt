@@ -25,10 +25,13 @@ val viewModelModule = module {
     // Auth
     viewModel { LoginViewModel(loginUseCase = get()) }
     viewModel { RegisterViewModel(registerUseCase = get()) }
-    viewModel { AuthViewModel(tokenManager = get()) }
+    viewModel { AuthViewModel(tokenManager = get(), apiService = get()) }
 
     // Dashboard
-    viewModel { DashboardViewModel(dashboardRepository = get()) }
+    viewModel { DashboardViewModel(
+        dashboardRepository = get(),
+        tokenManager = get()
+    ) }
 
     // Dashboard Karyawan
     viewModel { DashboardKaryawanViewModel(

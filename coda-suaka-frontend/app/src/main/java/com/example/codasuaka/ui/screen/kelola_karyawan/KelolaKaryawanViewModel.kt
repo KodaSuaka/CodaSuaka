@@ -54,6 +54,8 @@ data class KelolaKaryawanUiState(
     // ── Form Fields ──
     val formNama: String = "",
     val formAlamat: String = "",
+    val formEmail: String = "",
+    val formPassword: String = "",
     val formRoleId: Int = 0,
     val formOutletId: Int = 0,
     val editingKaryawanId: String? = null
@@ -148,6 +150,8 @@ class KelolaKaryawanViewModel(
             dialogMode = KaryawanDialogMode.Tambah,
             formNama = "",
             formAlamat = "",
+            formEmail = "",
+            formPassword = "",
             formRoleId = 0,
             formOutletId = 0,
             editingKaryawanId = null,
@@ -161,6 +165,8 @@ class KelolaKaryawanViewModel(
             dialogMode = KaryawanDialogMode.Edit(karyawan),
             formNama = karyawan.namaLengkap,
             formAlamat = karyawan.alamat,
+            formEmail = "",
+            formPassword = "",
             formRoleId = karyawan.role?.id ?: 0,
             formOutletId = karyawan.outlet?.id ?: 0,
             editingKaryawanId = karyawan.id,
@@ -174,6 +180,8 @@ class KelolaKaryawanViewModel(
             dialogMode = KaryawanDialogMode.Closed,
             formNama = "",
             formAlamat = "",
+            formEmail = "",
+            formPassword = "",
             formRoleId = 0,
             formOutletId = 0,
             editingKaryawanId = null,
@@ -191,6 +199,14 @@ class KelolaKaryawanViewModel(
         _uiState.value = _uiState.value.copy(formAlamat = value, errorMessage = null)
     }
 
+    fun onFormEmailChange(value: String) {
+        _uiState.value = _uiState.value.copy(formEmail = value, errorMessage = null)
+    }
+
+    fun onFormPasswordChange(value: String) {
+        _uiState.value = _uiState.value.copy(formPassword = value, errorMessage = null)
+    }
+
     fun onFormRoleChange(roleId: Int) {
         _uiState.value = _uiState.value.copy(formRoleId = roleId, errorMessage = null)
     }
@@ -203,6 +219,7 @@ class KelolaKaryawanViewModel(
 
     /**
      * Menyimpan karyawan baru ke API.
+     * Karyawan mendapat email dan password untuk login ke sistem.
      */
     fun simpanKaryawan() {
         val state = _uiState.value
@@ -214,6 +231,18 @@ class KelolaKaryawanViewModel(
         }
         if (state.formAlamat.isBlank()) {
             _uiState.value = state.copy(errorMessage = "Alamat karyawan harus diisi.")
+            return
+        }
+        if (state.formEmail.isBlank()) {
+            _uiState.value = state.copy(errorMessage = "Email karyawan harus diisi untuk login.")
+            return
+        }
+        if (state.formPassword.isBlank()) {
+            _uiState.value = state.copy(errorMessage = "Password karyawan harus diisi untuk login.")
+            return
+        }
+        if (state.formPassword.length < 6) {
+            _uiState.value = state.copy(errorMessage = "Password minimal 6 karakter.")
             return
         }
         if (state.formRoleId <= 0) {
@@ -228,8 +257,8 @@ class KelolaKaryawanViewModel(
 
             val request = CreateKaryawanRequest(
                 namaLengkap = state.formNama.trim(),
-                email = "${state.formNama.trim().lowercase().replace(" ", ".")}@email.com",
-                password = "password123",
+                email = state.formEmail.trim(),
+                password = state.formPassword,
                 alamat = state.formAlamat.trim(),
                 roleId = state.formRoleId,
                 outletId = outletId
@@ -243,6 +272,8 @@ class KelolaKaryawanViewModel(
                     dialogMode = KaryawanDialogMode.Closed,
                     formNama = "",
                     formAlamat = "",
+                    formEmail = "",
+                    formPassword = "",
                     formRoleId = 0,
                     formOutletId = 0,
                     successMessage = "Karyawan \"${newKaryawan.namaLengkap}\" berhasil ditambahkan."

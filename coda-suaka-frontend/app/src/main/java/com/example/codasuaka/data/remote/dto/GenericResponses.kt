@@ -409,3 +409,18 @@ data class UserInfoData(
     @SerializedName("profil_karyawan") val profilKaryawan: KaryawanDto?,
     @SerializedName("outlet") val outlet: OutletDto?
 )
+
+// ─── Instansi DTOs ──────────────────────────────────────────────
+
+data class InstansiResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: InstansiData?
+)
+
+data class InstansiData(
+    @SerializedName("id") val id: Int,
+    @SerializedName("nama_instansi") val namaInstansi: String,
+    @SerializedName("alamat") val alamat: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)

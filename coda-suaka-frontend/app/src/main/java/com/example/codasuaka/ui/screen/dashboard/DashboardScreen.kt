@@ -500,14 +500,14 @@ private fun DrawerContent(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = (user.namaLengkap ?: "Nama Pengguna"),
+                    text = viewModel.uiState.value.userNamaLengkap,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = OnPrimary
                 )
 
                 Text(
-                    text = (user.email),
+                    text = viewModel.uiState.value.userEmail,
                     style = MaterialTheme.typography.bodySmall,
                     color = OnPrimary.copy(alpha = 0.8f)
                 )

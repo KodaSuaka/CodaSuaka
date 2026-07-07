@@ -7,6 +7,13 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * @deprecated Gunakan Retrofit dari Koin DI module (`dataModule`)
+ * yang sudah include AuthInterceptor dan logging yang proper.
+ * Instance ini TIDAK memiliki interceptor auth sehingga tidak bisa
+ * mengirim request terautentikasi.
+ */
+@Deprecated("Gunakan ApiService dari Koin DI module yang sudah include AuthInterceptor")
 object RetrofitInstance {
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

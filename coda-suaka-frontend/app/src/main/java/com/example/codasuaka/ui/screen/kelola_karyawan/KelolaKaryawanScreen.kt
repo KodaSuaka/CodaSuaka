@@ -217,6 +217,8 @@ fun KelolaKaryawanScreen(
             DialogTambahKaryawan(
                 nama = uiState.formNama,
                 alamat = uiState.formAlamat,
+                email = uiState.formEmail,
+                password = uiState.formPassword,
                 selectedRoleId = uiState.formRoleId,
                 selectedOutletId = uiState.formOutletId,
                 roles = uiState.roles,
@@ -225,6 +227,8 @@ fun KelolaKaryawanScreen(
                 errorMessage = uiState.errorMessage,
                 onNamaChange = viewModel::onFormNamaChange,
                 onAlamatChange = viewModel::onFormAlamatChange,
+                onEmailChange = viewModel::onFormEmailChange,
+                onPasswordChange = viewModel::onFormPasswordChange,
                 onRoleChange = viewModel::onFormRoleChange,
                 onOutletChange = viewModel::onFormOutletChange,
                 onSimpan = viewModel::simpanKaryawan,
@@ -414,6 +418,8 @@ private fun KaryawanListItem(
 private fun DialogTambahKaryawan(
     nama: String,
     alamat: String,
+    email: String,
+    password: String,
     selectedRoleId: Int,
     selectedOutletId: Int,
     roles: List<Role>,
@@ -422,6 +428,8 @@ private fun DialogTambahKaryawan(
     errorMessage: String?,
     onNamaChange: (String) -> Unit,
     onAlamatChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
     onRoleChange: (Int) -> Unit,
     onOutletChange: (Int) -> Unit,
     onSimpan: () -> Unit,
@@ -506,6 +514,46 @@ private fun DialogTambahKaryawan(
                     placeholder = { Text("Masukkan alamat karyawan") },
                     minLines = 2,
                     maxLines = 3,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
+                )
+
+                // Email (untuk login)
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = onEmailChange,
+                    label = { Text("Email (untuk login)") },
+                    placeholder = { Text("Masukkan email karyawan") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
+                )
+
+                // Password (untuk login)
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = onPasswordChange,
+                    label = { Text("Password (untuk login)") },
+                    placeholder = { Text("Masukkan password karyawan") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(

@@ -28,9 +28,11 @@ class DashboardController extends Controller
         $instansiId = $user->instansi_id;
         $userIds = User::where('instansi_id', $instansiId)->pluck('id');
 
-        $totalKaryawan = karyawan::whereIn('user_id', $userIds)->count();
+        $totalKaryawan = karyawan::whereIn('user_id', $userIds)
+            ->whereHas('user', fn($q) => $q->whereHas('role', fn($r) => $r->where('nama_role', 'Karyawan')))
+            ->count();
         $totalOutlet = outlet::where('instansi_id', $instansiId)->count();
-        $totalDivisi = Divisi::count(); // semua divisi di outlet-instansi
+        $totalDivisi = Divisi::whereHas('outlet', fn($q) => $q->where('instansi_id', $instansiId))->count();
 
         // Presensi hari ini
         $today = now()->toDateString();

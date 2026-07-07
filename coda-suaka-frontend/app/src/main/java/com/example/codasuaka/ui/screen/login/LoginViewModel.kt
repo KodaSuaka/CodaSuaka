@@ -12,7 +12,8 @@ data class LoginUiState(
     val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val loginSuccess: Boolean = false
+    val loginSuccess: Boolean = false,
+    val userRole: String? = null
 )
 
 class LoginViewModel(
@@ -39,7 +40,8 @@ class LoginViewModel(
                 .onSuccess { user ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        loginSuccess = true
+                        loginSuccess = true,
+                        userRole = user.role
                     )
                 }
                 .onFailure { error ->

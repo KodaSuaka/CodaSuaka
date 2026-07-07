@@ -102,11 +102,13 @@ class PengajuanController extends Controller
             'tanggal_disetujui' => now(),
         ]);
 
-        // Jika cuti, kurangi sisa cuti
+        // Jika cuti, kurangi sisa cuti (hitung hari kerja, exclude weekend)
         if ($pengajuan->jenis === 'cuti') {
             $karyawan = $pengajuan->user->profilKaryawan;
             if ($karyawan) {
-                $hariCuti = $pengajuan->tanggal_mulai->diffInDays($pengajuan->tanggal_selesai) + 1;
+                $hariCuti = $pengajuan->tanggal_mulai->diffInDaysFiltered(function ($date) {
+                    return !$date->isSaturday() && !$date->isSunday();
+                }, $pengajuan->tanggal_selesai) + 1;
                 $karyawan->decrement('sisa_cuti', $hariCuti);
             }
         }

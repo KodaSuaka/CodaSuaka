@@ -39,10 +39,10 @@ val dataModule = module {
             .build()
     }
 
-    // Retrofit instance — mengarah ke VPS
+    // Retrofit instance — menggunakan BASE_URL dari BuildConfig
     single {
         Retrofit.Builder()
-            .baseUrl("https://codasuaka.my.id/")
+            .baseUrl(com.example.codasuaka.BuildConfig.BASE_URL)
             .client(get())
             .addConverterFactory(GsonConverterFactory.create())
             .build()

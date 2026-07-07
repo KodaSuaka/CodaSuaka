@@ -22,24 +22,36 @@ class ChatController extends Controller
         $instansiId = $user->instansi_id;
 
         // Ambil semua user dalam instansi yang sama, kecuali user yang login
+        // Gunakan subquery untuk unread count dan last message guna hindari N+1
         $users = User::where('instansi_id', $instansiId)
             ->where('id', '!=', $user->id)
             ->with(['role', 'profilKaryawan'])
+            ->withCount(['pesanDiterima as unread_count' => function ($q) use ($user) {
+                $q->where('pengirim_id', $user->id)->where('is_read', false);
+            }])
             ->get();
 
-        // Hitung unread count per kontak
-        $contacts = $users->map(function ($kontak) use ($user) {
-            $unreadCount = Chat::where('pengirim_id', $kontak->id)
-                ->where('penerima_id', $user->id)
-                ->where('is_read', false)
-                ->count();
+        // Ambil last message untuk setiap pasangan chat dalam satu query
+        $contactIds = $users->pluck('id')->toArray();
+        $lastMessages = [];
+        if (!empty($contactIds)) {
+            // Get latest message per contact pair using a subquery approach
+            $rawLastMessages = Chat::where(function ($q) use ($user, $contactIds) {
+                $q->whereIn('pengirim_id', $contactIds)->where('penerima_id', $user->id);
+            })->orWhere(function ($q) use ($user, $contactIds) {
+                $q->whereIn('penerima_id', $contactIds)->where('pengirim_id', $user->id);
+            })->orderBy('created_at', 'desc')->get()
+            ->groupBy(function ($chat) use ($user) {
+                return $chat->pengirim_id === $user->id ? $chat->penerima_id : $chat->pengirim_id;
+            })->map(fn($msgs) => $msgs->first());
 
-            // Ambil pesan terakhir
-            $lastMessage = Chat::where(function ($q) use ($user, $kontak) {
-                $q->where('pengirim_id', $kontak->id)->where('penerima_id', $user->id);
-            })->orWhere(function ($q) use ($user, $kontak) {
-                $q->where('pengirim_id', $user->id)->where('penerima_id', $kontak->id);
-            })->latest()->first();
+            foreach ($rawLastMessages as $contactId => $message) {
+                $lastMessages[$contactId] = $message;
+            }
+        }
+
+        $contacts = $users->map(function ($kontak) use ($user, $lastMessages) {
+            $lastMessage = $lastMessages[$kontak->id] ?? null;
 
             return [
                 'id' => $kontak->id,
@@ -49,7 +61,7 @@ class ChatController extends Controller
                 'role_id' => $kontak->role_id,
                 'nama_lengkap' => $kontak->profilKaryawan ? $kontak->profilKaryawan->nama_lengkap : $kontak->name,
                 'foto_profil' => $kontak->profilKaryawan ? $kontak->profilKaryawan->foto_profil : null,
-                'unread_count' => $unreadCount,
+                'unread_count' => (int) $kontak->unread_count,
                 'last_message' => $lastMessage ? $lastMessage->pesan : null,
                 'last_message_time' => $lastMessage ? $lastMessage->created_at->diffForHumans() : null,
             ];

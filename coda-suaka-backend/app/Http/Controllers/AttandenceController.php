@@ -143,6 +143,12 @@ class AttandenceController extends Controller
     public function rekap(Request $request)
     {
         $user = $request->user();
+
+        // Hanya Owner yang bisa melihat rekap kehadiran
+        if ($user->role?->nama_role !== 'Owner') {
+            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki akses ke rekap kehadiran'], 403);
+        }
+
         $bulan = $request->get('bulan', now()->month);
         $tahun = $request->get('tahun', now()->year);
 

@@ -2,9 +2,11 @@ package com.example.codasuaka.ui.screen.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.domain.repository.DashboardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -17,9 +19,9 @@ data class DashboardUiState(
     val isDrawerOpen: Boolean = false,
     val errorMessage: String? = null,
     val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Tugas Tim, 2 = Pesan, 3 = Divisi,
-    val userNamaLengkap: String? = null,   // ← tambahkan
-    val userEmail: String? = null,          // ← tambahkan
-    val userRole: String? = null            // ← tambahkan kalau perlu
+    val userNamaLengkap: String = "Nama Pengguna",
+    val userEmail: String = "",
+    val userRole: String = ""
 )
 
 
@@ -28,14 +30,32 @@ data class DashboardUiState(
  * Mengelola state omset, outlet, navigasi drawer & bottom nav.
  */
 class DashboardViewModel(
-    private val dashboardRepository: DashboardRepository
+    private val dashboardRepository: DashboardRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState
 
     init {
+        loadUserData()
         loadDashboardData()
+    }
+
+    /**
+     * Muat data user dari TokenManager (DataStore).
+     */
+    private fun loadUserData() {
+        viewModelScope.launch {
+            val name = tokenManager.name.first() ?: "Nama Pengguna"
+            val email = tokenManager.email.first() ?: ""
+            val role = tokenManager.role.first() ?: ""
+            _uiState.value = _uiState.value.copy(
+                userNamaLengkap = name,
+                userEmail = email,
+                userRole = role
+            )
+        }
     }
 
     /**

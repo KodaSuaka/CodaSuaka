@@ -2,8 +2,10 @@ package com.example.codasuaka.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import org.koin.androidx.compose.koinViewModel
 import com.example.codasuaka.ui.screen.auth.AuthScreen
 import com.example.codasuaka.ui.screen.auth.AuthViewModel
@@ -32,6 +34,7 @@ import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import org.koin.core.parameter.parametersOf
+import java.net.URLEncoder
 
 object Routes {
     const val AUTH = "auth"
@@ -48,6 +51,11 @@ object Routes {
     const val DIVISI = "divisi"
     const val TAMBAH_KARYAWAN = "tambah_karyawan"
     const val PENGAJUAN = "pengajuan"
+
+    fun chatDetail(userId: Int, userName: String): String {
+        val encodedName = URLEncoder.encode(userName, "UTF-8")
+        return "chat_detail/$userId/$encodedName"
+    }
 }
 
 @Composable
@@ -62,6 +70,8 @@ fun AppNavigation(navController: NavHostController) {
             AuthScreen(
                 viewModel = authViewModel,
                 onAuthenticated = {
+                    // Navigasi berdasarkan role akan ditentukan oleh AuthScreen
+                    // Default ke DASHBOARD (Owner), jika Karyawan akan pakai DASHBOARD_KARYAWAN
                     navController.navigate(Routes.DASHBOARD) {
                         popUpTo(Routes.AUTH) { inclusive = true }
                     }
@@ -78,8 +88,12 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.LOGIN) {
             val loginViewModel: LoginViewModel = koinViewModel()
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(Routes.DASHBOARD) {
+                onLoginSuccess = { role ->
+                    val destination = when (role) {
+                        "Karyawan" -> Routes.DASHBOARD_KARYAWAN
+                        else -> Routes.DASHBOARD
+                    }
+                    navController.navigate(destination) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 },
@@ -106,7 +120,7 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        // ── Dashboard ──
+        // ── Dashboard (Owner) ──
         composable(Routes.DASHBOARD) {
             val dashboardViewModel: DashboardViewModel = koinViewModel()
             val authViewModel: AuthViewModel = koinViewModel()
@@ -125,6 +139,28 @@ fun AppNavigation(navController: NavHostController) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        // ── Dashboard Karyawan ──
+        composable(Routes.DASHBOARD_KARYAWAN) {
+            val dashboardKaryawanViewModel: DashboardKaryawanViewModel = koinViewModel()
+            val authViewModel: AuthViewModel = koinViewModel()
+            DashboardKaryawanScreen(
+                onNavigateTo = { route ->
+                    try {
+                        navController.navigate(route)
+                    } catch (_: Exception) {
+                        // Route not available — ignore
+                    }
+                },
+                onLogout = {
+                    authViewModel.logout()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                viewModel = dashboardKaryawanViewModel
             )
         }
 
@@ -164,21 +200,27 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
+        // ── Contact List (Chat) ──
         composable(Routes.CONTACT_LIST) {
             val chatContactViewModel: ChatContactViewModel = koinViewModel()
             ChatContactListScreen(
                 onBack = { navController.popBackStack() },
                 onContactClick = { userId, userName ->
-                    navController.navigate("chat_detail/$userId/$userName")
+                    navController.navigate(Routes.chatDetail(userId, userName))
                 },
                 viewModel = chatContactViewModel
             )
         }
 
         // ── Chat Detail ──
-        composable(Routes.CHAT_DETAIL) { backStackEntry ->
-            val userId =
-                backStackEntry.arguments?.getString("userId")?.toIntOrNull() ?: return@composable
+        composable(
+            route = Routes.CHAT_DETAIL,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.IntType },
+                navArgument("userName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getInt("userId") ?: return@composable
             val userName = backStackEntry.arguments?.getString("userName") ?: "User"
             val chatDetailViewModel: ChatDetailViewModel = koinViewModel(
                 parameters = { parametersOf(userId, userName) }
@@ -189,6 +231,7 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
+        // ── Divisi ──
         composable(Routes.DIVISI) {
             val divisiViewModel: DivisiViewModel = koinViewModel()
             DivisiScreen(
@@ -196,32 +239,13 @@ fun AppNavigation(navController: NavHostController) {
                 viewModel = divisiViewModel
             )
         }
+
+        // ── Tambah Karyawan (alias ke KelolaKaryawan) ──
         composable(Routes.TAMBAH_KARYAWAN) {
             val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
             KelolaKaryawanScreen(
                 onBack = { navController.popBackStack() },
                 viewModel = kelolaKaryawanViewModel
-            )
-        }
-        // ── Dashboard Karyawan ──
-        composable(Routes.DASHBOARD_KARYAWAN) {
-            val dashboardKaryawanViewModel: DashboardKaryawanViewModel = koinViewModel()
-            val authViewModel: AuthViewModel = koinViewModel()
-            DashboardKaryawanScreen(
-                onNavigateTo = { route ->
-                    try {
-                        navController.navigate(route)
-                    } catch (_: Exception) {
-                        // Route not available — ignore
-                    }
-                },
-                onLogout = {
-                    authViewModel.logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                viewModel = dashboardKaryawanViewModel
             )
         }
 

@@ -64,6 +64,11 @@ class KaryawanController extends Controller
         $user = $request->user();
         $instansiId = $user->instansi_id;
 
+        // Hanya Owner yang boleh menambahkan karyawan baru
+        if (!$user->role || $user->role->nama_role !== 'Owner') {
+            return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menambahkan karyawan'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'nama_lengkap' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -154,9 +159,9 @@ class KaryawanController extends Controller
      */
     public function destroy(karyawan $karyawan)
     {
-        // Hapus user terkait juga
-        $karyawan->user()->delete();
+        // Hapus profil karyawan terlebih dahulu, baru user (karena cascade)
         $karyawan->delete();
+        $karyawan->user()->delete();
         return response()->json(['status' => 'success', 'message' => 'Karyawan berhasil dihapus']);
     }
 }

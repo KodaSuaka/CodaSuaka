@@ -440,11 +440,11 @@ class SuperAdminController extends Controller
      */
     public function destroyPaket(paket $paket)
     {
-        $paket->update(['is_active' => false]);
+        $paket->delete();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Paket berhasil dinonaktifkan'
+            'message' => 'Paket berhasil dihapus'
         ]);
     }
 
