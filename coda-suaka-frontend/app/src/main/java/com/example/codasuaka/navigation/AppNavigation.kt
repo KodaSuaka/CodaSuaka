@@ -173,7 +173,8 @@ fun AppNavigation(navController: NavHostController) {
 
         // ── Chat Detail ──
         composable(Routes.CHAT_DETAIL) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId")?.toIntOrNull() ?: return@composable
+            val userId =
+                backStackEntry.arguments?.getString("userId")?.toIntOrNull() ?: return@composable
             val userName = backStackEntry.arguments?.getString("userName") ?: "User"
             val chatDetailViewModel: ChatDetailViewModel = koinViewModel(
                 parameters = { parametersOf(userId, userName) }
@@ -225,3 +226,4 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
     }
+}

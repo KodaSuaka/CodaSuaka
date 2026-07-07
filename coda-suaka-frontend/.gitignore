@@ -18,6 +18,7 @@ local.properties
 /gradle/caches/
 /gradle/daemon/
 /gradle/native/
+/gradle/.tmp/
 /gradle/kotlin-profile/
 /gradle/wrapper/dists/
 
