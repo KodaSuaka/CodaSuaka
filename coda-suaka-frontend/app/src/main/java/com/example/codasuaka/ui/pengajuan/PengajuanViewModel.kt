@@ -2,7 +2,9 @@ package com.example.codasuaka.ui.pengajuan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.example.codasuaka.data.remote.dto.CreatePengajuanRequest
+import com.example.codasuaka.data.remote.dto.PengajuanDto
+import com.example.codasuaka.domain.repository.PengajuanRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -54,86 +56,40 @@ data class PengajuanUiState(
 
 /**
  * ViewModel untuk halaman Pengajuan (Cuti/Izin).
- * TODO: Integrasi dengan API backend GET/POST /api/pengajuan
  */
-class PengajuanViewModel : ViewModel() {
+class PengajuanViewModel(
+    private val pengajuanRepository: PengajuanRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PengajuanUiState())
     val uiState: StateFlow<PengajuanUiState> = _uiState
 
     private val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-    private var nextId = 6 // mulai dari 6 karena dummy data sudah 5
+    private val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale("id", "ID"))
 
     init {
         loadRiwayat()
     }
 
     /**
-     * Memuat riwayat pengajuan dummy.
-     * TODO: Panggil API GET /api/pengajuan
+     * Memuat riwayat pengajuan dari API.
      */
     private fun loadRiwayat() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            delay(600)
 
-            val dummyRiwayat = listOf(
-                Pengajuan(
-                    id = 1,
-                    jenis = JenisPengajuan.CUTI_TAHUNAN,
-                    tanggalMulai = "12 Juni 2026",
-                    tanggalSelesai = "15 Juni 2026",
-                    jumlahHari = 4,
-                    keterangan = "Cuti tahunan untuk liburan keluarga ke Bali",
-                    status = "disetujui",
-                    createdAt = "01 Juni 2026"
-                ),
-                Pengajuan(
-                    id = 2,
-                    jenis = JenisPengajuan.IZIN_SAKIT,
-                    tanggalMulai = "10 Juni 2026",
-                    tanggalSelesai = "10 Juni 2026",
-                    jumlahHari = 1,
-                    keterangan = "Demam dan tidak bisa masuk kerja",
-                    status = "pending",
-                    createdAt = "10 Juni 2026"
-                ),
-                Pengajuan(
-                    id = 3,
-                    jenis = JenisPengajuan.MENDADAK,
-                    tanggalMulai = "05 Juni 2026",
-                    tanggalSelesai = "05 Juni 2026",
-                    jumlahHari = 1,
-                    keterangan = "Ada urusan keluarga mendadak",
-                    status = "ditolak",
-                    createdAt = "05 Juni 2026"
-                ),
-                Pengajuan(
-                    id = 4,
-                    jenis = JenisPengajuan.CUTI_TAHUNAN,
-                    tanggalMulai = "20 Mei 2026",
-                    tanggalSelesai = "22 Mei 2026",
-                    jumlahHari = 3,
-                    keterangan = "Cuti tahunan",
-                    status = "disetujui",
-                    createdAt = "15 Mei 2026"
-                ),
-                Pengajuan(
-                    id = 5,
-                    jenis = JenisPengajuan.IZIN_SAKIT,
-                    tanggalMulai = "10 Mei 2026",
-                    tanggalSelesai = "12 Mei 2026",
-                    jumlahHari = 3,
-                    keterangan = "Sakit typus",
-                    status = "disetujui",
-                    createdAt = "10 Mei 2026"
+            val result = pengajuanRepository.getPengajuans()
+            result.onSuccess { dtos ->
+                _uiState.value = _uiState.value.copy(
+                    riwayatPengajuan = dtos.reversed().map { it.toPengajuan() },
+                    isLoading = false
                 )
-            )
-
-            _uiState.value = _uiState.value.copy(
-                riwayatPengajuan = dummyRiwayat,
-                isLoading = false
-            )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = it.message ?: "Gagal memuat riwayat pengajuan"
+                )
+            }
         }
     }
 
@@ -192,8 +148,7 @@ class PengajuanViewModel : ViewModel() {
     // ─── Actions ───
 
     /**
-     * Mengajukan pengajuan cuti/izin baru.
-     * TODO: Panggil API POST /api/pengajuan
+     * Mengajukan pengajuan cuti/izin baru ke API.
      */
     fun ajukanPengajuan() {
         val state = _uiState.value
@@ -222,32 +177,39 @@ class PengajuanViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
-            delay(800) // Simulasi API call
 
-            val pengajuanBaru = Pengajuan(
-                id = nextId++,
-                jenis = state.selectedJenis!!,
-                tanggalMulai = state.tanggalMulai,
-                tanggalSelesai = state.tanggalSelesai,
-                jumlahHari = state.jumlahHari,
-                keterangan = state.keterangan.trim(),
-                status = "pending",
-                createdAt = dateFormatter.format(Date())
+            val tanggalMulaiApi = apiDateFormatter.format(Date(state.tanggalMulaiMillis))
+            val tanggalSelesaiApi = apiDateFormatter.format(Date(state.tanggalSelesaiMillis))
+
+            val request = CreatePengajuanRequest(
+                jenis = state.selectedJenis.name.lowercase(),
+                tanggalMulai = tanggalMulaiApi,
+                tanggalSelesai = tanggalSelesaiApi,
+                keterangan = state.keterangan.trim()
             )
 
-            _uiState.value = _uiState.value.copy(
-                riwayatPengajuan = listOf(pengajuanBaru) + _uiState.value.riwayatPengajuan,
-                isSaving = false,
-                isSuccess = true,
-                selectedJenis = null,
-                tanggalMulai = "",
-                tanggalMulaiMillis = null,
-                tanggalSelesai = "",
-                tanggalSelesaiMillis = null,
-                keterangan = "",
-                jumlahHari = 0,
-                successMessage = "Pengajuan ${pengajuanBaru.jenis.displayName} berhasil diajukan."
-            )
+            val result = pengajuanRepository.createPengajuan(request)
+            result.onSuccess { dto ->
+                val pengajuanBaru = dto.toPengajuan()
+                _uiState.value = _uiState.value.copy(
+                    riwayatPengajuan = listOf(pengajuanBaru) + _uiState.value.riwayatPengajuan,
+                    isSaving = false,
+                    isSuccess = true,
+                    selectedJenis = null,
+                    tanggalMulai = "",
+                    tanggalMulaiMillis = null,
+                    tanggalSelesai = "",
+                    tanggalSelesaiMillis = null,
+                    keterangan = "",
+                    jumlahHari = 0,
+                    successMessage = "Pengajuan ${pengajuanBaru.jenis.displayName} berhasil diajukan."
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    errorMessage = it.message ?: "Gagal mengajukan pengajuan"
+                )
+            }
         }
     }
 
@@ -268,5 +230,26 @@ class PengajuanViewModel : ViewModel() {
         val diff = selesaiMillis - mulaiMillis
         val days = TimeUnit.MILLISECONDS.toDays(diff).toInt()
         return days + 1 // inklusif
+    }
+
+    companion object {
+        fun PengajuanDto.toPengajuan(): Pengajuan {
+            val jenis = when (this.jenis.lowercase()) {
+                "cuti_tahunan" -> JenisPengajuan.CUTI_TAHUNAN
+                "izin_sakit" -> JenisPengajuan.IZIN_SAKIT
+                "mendadak" -> JenisPengajuan.MENDADAK
+                else -> JenisPengajuan.CUTI_TAHUNAN
+            }
+            return Pengajuan(
+                id = this.id,
+                jenis = jenis,
+                tanggalMulai = this.tanggalMulai ?: "",
+                tanggalSelesai = this.tanggalSelesai ?: "",
+                jumlahHari = 0, // akan dihitung jika perlu
+                keterangan = this.keterangan ?: "",
+                status = this.status,
+                createdAt = this.createdAt ?: ""
+            )
+        }
     }
 }

@@ -2,7 +2,11 @@ package com.example.codasuaka.ui.screen.dashboard_karyawan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.example.codasuaka.data.remote.dto.PenugasanDto
+import com.example.codasuaka.domain.repository.KaryawanRepository
+import com.example.codasuaka.domain.repository.PengajuanRepository
+import com.example.codasuaka.domain.repository.PenugasanRepository
+import com.example.codasuaka.domain.repository.PresensiRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,6 +23,7 @@ enum class AbsensiStatus {
  * Data class untuk data diri karyawan.
  */
 data class EmployeeInfo(
+    val id: String = "",
     val nama: String = "Karyawan",
     val jabatan: String = "Staff",
     val poinPerforma: Int = 0,
@@ -39,16 +44,15 @@ data class TugasItem(
  * State untuk halaman Dashboard Karyawan.
  */
 data class DashboardKaryawanUiState(
-    // ── Section Atas: Data Diri ──
     val employeeInfo: EmployeeInfo = EmployeeInfo(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 
     // ── Section Tengah: Menu Personal ──
     val absensiStatus: AbsensiStatus = AbsensiStatus.CHECKED_OUT,
-    val absensiTime: String? = null, // jam checkin/checkout terakhir
-    val specialEvent: String? = null, // event dari jadwal operasional (random, nullable)
-    val showSpecialEvent: Boolean = false, // kadang muncul, kadang tidak
+    val absensiTime: String? = null,
+    val specialEvent: String? = null,
+    val showSpecialEvent: Boolean = false,
 
     // ── Section Tengah: Menu Jabatan ──
     val roleMenuItems: List<RoleMenuItem> = emptyList(),
@@ -73,7 +77,7 @@ data class DashboardKaryawanUiState(
 data class RoleMenuItem(
     val id: String,
     val label: String,
-    val iconResName: String, // nama ikon, akan dipetakan ke ikon Kompose
+    val iconResName: String,
     val route: String? = null
 )
 
@@ -90,8 +94,14 @@ data class AdditionalMenuItem(
 /**
  * ViewModel untuk Dashboard Karyawan.
  * Mengelola state data diri, absensi, tugas, cuti, dan navigasi.
+ * Terintegrasi dengan API backend.
  */
-class DashboardKaryawanViewModel : ViewModel() {
+class DashboardKaryawanViewModel(
+    private val presensiRepository: PresensiRepository,
+    private val penugasanRepository: PenugasanRepository,
+    private val karyawanRepository: KaryawanRepository,
+    private val pengajuanRepository: PengajuanRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardKaryawanUiState())
     val uiState: StateFlow<DashboardKaryawanUiState> = _uiState
@@ -101,79 +111,125 @@ class DashboardKaryawanViewModel : ViewModel() {
     }
 
     /**
-     * Memuat data awal dashboard.
-     * Untuk tahap awal menggunakan data dummy.
-     * TODO: Integrasi dengan API endpoint GET /api/karyawan/me, GET /api/absensi/status, dll.
+     * Memuat data awal dashboard dari API.
      */
     private fun loadDashboardData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            // Simulasi loading — ganti dengan panggilan API sesungguhnya
-            delay(800)
+            try {
+                // Muat data dari berbagai endpoint secara paralel
+                val karyawanResult = karyawanRepository.getKaryawanMe()
+                val presensiResult = presensiRepository.getPresensiToday()
+                val tugasResult = penugasanRepository.getPenugasans(status = "belum,proses")
+                val pengajuanResult = pengajuanRepository.getPengajuans()
 
-            // Data dummy (nanti diganti dengan response API)
-            _uiState.value = _uiState.value.copy(
-                employeeInfo = EmployeeInfo(
-                    nama = "Ahmad Fauzi",
-                    jabatan = "Staff Operasional",
-                    poinPerforma = 85
-                ),
-                absensiStatus = AbsensiStatus.CHECKED_OUT,
-                absensiTime = null,
-                specialEvent = "Hari Jadi Outlet ke-3 — Diskon 20%",
-                showSpecialEvent = true,
-                poinKinerja = 85,
-                totalTugas = 5,
-                tugasSelesai = 3,
-                daftarTugas = listOf(
-                    TugasItem(1, "Menyusun laporan stok harian", "2026-07-05", false),
-                    TugasItem(2, "Pengecekan kebersihan area", "2026-07-04", true),
-                    TugasItem(3, "Koordinasi dengan tim kebersihan", "2026-07-06", false)
-                ),
-                sisaCuti = 12,
-                roleMenuItems = listOf(
-                    RoleMenuItem("laporan", "Laporan", "Description", "laporan_keuangan"),
-                    RoleMenuItem("absensi", "Riwayat Absensi", "FactCheck", "riwayat_kehadiran"),
-                    RoleMenuItem("tugas", "Tugas Tim", "Assignment", "tugas_tim")
-                ),
-                additionalContent = listOf(
-                    AdditionalMenuItem("pelatihan", "Pelatihan", "School", "pelatihan"),
-                    AdditionalMenuItem("penghargaan", "Penghargaan", "EmojiEvents", "penghargaan")
-                ),
-                isLoading = false
-            )
+                karyawanResult.onSuccess { karyawan ->
+                    _uiState.value = _uiState.value.copy(
+                        employeeInfo = EmployeeInfo(
+                            id = karyawan.id,
+                            nama = karyawan.namaLengkap,
+                            jabatan = karyawan.user?.role?.namaRole ?: "Staff",
+                            poinPerforma = 0,
+                            fotoUrl = karyawan.fotoProfil
+                        ),
+                        sisaCuti = karyawan.sisaCuti ?: 12
+                    )
+                }
+
+                presensiResult.onSuccess { today ->
+                    _uiState.value = _uiState.value.copy(
+                        absensiStatus = if (today.sudahCheckin && !today.sudahCheckout)
+                            AbsensiStatus.CHECKED_IN else AbsensiStatus.CHECKED_OUT,
+                        absensiTime = today.presensi?.jamCheckin?.let {
+                            if (today.sudahCheckout) "$it (checkout)" else "$it (checkin)"
+                        }
+                    )
+                }
+
+                tugasResult.onSuccess { tugasList ->
+                    val tugasItems = tugasList.map { tugas ->
+                        TugasItem(
+                            id = tugas.id,
+                            judul = tugas.judul,
+                            tenggat = tugas.tenggat ?: "-",
+                            isSelesai = tugas.status == "selesai"
+                        )
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        totalTugas = tugasList.size,
+                        tugasSelesai = tugasList.count { it.status == "selesai" },
+                        daftarTugas = tugasItems
+                    )
+                }
+
+                pengajuanResult.onSuccess { pengajuanList ->
+                    val pendingCount = pengajuanList.count { it.status == "pending" }
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    roleMenuItems = listOf(
+                        RoleMenuItem("laporan", "Laporan", "Description", "laporan_keuangan"),
+                        RoleMenuItem("absensi", "Riwayat Absensi", "FactCheck", "riwayat_kehadiran"),
+                        RoleMenuItem("tugas", "Tugas Tim", "Assignment", "tugas_tim")
+                    ),
+                    additionalContent = listOf(
+                        AdditionalMenuItem("pelatihan", "Pelatihan", "School", "pelatihan"),
+                        AdditionalMenuItem("penghargaan", "Penghargaan", "EmojiEvents", "penghargaan")
+                    ),
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message
+                )
+            }
         }
     }
 
     // ─── Absensi (Checkin / Checkout) ──────────────────────────
 
     /**
-     * Melakukan checkin atau checkout.
-     * TODO: Panggil API POST /api/absensi/checkin atau /api/absensi/checkout
+     * Melakukan checkin atau checkout via API.
      */
     fun toggleAbsensi() {
         viewModelScope.launch {
             val current = _uiState.value.absensiStatus
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            // Simulasi request API
-            delay(600)
-
             if (current == AbsensiStatus.CHECKED_OUT) {
                 // Checkin
-                _uiState.value = _uiState.value.copy(
-                    absensiStatus = AbsensiStatus.CHECKED_IN,
-                    absensiTime = "07:45 WIB",
-                    isLoading = false
-                )
+                presensiRepository.checkin()
+                    .onSuccess { presensi ->
+                        _uiState.value = _uiState.value.copy(
+                            absensiStatus = AbsensiStatus.CHECKED_IN,
+                            absensiTime = presensi.jamCheckin?.let { "$it WIB" },
+                            isLoading = false
+                        )
+                    }
+                    .onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = error.message
+                        )
+                    }
             } else {
                 // Checkout
-                _uiState.value = _uiState.value.copy(
-                    absensiStatus = AbsensiStatus.CHECKED_OUT,
-                    absensiTime = "16:30 WIB",
-                    isLoading = false
-                )
+                presensiRepository.checkout()
+                    .onSuccess { presensi ->
+                        _uiState.value = _uiState.value.copy(
+                            absensiStatus = AbsensiStatus.CHECKED_OUT,
+                            absensiTime = presensi.jamCheckout?.let { "$it WIB" },
+                            isLoading = false
+                        )
+                    }
+                    .onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = error.message
+                        )
+                    }
             }
         }
     }

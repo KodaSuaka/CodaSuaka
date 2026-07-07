@@ -2,7 +2,7 @@ package com.example.codasuaka.ui.screen.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.example.codasuaka.domain.repository.DashboardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -23,7 +23,9 @@ data class DashboardUiState(
  * ViewModel untuk Dashboard.
  * Mengelola state omset, outlet, navigasi drawer & bottom nav.
  */
-class DashboardViewModel : ViewModel() {
+class DashboardViewModel(
+    private val dashboardRepository: DashboardRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState
@@ -33,23 +35,26 @@ class DashboardViewModel : ViewModel() {
     }
 
     /**
-     * Memuat data awal dashboard (outlet & omset).
-     * Untuk tahap awal menggunakan data dummy.
-     * TODO: Integrasi dengan API endpoint GET /api/outlet dan GET /api/transaksi-paket
+     * Memuat data awal dashboard (outlet & omset) dari API.
      */
     private fun loadDashboardData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            // Simulasi loading — ganti dengan panggilan API sesungguhnya
-            delay(800)
-
-            // Data dummy (nanti diganti dengan response API)
-            _uiState.value = _uiState.value.copy(
-                outletName = "Outlet Pusat",
-                omsetTotal = 15_750_000,
-                isLoading = false
-            )
+            dashboardRepository.getDashboard()
+                .onSuccess { data ->
+                    _uiState.value = _uiState.value.copy(
+                        outletName = "Outlet Pusat", // default, bisa diganti dari data user
+                        omsetTotal = 0,
+                        isLoading = false
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = error.message
+                    )
+                }
         }
     }
 
@@ -61,14 +66,20 @@ class DashboardViewModel : ViewModel() {
     fun loadOmset(startDate: String, endDate: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            // TODO: Panggil API GET /api/transaksi-paket?start_date=...&end_date=...
-            delay(500)
 
-            // Dummy: perbarui omset
-            _uiState.value = _uiState.value.copy(
-                omsetTotal = 18_200_000,
-                isLoading = false
-            )
+            dashboardRepository.getOmset(startDate, endDate)
+                .onSuccess { data ->
+                    _uiState.value = _uiState.value.copy(
+                        omsetTotal = data.totalOmset,
+                        isLoading = false
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = error.message
+                    )
+                }
         }
     }
 

@@ -1,13 +1,10 @@
 package com.example.codasuaka.di
 
-import com.example.codasuaka.core.utils.Constants
 import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.data.remote.ApiService
 import com.example.codasuaka.data.remote.interceptor.AuthInterceptor
-import com.example.codasuaka.data.repository.AuthRepositoryImpl
-import com.example.codasuaka.data.repository.ChatRepositoryImpl
-import com.example.codasuaka.domain.repository.AuthRepository
-import com.example.codasuaka.domain.repository.ChatRepository
+import com.example.codasuaka.data.repository.*
+import com.example.codasuaka.domain.repository.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
@@ -18,6 +15,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Module Koin untuk dependency data layer.
  * Bertanggung jawab menyediakan Retrofit, ApiService, Repository.
+ * Menggunakan base URL VPS (codasuaka.my.id).
  */
 val dataModule = module {
     // OkHttp Client dengan interceptor
@@ -41,10 +39,10 @@ val dataModule = module {
             .build()
     }
 
-    // Retrofit instance
+    // Retrofit instance — mengarah ke VPS
     single {
         Retrofit.Builder()
-            .baseUrl("${Constants.BASE_URL}/")
+            .baseUrl("https://codasuaka.my.id/")
             .client(get())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -55,7 +53,8 @@ val dataModule = module {
         get<Retrofit>().create(ApiService::class.java)
     }
 
-    // Repository Implementation (bind ke interface)
+    // ── Repository Bindings ──
+
     single<AuthRepository> {
         AuthRepositoryImpl(
             apiService = get(),
@@ -63,8 +62,39 @@ val dataModule = module {
         )
     }
 
-    // Chat Repository
     single<ChatRepository> {
         ChatRepositoryImpl(apiService = get())
+    }
+
+    single<DashboardRepository> {
+        DashboardRepositoryImpl(apiService = get())
+    }
+
+    single<OutletRepository> {
+        OutletRepositoryImpl(apiService = get())
+    }
+
+    single<KaryawanRepository> {
+        KaryawanRepositoryImpl(apiService = get())
+    }
+
+    single<DivisiRepository> {
+        DivisiRepositoryImpl(apiService = get())
+    }
+
+    single<PresensiRepository> {
+        PresensiRepositoryImpl(apiService = get())
+    }
+
+    single<PengajuanRepository> {
+        PengajuanRepositoryImpl(apiService = get())
+    }
+
+    single<JadwalRepository> {
+        JadwalRepositoryImpl(apiService = get())
+    }
+
+    single<PenugasanRepository> {
+        PenugasanRepositoryImpl(apiService = get())
     }
 }

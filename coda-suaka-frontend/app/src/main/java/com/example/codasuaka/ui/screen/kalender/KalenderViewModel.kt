@@ -2,7 +2,9 @@ package com.example.codasuaka.ui.screen.kalender
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.example.codasuaka.data.remote.dto.CreateJadwalRequest
+import com.example.codasuaka.data.remote.dto.JadwalDto
+import com.example.codasuaka.domain.repository.JadwalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -60,12 +62,12 @@ data class KalenderUiState(
 /**
  * ViewModel untuk halaman Kalender / Jadwal.
  */
-class KalenderViewModel : ViewModel() {
+class KalenderViewModel(
+    private val jadwalRepository: JadwalRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(KalenderUiState())
     val uiState: StateFlow<KalenderUiState> = _uiState
-
-    private var nextId = 1
 
     init {
         loadEvents()
@@ -88,58 +90,29 @@ class KalenderViewModel : ViewModel() {
     }
 
     /**
-     * Memuat daftar event untuk bulan aktif (dummy).
-     * TODO: Panggil API GET /api/jadwal?bulan=&tahun=&outlet_id=
+     * Memuat daftar event untuk bulan aktif dari API.
      */
     private fun loadEvents() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            delay(400)
 
             val month = _uiState.value.currentMonth
-            val dummyEvents = listOf(
-                KalenderEvent(
-                    id = nextId++,
-                    namaEvent = "Libur Nasional — Idul Adha",
-                    tanggal = month.atDay(7),
-                    kategori = EventCategory.LIBUR
-                ),
-                KalenderEvent(
-                    id = nextId++,
-                    namaEvent = "Meeting Evaluasi Bulanan",
-                    tanggal = month.atDay(10),
-                    kategori = EventCategory.TUGAS
-                ),
-                KalenderEvent(
-                    id = nextId++,
-                    namaEvent = "Acara Team Building",
-                    tanggal = month.atDay(15),
-                    kategori = EventCategory.EVENT
-                ),
-                KalenderEvent(
-                    id = nextId++,
-                    namaEvent = "Cuti Bersama",
-                    tanggal = month.atDay(20),
-                    kategori = EventCategory.LIBUR
-                ),
-                KalenderEvent(
-                    id = nextId++,
-                    namaEvent = "Deadline Laporan Keuangan",
-                    tanggal = month.atDay(25),
-                    kategori = EventCategory.TUGAS
-                ),
-                KalenderEvent(
-                    id = nextId++,
-                    namaEvent = "Workshop Kompetensi Karyawan",
-                    tanggal = month.atDay(28),
-                    kategori = EventCategory.EVENT
-                )
+            val result = jadwalRepository.getJadwals(
+                bulan = month.monthValue,
+                tahun = month.year
             )
 
-            _uiState.value = _uiState.value.copy(
-                events = dummyEvents,
-                isLoading = false
-            )
+            result.onSuccess { dtos ->
+                _uiState.value = _uiState.value.copy(
+                    events = dtos.map { it.toKalenderEvent() },
+                    isLoading = false
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = it.message ?: "Gagal memuat jadwal"
+                )
+            }
         }
     }
 
@@ -189,8 +162,7 @@ class KalenderViewModel : ViewModel() {
     }
 
     /**
-     * Menyimpan event baru dari dialog.
-     * TODO: Panggil API POST /api/jadwal
+     * Menyimpan event baru dari dialog ke API.
      */
     fun simpanEvent() {
         val state = _uiState.value
@@ -213,43 +185,80 @@ class KalenderViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
-            delay(500)
 
-            val newEvent = KalenderEvent(
-                id = nextId++,
+            val request = CreateJadwalRequest(
                 namaEvent = state.formNamaEvent.trim(),
-                tanggal = tanggal,
-                kategori = state.formKategori
+                tanggal = tanggal.toString(),
+                kategori = state.formKategori.name.lowercase()
             )
 
-            _uiState.value = _uiState.value.copy(
-                events = _uiState.value.events + newEvent,
-                isSaving = false,
-                dialogMode = KalenderDialogMode.Closed,
-                formNamaEvent = "",
-                formTanggal = "",
-                formKategori = EventCategory.EVENT,
-                successMessage = "Event \"${newEvent.namaEvent}\" berhasil ditambahkan."
-            )
+            val result = jadwalRepository.createJadwal(request)
+            result.onSuccess { dto ->
+                val newEvent = dto.toKalenderEvent()
+                _uiState.value = _uiState.value.copy(
+                    events = _uiState.value.events + newEvent,
+                    isSaving = false,
+                    dialogMode = KalenderDialogMode.Closed,
+                    formNamaEvent = "",
+                    formTanggal = "",
+                    formKategori = EventCategory.EVENT,
+                    successMessage = "Event \"${newEvent.namaEvent}\" berhasil ditambahkan."
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    errorMessage = it.message ?: "Gagal menyimpan event"
+                )
+            }
         }
     }
 
     /**
-     * Menghapus event.
-     * TODO: Panggil API DELETE /api/jadwal/{id}
+     * Menghapus event via API.
      */
     fun hapusEvent(id: Int) {
         viewModelScope.launch {
-            delay(300)
-            _uiState.value = _uiState.value.copy(
-                events = _uiState.value.events.filter { it.id != id },
-                dialogMode = KalenderDialogMode.Closed,
-                successMessage = "Event berhasil dihapus."
-            )
+            _uiState.value = _uiState.value.copy(isSaving = true)
+
+            val result = jadwalRepository.deleteJadwal(id)
+            result.onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    events = _uiState.value.events.filter { it.id != id },
+                    isSaving = false,
+                    dialogMode = KalenderDialogMode.Closed,
+                    successMessage = "Event berhasil dihapus."
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    errorMessage = it.message ?: "Gagal menghapus event"
+                )
+            }
         }
     }
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
+    }
+
+    companion object {
+        fun JadwalDto.toKalenderEvent(): KalenderEvent {
+            val kategori = when (this.kategori.lowercase()) {
+                "libur" -> EventCategory.LIBUR
+                "tugas" -> EventCategory.TUGAS
+                else -> EventCategory.EVENT
+            }
+            val date = try {
+                LocalDate.parse(this.tanggal?.take(10))
+            } catch (e: Exception) {
+                LocalDate.now()
+            }
+            return KalenderEvent(
+                id = this.id,
+                namaEvent = this.namaEvent,
+                tanggal = date,
+                kategori = kategori
+            )
+        }
     }
 }

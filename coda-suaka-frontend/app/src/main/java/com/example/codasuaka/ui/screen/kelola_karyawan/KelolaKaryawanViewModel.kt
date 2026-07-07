@@ -2,8 +2,14 @@ package com.example.codasuaka.ui.screen.kelola_karyawan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.remote.dto.CreateKaryawanRequest
+import com.example.codasuaka.data.remote.dto.KaryawanDto
+import com.example.codasuaka.data.remote.dto.OutletDto
+import com.example.codasuaka.data.remote.dto.RoleDto
+import com.example.codasuaka.data.remote.dto.UpdateKaryawanRequest
+import com.example.codasuaka.domain.repository.KaryawanRepository
+import com.example.codasuaka.domain.repository.OutletRepository
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -57,98 +63,81 @@ data class KelolaKaryawanUiState(
 
 /**
  * ViewModel untuk halaman Kelola Karyawan.
- * TODO: Integrasi dengan API backend GET/POST/PUT/DELETE /api/karyawan
  */
-class KelolaKaryawanViewModel : ViewModel() {
+class KelolaKaryawanViewModel(
+    private val karyawanRepository: KaryawanRepository,
+    private val outletRepository: OutletRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(KelolaKaryawanUiState())
     val uiState: StateFlow<KelolaKaryawanUiState> = _uiState
-
-    private var nextKaryawanId = 1
 
     init {
         loadInitialData()
     }
 
     /**
-     * Memuat data awal (roles, outlets, daftar karyawan).
-     * TODO: Panggil API GET /api/roles, GET /api/outlet, GET /api/karyawan
+     * Memuat data awal (roles, outlets, daftar karyawan) dari API.
      */
     private fun loadInitialData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            delay(600)
 
-            // Dummy roles
-            val dummyRoles = listOf(
-                Role(id = 1, namaRole = "Kasir"),
-                Role(id = 2, namaRole = "Koki"),
-                Role(id = 3, namaRole = "Pelayan"),
-                Role(id = 4, namaRole = "Kurir"),
-                Role(id = 5, namaRole = "Pencuci")
-            )
+            var loadedRoles = emptyList<Role>()
+            var loadedOutlets = emptyList<Outlet>()
+            var loadedKaryawan = emptyList<Karyawan>()
+            var errorMsg: String? = null
 
-            // Dummy outlets
-            val dummyOutlets = listOf(
-                Outlet(id = 1, namaOutlet = "Outlet Pusat", alamatOutlet = "Jl. Merdeka No. 123, Jakarta"),
-                Outlet(id = 2, namaOutlet = "Outlet Cabang", alamatOutlet = "Jl. Sudirman No. 45, Bandung")
-            )
+            // Load roles
+            karyawanRepository.getRoles().onSuccess { dtos ->
+                loadedRoles = dtos.map { it.toRole() }
+            }.onFailure {
+                errorMsg = it.message
+            }
 
-            // Dummy karyawan
-            val dummyKaryawan = listOf(
-                Karyawan(
-                    id = (nextKaryawanId++).toString(),
-                    namaLengkap = "Ahmad Fauzi",
-                    alamat = "Jl. Merdeka No. 45, Jakarta",
-                    role = Role(id = 1, namaRole = "Kasir"),
-                    outlet = Outlet(id = 1, namaOutlet = "Outlet Pusat")
-                ),
-                Karyawan(
-                    id = (nextKaryawanId++).toString(),
-                    namaLengkap = "Siti Rahmawati",
-                    alamat = "Jl. Kebon Jeruk No. 12, Jakarta",
-                    role = Role(id = 2, namaRole = "Koki"),
-                    outlet = Outlet(id = 1, namaOutlet = "Outlet Pusat")
-                ),
-                Karyawan(
-                    id = (nextKaryawanId++).toString(),
-                    namaLengkap = "Budi Santoso",
-                    alamat = "Jl. Asia Afrika No. 88, Bandung",
-                    role = Role(id = 3, namaRole = "Pelayan"),
-                    outlet = Outlet(id = 2, namaOutlet = "Outlet Cabang")
-                )
-            )
+            // Load outlets
+            outletRepository.getOutlets().onSuccess { dtos ->
+                loadedOutlets = dtos.map { it.toOutlet() }
+            }.onFailure {
+                errorMsg = errorMsg ?: it.message
+            }
+
+            // Load karyawan
+            karyawanRepository.getKaryawans().onSuccess { dtos ->
+                loadedKaryawan = dtos.map { it.toKaryawan(loadedRoles, loadedOutlets) }
+            }.onFailure {
+                errorMsg = errorMsg ?: it.message
+            }
 
             _uiState.value = _uiState.value.copy(
-                roles = dummyRoles,
-                outlets = dummyOutlets,
-                karyawanList = dummyKaryawan,
-                isLoading = false
+                roles = loadedRoles,
+                outlets = loadedOutlets,
+                karyawanList = loadedKaryawan,
+                isLoading = false,
+                errorMessage = errorMsg
             )
         }
     }
 
     /**
      * Memuat ulang daftar karyawan, opsional filter berdasarkan outlet.
-     * TODO: Panggil API GET /api/karyawan?outlet_id=...
      */
     fun loadKaryawan(outletId: Int? = null) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            delay(400)
 
-            // Filter dummy data
-            val filtered = if (outletId != null) {
-                _uiState.value.karyawanList.filter { it.outlet?.id == outletId }
-            } else {
-                _uiState.value.karyawanList
+            karyawanRepository.getKaryawans(outletId).onSuccess { dtos ->
+                _uiState.value = _uiState.value.copy(
+                    karyawanList = dtos.map { it.toKaryawan(_uiState.value.roles, _uiState.value.outlets) },
+                    isLoading = false,
+                    selectedOutletId = outletId
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = it.message ?: "Gagal memuat karyawan"
+                )
             }
-
-            _uiState.value = _uiState.value.copy(
-                karyawanList = filtered,
-                isLoading = false,
-                selectedOutletId = outletId
-            )
         }
     }
 
@@ -213,8 +202,7 @@ class KelolaKaryawanViewModel : ViewModel() {
     // ─── Actions ───
 
     /**
-     * Menyimpan karyawan baru dari dialog tambah.
-     * TODO: Panggil API POST /api/karyawan
+     * Menyimpan karyawan baru ke API.
      */
     fun simpanKaryawan() {
         val state = _uiState.value
@@ -233,48 +221,43 @@ class KelolaKaryawanViewModel : ViewModel() {
             return
         }
 
-        // Cek maksimal 5 karyawan per outlet
-        val outletId = state.formOutletId.takeIf { it > 0 }
-            ?: (state.outlets.firstOrNull()?.id ?: 0)
-        val currentCount = state.karyawanList.count { it.outlet?.id == outletId }
-        if (currentCount >= 5) {
-            _uiState.value = state.copy(
-                errorMessage = "Maksimal 5 karyawan per outlet. Hapus salah satu untuk menambah."
-            )
-            return
-        }
-
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
-            delay(500)
 
-            val role = state.roles.find { it.id == state.formRoleId }
-            val outlet = state.outlets.find { it.id == outletId }
+            val outletId = state.formOutletId.takeIf { it > 0 }
 
-            val newKaryawan = Karyawan(
-                id = (nextKaryawanId++).toString(),
+            val request = CreateKaryawanRequest(
                 namaLengkap = state.formNama.trim(),
+                email = "${state.formNama.trim().lowercase().replace(" ", ".")}@email.com",
+                password = "password123",
                 alamat = state.formAlamat.trim(),
-                role = role,
-                outlet = outlet
+                roleId = state.formRoleId,
+                outletId = outletId
             )
 
-            _uiState.value = _uiState.value.copy(
-                karyawanList = _uiState.value.karyawanList + newKaryawan,
-                isSaving = false,
-                dialogMode = KaryawanDialogMode.Closed,
-                formNama = "",
-                formAlamat = "",
-                formRoleId = 0,
-                formOutletId = 0,
-                successMessage = "Karyawan \"${newKaryawan.namaLengkap}\" berhasil ditambahkan."
-            )
+            karyawanRepository.createKaryawan(request).onSuccess { dto ->
+                val newKaryawan = dto.toKaryawan(state.roles, state.outlets)
+                _uiState.value = _uiState.value.copy(
+                    karyawanList = _uiState.value.karyawanList + newKaryawan,
+                    isSaving = false,
+                    dialogMode = KaryawanDialogMode.Closed,
+                    formNama = "",
+                    formAlamat = "",
+                    formRoleId = 0,
+                    formOutletId = 0,
+                    successMessage = "Karyawan \"${newKaryawan.namaLengkap}\" berhasil ditambahkan."
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    errorMessage = it.message ?: "Gagal menambahkan karyawan"
+                )
+            }
         }
     }
 
     /**
-     * Memperbarui data karyawan dari dialog edit.
-     * TODO: Panggil API PUT /api/karyawan/{id}
+     * Memperbarui data karyawan via API.
      */
     fun updateKaryawan() {
         val state = _uiState.value
@@ -291,45 +274,58 @@ class KelolaKaryawanViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
-            delay(500)
 
-            val outletId = state.formOutletId.takeIf { it > 0 }
-            val outlet = state.outlets.find { it.id == outletId }
-
-            val updatedKaryawan = state.karyawanList.find { it.id == id }?.copy(
+            val request = UpdateKaryawanRequest(
                 namaLengkap = state.formNama.trim(),
                 alamat = state.formAlamat.trim(),
-                outlet = outlet
+                outletId = state.formOutletId.takeIf { it > 0 }
             )
 
-            if (updatedKaryawan != null) {
+            karyawanRepository.updateKaryawan(id, request).onSuccess {
+                // Reload karyawan list
+                karyawanRepository.getKaryawans().onSuccess { dtos ->
+                    _uiState.value = _uiState.value.copy(
+                        karyawanList = dtos.map { dto -> dto.toKaryawan(state.roles, state.outlets) },
+                        isSaving = false,
+                        dialogMode = KaryawanDialogMode.Closed,
+                        successMessage = "Karyawan berhasil diperbarui."
+                    )
+                }.onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        dialogMode = KaryawanDialogMode.Closed,
+                        successMessage = "Karyawan berhasil diperbarui."
+                    )
+                }
+            }.onFailure {
                 _uiState.value = _uiState.value.copy(
-                    karyawanList = _uiState.value.karyawanList.map {
-                        if (it.id == id) updatedKaryawan else it
-                    },
                     isSaving = false,
-                    dialogMode = KaryawanDialogMode.Closed,
-                    successMessage = "Karyawan berhasil diperbarui."
+                    errorMessage = it.message ?: "Gagal memperbarui karyawan"
                 )
             }
         }
     }
 
     /**
-     * Menghapus karyawan dari dialog edit.
-     * TODO: Panggil API DELETE /api/karyawan/{id}
+     * Menghapus karyawan via API.
      */
     fun hapusKaryawan(id: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true)
-            delay(300)
 
-            _uiState.value = _uiState.value.copy(
-                karyawanList = _uiState.value.karyawanList.filter { it.id != id },
-                isSaving = false,
-                dialogMode = KaryawanDialogMode.Closed,
-                successMessage = "Karyawan berhasil dihapus."
-            )
+            karyawanRepository.deleteKaryawan(id).onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    karyawanList = _uiState.value.karyawanList.filter { it.id != id },
+                    isSaving = false,
+                    dialogMode = KaryawanDialogMode.Closed,
+                    successMessage = "Karyawan berhasil dihapus."
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    errorMessage = it.message ?: "Gagal menghapus karyawan"
+                )
+            }
         }
     }
 
@@ -339,5 +335,33 @@ class KelolaKaryawanViewModel : ViewModel() {
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
+    }
+
+    companion object {
+        fun RoleDto.toRole() = Role(id = this.id, namaRole = this.namaRole)
+
+        fun OutletDto.toOutlet() = Outlet(
+            id = this.id,
+            namaOutlet = this.namaOutlet,
+            alamatOutlet = this.alamatOutlet ?: ""
+        )
+
+        fun KaryawanDto.toKaryawan(roles: List<Role>, outlets: List<Outlet>): Karyawan {
+            val role = this.user?.role?.let { roleDto ->
+                roles.find { it.id == roleDto.id }
+            }
+            val outlet = this.outlet?.let { outletDto ->
+                outlets.find { it.id == outletDto.id }
+            }
+            return Karyawan(
+                id = this.id,
+                namaLengkap = this.namaLengkap,
+                alamat = this.alamat ?: "",
+                kontak = this.kontak ?: "",
+                fotoProfil = this.fotoProfil,
+                role = role,
+                outlet = outlet
+            )
+        }
     }
 }

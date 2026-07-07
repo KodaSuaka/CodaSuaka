@@ -2,7 +2,9 @@ package com.example.codasuaka.ui.screen.kelola_outlet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.example.codasuaka.data.remote.dto.OutletDto
+import com.example.codasuaka.data.remote.dto.OutletRequest
+import com.example.codasuaka.domain.repository.OutletRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -46,36 +48,40 @@ data class KelolaOutletUiState(
 
 /**
  * ViewModel untuk halaman Kelola Outlet.
- * TODO: Integrasi dengan API backend GET/POST/DELETE /api/outlet
+ * Terintegrasi dengan API backend.
  */
-class KelolaOutletViewModel : ViewModel() {
+class KelolaOutletViewModel(
+    private val outletRepository: OutletRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(KelolaOutletUiState())
     val uiState: StateFlow<KelolaOutletUiState> = _uiState
-
-    private var nextId = 1
 
     init {
         loadOutlets()
     }
 
     /**
-     * Memuat daftar outlet (dummy).
-     * TODO: Panggil API GET /api/outlet
+     * Memuat daftar outlet dari API.
      */
     private fun loadOutlets() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            delay(600)
 
-            val dummyOutlets = listOf(
-                Outlet(id = nextId++, namaOutlet = "Outlet Pusat",
-                    alamatOutlet = "Jl. Merdeka No. 123, Jakarta", jumlahKaryawan = 12),
-                Outlet(id = nextId++, namaOutlet = "Outlet Cabang",
-                    alamatOutlet = "Jl. Sudirman No. 45, Bandung", jumlahKaryawan = 8)
-            )
-
-            _uiState.value = _uiState.value.copy(outlets = dummyOutlets, isLoading = false)
+            outletRepository.getOutlets()
+                .onSuccess { outletDtos ->
+                    val outlets = outletDtos.map { it.toOutlet() }
+                    _uiState.value = _uiState.value.copy(
+                        outlets = outlets,
+                        isLoading = false
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = error.message
+                    )
+                }
         }
     }
 
@@ -119,8 +125,7 @@ class KelolaOutletViewModel : ViewModel() {
     }
 
     /**
-     * Menyimpan outlet baru dari dialog.
-     * TODO: Panggil API POST /api/outlet
+     * Menyimpan outlet baru dari dialog via API.
      */
     fun simpanOutlet() {
         val state = _uiState.value
@@ -135,42 +140,66 @@ class KelolaOutletViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
-            delay(500)
 
-            val newOutlet = Outlet(
-                id = nextId++,
-                namaOutlet = state.formNamaOutlet.trim(),
-                alamatOutlet = state.formAlamatOutlet.trim(),
-                jumlahKaryawan = 0
+            outletRepository.createOutlet(
+                OutletRequest(
+                    namaOutlet = state.formNamaOutlet.trim(),
+                    alamatOutlet = state.formAlamatOutlet.trim()
+                )
             )
-
-            _uiState.value = _uiState.value.copy(
-                outlets = _uiState.value.outlets + newOutlet,
-                isSaving = false,
-                dialogMode = DialogMode.Closed,
-                formNamaOutlet = "",
-                formAlamatOutlet = "",
-                successMessage = "Outlet \"${newOutlet.namaOutlet}\" berhasil ditambahkan."
-            )
+                .onSuccess { outletDto ->
+                    val newOutlet = outletDto.toOutlet()
+                    _uiState.value = _uiState.value.copy(
+                        outlets = _uiState.value.outlets + newOutlet,
+                        isSaving = false,
+                        dialogMode = DialogMode.Closed,
+                        formNamaOutlet = "",
+                        formAlamatOutlet = "",
+                        successMessage = "Outlet \"${newOutlet.namaOutlet}\" berhasil ditambahkan."
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        errorMessage = error.message
+                    )
+                }
         }
     }
 
     /**
-     * Menghapus outlet.
-     * TODO: Panggil API DELETE /api/outlet/{id}
+     * Menghapus outlet via API.
      */
     fun hapusOutlet(id: Int) {
         viewModelScope.launch {
-            delay(300)
-            _uiState.value = _uiState.value.copy(
-                outlets = _uiState.value.outlets.filter { it.id != id },
-                dialogMode = DialogMode.Closed,
-                successMessage = "Outlet berhasil dihapus."
-            )
+            outletRepository.deleteOutlet(id)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        outlets = _uiState.value.outlets.filter { it.id != id },
+                        dialogMode = DialogMode.Closed,
+                        successMessage = "Outlet berhasil dihapus."
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = error.message
+                    )
+                }
         }
     }
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
+    }
+
+    // ─── Extension ───────────────────────────────────────────
+
+    companion object {
+        fun OutletDto.toOutlet() = Outlet(
+            id = this.id,
+            namaOutlet = this.namaOutlet,
+            alamatOutlet = this.alamatOutlet ?: "",
+            jumlahKaryawan = 0
+        )
     }
 }
