@@ -18,6 +18,7 @@ use App\Http\Controllers\PaketController;
 use App\Http\Controllers\TransaksiPaketController;
 use App\Http\Controllers\InstansiController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SuperAdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,5 +113,35 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/messages/{user}', [ChatController::class, 'messages']);
         Route::post('/send', [ChatController::class, 'send']);
         Route::put('/read/{user}', [ChatController::class, 'markAsRead']);
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    //  SUPER ADMIN — Hanya untuk role "Super Admin"
+    // ═══════════════════════════════════════════════════════════
+    Route::prefix('super-admin')->middleware('super.admin')->group(function () {
+
+        // Dashboard Super Admin
+        Route::get('/dashboard', [SuperAdminController::class, 'dashboard']);
+
+        // ─── CRUD Instansi ─────────────────────────────────────
+        Route::get('/instansis', [SuperAdminController::class, 'indexInstansi']);
+        Route::get('/instansis/{instansi}', [SuperAdminController::class, 'showInstansi']);
+        Route::post('/instansis', [SuperAdminController::class, 'storeInstansi']);
+        Route::put('/instansis/{instansi}', [SuperAdminController::class, 'updateInstansi']);
+        Route::delete('/instansis/{instansi}', [SuperAdminController::class, 'destroyInstansi']);
+
+        // ─── CRUD Owner ────────────────────────────────────────
+        Route::get('/owners', [SuperAdminController::class, 'indexOwner']);
+        Route::get('/owners/{user}', [SuperAdminController::class, 'showOwner']);
+        Route::post('/owners', [SuperAdminController::class, 'storeOwner']);
+        Route::put('/owners/{user}', [SuperAdminController::class, 'updateOwner']);
+        Route::delete('/owners/{user}', [SuperAdminController::class, 'destroyOwner']);
+
+        // ─── CRUD Paket ────────────────────────────────────────
+        Route::get('/pakets', [SuperAdminController::class, 'indexPaket']);
+        Route::get('/pakets/{paket}', [SuperAdminController::class, 'showPaket']);
+        Route::post('/pakets', [SuperAdminController::class, 'storePaket']);
+        Route::put('/pakets/{paket}', [SuperAdminController::class, 'updatePaket']);
+        Route::delete('/pakets/{paket}', [SuperAdminController::class, 'destroyPaket']);
     });
 });

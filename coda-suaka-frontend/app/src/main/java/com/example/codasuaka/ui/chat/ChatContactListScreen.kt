@@ -203,7 +203,7 @@ private fun ContactItem(
                 if (contact.unreadCount > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Badge(
-                        containerColor = Coral,
+                        containerColor = Error,
                         contentColor = OnPrimary
                     ) {
                         Text(

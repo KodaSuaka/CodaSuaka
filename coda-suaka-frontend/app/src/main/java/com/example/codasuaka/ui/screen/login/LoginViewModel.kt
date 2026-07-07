@@ -32,11 +32,11 @@ class LoginViewModel(
 
     fun login() {
         val state = _uiState.value
-        _uiState.value = state.copy(isLoading = true, errorMessage = null)
+        _uiState.value = state.copy(isLoading = true, errorMessage = null, loginSuccess = false)
 
         viewModelScope.launch {
             loginUseCase(state.email, state.password)
-                .onSuccess {
+                .onSuccess { user ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         loginSuccess = true
