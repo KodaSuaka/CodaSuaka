@@ -23,7 +23,7 @@ class PenugasanController extends Controller
         $query = penugasan::with(['penanggungJawab.user', 'divisi', 'pembuat']);
 
         // Owner/Admin lihat semua di instansi, karyawan lihat tugas sendiri
-        if ($user->role_id !== 1) {
+        if ($user->role?->nama_role !== 'Owner') {
             $karyawan = $user->profilKaryawan;
             if ($karyawan) {
                 $query->where('penanggung_jawab_id', $karyawan->id);

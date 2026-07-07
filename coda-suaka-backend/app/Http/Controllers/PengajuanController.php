@@ -22,7 +22,7 @@ class PengajuanController extends Controller
         $query = pengajuan::with(['user.profilKaryawan', 'penyetuju.profilKaryawan']);
 
         // Owner bisa lihat semua pengajuan di instansinya, karyawan hanya punya sendiri
-        if ($user->role_id !== 1) {
+        if ($user->role?->nama_role !== 'Owner') {
             $query->where('user_id', $user->id);
         }
 

@@ -24,7 +24,7 @@ class AttandenceController extends Controller
         $query = attandence::with('user.profilKaryawan');
 
         // Owner/Admin bisa lihat semua, karyawan hanya lihat sendiri
-        if ($user->role_id !== 1) { // Asumsi role_id 1 = owner
+        if ($user->role?->nama_role !== 'Owner') {
             $query->where('user_id', $user->id);
         } elseif ($request->has('user_id')) {
             $query->where('user_id', $request->user_id);
