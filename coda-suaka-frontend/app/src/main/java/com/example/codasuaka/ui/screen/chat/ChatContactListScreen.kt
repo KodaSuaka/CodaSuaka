@@ -117,7 +117,7 @@ fun ChatContactListScreen(
                             items(group.contacts, key = { it.id }) { contact ->
                                 ContactItem(
                                     contact = contact,
-                                    onClick = { onContactClick(contact.id, contact.namaLengkap ?: contact.name) }
+                                    onClick = { onContactClick(contact.id, contact.namaLengkap ?: contact.name ?: "Unknown") }
                                 )
                             }
                         }

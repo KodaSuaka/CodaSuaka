@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.codasuaka.data.remote.dto.MessageDto
 import com.example.codasuaka.ui.theme.*
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 
 // ─── Warna chat bubble ──────────────────────────────────────────
