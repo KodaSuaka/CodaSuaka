@@ -35,35 +35,44 @@ class AuthViewModel(
     val authState: StateFlow<AuthState> = _authState
 
     init {
-        // Langsung navigasi ke Login — tidak ada auto-login ke Dashboard
-        // agar tidak memicu error dari panggilan API dashboard saat token tidak valid.
-        clearTokenAndGoToLogin()
+        checkAuthStatus()
     }
 
     /**
-     * Hapus token tersimpan (jika ada) lalu navigasi ke halaman Login.
-     * Dengan demikian splash screen akan selalu menuju ke Login,
-     * bukan langsung ke Dashboard yang bisa memicu error.
+     * Cek apakah token tersimpan masih ada.
+     * Jika ada, arahkan ke Dashboard (Authenticated).
+     * Jika tidak ada, arahkan ke Login (Unauthenticated).
+     *
+     * PENTING: fungsi ini HANYA membaca token, tidak pernah menghapusnya.
+     * Penghapusan token hanya boleh terjadi lewat logout() eksplisit.
      */
-    private fun clearTokenAndGoToLogin() {
+    private fun checkAuthStatus() {
         viewModelScope.launch {
             try {
-                tokenManager.clearAuthData()
+                val token = tokenManager.token.first()
+                _authState.value = if (!token.isNullOrBlank()) {
+                    AuthState.Authenticated
+                } else {
+                    AuthState.Unauthenticated
+                }
             } catch (_: Exception) {
-                // Abaikan error — yang penting state berubah ke Unauthenticated
+                // Kalau gagal baca token karena alasan apapun, anggap belum login
+                _authState.value = AuthState.Unauthenticated
             }
-            _authState.value = AuthState.Unauthenticated
         }
     }
 
     /**
      * Logout: hapus data auth, lalu ubah state ke Unauthenticated.
+     * Ini satu-satunya tempat yang boleh menghapus token.
      */
     fun logout() {
         viewModelScope.launch {
             try {
                 tokenManager.clearAuthData()
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+                // Abaikan error saat clear, tetap lanjut ubah state
+            }
             _authState.value = AuthState.Unauthenticated
         }
     }

@@ -16,8 +16,12 @@ data class DashboardUiState(
     val isLoading: Boolean = false,
     val isDrawerOpen: Boolean = false,
     val errorMessage: String? = null,
-    val selectedBottomNav: Int = 0 // 0 = Dashboard, 1 = Tugas Tim, 2 = Pesan, 3 = Divisi
+    val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Tugas Tim, 2 = Pesan, 3 = Divisi,
+    val userNamaLengkap: String? = null,   // ← tambahkan
+    val userEmail: String? = null,          // ← tambahkan
+    val userRole: String? = null            // ← tambahkan kalau perlu
 )
+
 
 /**
  * ViewModel untuk Dashboard.

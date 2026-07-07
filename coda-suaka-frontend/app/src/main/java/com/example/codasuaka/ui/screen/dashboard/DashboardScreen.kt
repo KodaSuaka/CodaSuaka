@@ -500,14 +500,14 @@ private fun DrawerContent(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Admin Outlet",
+                    text = (user.namaLengkap ?: "Nama Pengguna"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = OnPrimary
                 )
 
                 Text(
-                    text = "admin@codasuaka.id",
+                    text = (user.email),
                     style = MaterialTheme.typography.bodySmall,
                     color = OnPrimary.copy(alpha = 0.8f)
                 )
