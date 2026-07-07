@@ -32,7 +32,7 @@ class SuperAdminController extends Controller
         $instansis = instansi::with(['paket', 'users' => function ($q) {
             $q->whereHas('role', fn($r) => $r->where('nama_role', 'Owner'))
               ->with('profilKaryawan');
-        }])->orderBy('created_at', 'desc')->get();
+        }])->withCount('outlets')->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'status' => 'success',

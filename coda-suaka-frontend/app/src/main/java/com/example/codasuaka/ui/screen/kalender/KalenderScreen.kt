@@ -362,7 +362,7 @@ private fun CalendarSection(
 }
 
 @Composable
-private fun DateCell(
+private fun RowScope.DateCell(
     dayNumber: Int,
     isToday: Boolean,
     dotColor: Color?,
@@ -503,6 +503,7 @@ private fun EventListItem(
 // DIALOG — Tambah Event
 // ═══════════════════════════════════════════════════════════
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DialogTambahEvent(
     namaEvent: String,
@@ -620,7 +621,7 @@ private fun DialogTambahEvent(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Primary,

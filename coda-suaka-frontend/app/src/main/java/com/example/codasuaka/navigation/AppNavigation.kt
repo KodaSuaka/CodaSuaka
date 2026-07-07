@@ -1,13 +1,6 @@
 package com.example.codasuaka.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,7 +31,6 @@ import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
-import com.example.codasuaka.ui.theme.Primary
 import org.koin.core.parameter.parametersOf
 
 object Routes {
@@ -51,29 +43,18 @@ object Routes {
     const val KELOLA_KARYAWAN = "kelola_karyawan"
     const val KALENDER = "kalender"
     const val RIWAYAT_KEHADIRAN = "riwayat_kehadiran"
-    const val LOG_ABSENSI = "log_absensi"
-    const val LAPORAN_KEUANGAN = "laporan_keuangan"
-    const val STATUS_KARYAWAN = "status_karyawan"
-    const val TUGAS_TIM = "tugas_tim"
-    const val PESAN = "pesan"
     const val CONTACT_LIST = "contact_list"
     const val CHAT_DETAIL = "chat_detail/{userId}/{userName}"
     const val DIVISI = "divisi"
-    const val DATA_PERSETUJUAN = "data_persetujuan"
     const val TAMBAH_KARYAWAN = "tambah_karyawan"
-    const val KELOLA_SHIFT = "kelola_shift"
     const val PENGAJUAN = "pengajuan"
-    const val DETAIL_KINERJA = "detail_kinerja"
-    const val SISA_CUTI = "sisa_cuti"
-    const val PELATIHAN = "pelatihan"
-    const val PENGHARGAAN = "penghargaan"
 }
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Routes.DASHBOARD
+        startDestination = Routes.AUTH
     ) {
         // ── Auth Check (gatekeeper) ──
         composable(Routes.AUTH) {
@@ -128,13 +109,13 @@ fun AppNavigation(navController: NavHostController) {
         // ── Dashboard ──
         composable(Routes.DASHBOARD) {
             val dashboardViewModel: DashboardViewModel = koinViewModel()
+            val authViewModel: AuthViewModel = koinViewModel()
             DashboardScreen(
                 viewModel = dashboardViewModel,
                 onNavigateTo = { route ->
                     navController.navigate(route)
                 },
                 onLogout = {
-                    val authViewModel: AuthViewModel = koinViewModel()
                     authViewModel.logout()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
@@ -179,19 +160,6 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        // ── Placeholder screens untuk fitur lainnya ──
-        composable(Routes.LOG_ABSENSI) {
-            PlaceholderScreen(title = "Log Absensi")
-        }
-        composable(Routes.LAPORAN_KEUANGAN) {
-            PlaceholderScreen(title = "Laporan Keuangan")
-        }
-        composable(Routes.STATUS_KARYAWAN) {
-            PlaceholderScreen(title = "Status Karyawan")
-        }
-        composable(Routes.TUGAS_TIM) {
-            PlaceholderScreen(title = "Tugas Tim")
-        }
         composable(Routes.CONTACT_LIST) {
             val chatContactViewModel: ChatContactViewModel = koinViewModel()
             ChatContactListScreen(
@@ -216,18 +184,12 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        composable(Routes.PESAN) {
-            PlaceholderScreen(title = "Pesan")
-        }
         composable(Routes.DIVISI) {
             val divisiViewModel: DivisiViewModel = koinViewModel()
             DivisiScreen(
                 onBack = { navController.popBackStack() },
                 viewModel = divisiViewModel
             )
-        }
-        composable(Routes.DATA_PERSETUJUAN) {
-            PlaceholderScreen(title = "Data Persetujuan")
         }
         composable(Routes.TAMBAH_KARYAWAN) {
             val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
@@ -236,19 +198,15 @@ fun AppNavigation(navController: NavHostController) {
                 viewModel = kelolaKaryawanViewModel
             )
         }
-        composable(Routes.KELOLA_SHIFT) {
-            PlaceholderScreen(title = "Kelola Shift")
-        }
-
         // ── Dashboard Karyawan ──
         composable(Routes.DASHBOARD_KARYAWAN) {
             val dashboardKaryawanViewModel: DashboardKaryawanViewModel = koinViewModel()
+            val authViewModel: AuthViewModel = koinViewModel()
             DashboardKaryawanScreen(
                 onNavigateTo = { route ->
                     navController.navigate(route)
                 },
                 onLogout = {
-                    val authViewModel: AuthViewModel = koinViewModel()
                     authViewModel.logout()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
@@ -266,28 +224,4 @@ fun AppNavigation(navController: NavHostController) {
                 viewModel = pengajuanViewModel
             )
         }
-        composable(Routes.DETAIL_KINERJA) { PlaceholderScreen(title = "Detail Kinerja") }
-        composable(Routes.SISA_CUTI) { PlaceholderScreen(title = "Sisa Cuti") }
-        composable(Routes.PELATIHAN) { PlaceholderScreen(title = "Pelatihan") }
-        composable(Routes.PENGHARGAAN) { PlaceholderScreen(title = "Penghargaan") }
     }
-}
-
-/**
- * Placeholder screen untuk fitur yang belum diimplementasikan.
- * Menampilkan judul halaman di tengah layar dengan tema aplikasi.
- */
-@Composable
-private fun PlaceholderScreen(title: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = Primary
-        )
-    }
-}
