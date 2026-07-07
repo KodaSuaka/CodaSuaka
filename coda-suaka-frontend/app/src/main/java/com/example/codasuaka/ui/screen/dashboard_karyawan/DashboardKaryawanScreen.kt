@@ -161,7 +161,7 @@ fun DashboardKaryawanScreen(
             // ══════════════════════════════════════════════════
             SectionPerformance(
                 poinKinerja = uiState.poinKinerja,
-                onDetailKinerjaClick = { onNavigateTo("detail_kinerja") }
+                onDetailKinerjaClick = { onNavigateTo("kalender") }
             )
 
             // ══════════════════════════════════════════════════
@@ -169,7 +169,7 @@ fun DashboardKaryawanScreen(
             // ══════════════════════════════════════════════════
             SectionLeave(
                 sisaCuti = uiState.sisaCuti,
-                onSisaCutiClick = { onNavigateTo("sisa_cuti") }
+                onSisaCutiClick = { onNavigateTo("pengajuan") }
             )
 
             Spacer(modifier = Modifier.height(8.dp))

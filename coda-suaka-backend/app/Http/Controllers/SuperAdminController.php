@@ -198,7 +198,7 @@ class SuperAdminController extends Controller
      */
     public function showOwner(User $user)
     {
-        if ($user->role->nama_role !== 'Owner') {
+        if (!$user->role || $user->role->nama_role !== 'Owner') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User bukan seorang Owner'
@@ -273,7 +273,7 @@ class SuperAdminController extends Controller
      */
     public function updateOwner(Request $request, User $user)
     {
-        if ($user->role->nama_role !== 'Owner') {
+        if (!$user->role || $user->role->nama_role !== 'Owner') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User bukan seorang Owner'
@@ -324,7 +324,7 @@ class SuperAdminController extends Controller
      */
     public function destroyOwner(User $user)
     {
-        if ($user->role->nama_role !== 'Owner') {
+        if (!$user->role || $user->role->nama_role !== 'Owner') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User bukan seorang Owner'

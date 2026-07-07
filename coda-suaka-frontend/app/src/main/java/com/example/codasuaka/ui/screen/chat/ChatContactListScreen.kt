@@ -169,7 +169,7 @@ private fun ContactItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = contact.namaLengkap ?: contact.name,
+                    text = contact.namaLengkap ?: contact.name ?: "Unknown",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = OnSurface,

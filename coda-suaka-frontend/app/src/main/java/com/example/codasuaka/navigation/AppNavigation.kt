@@ -113,7 +113,11 @@ fun AppNavigation(navController: NavHostController) {
             DashboardScreen(
                 viewModel = dashboardViewModel,
                 onNavigateTo = { route ->
-                    navController.navigate(route)
+                    try {
+                        navController.navigate(route)
+                    } catch (_: Exception) {
+                        // Route not available — ignore
+                    }
                 },
                 onLogout = {
                     authViewModel.logout()
@@ -205,7 +209,11 @@ fun AppNavigation(navController: NavHostController) {
             val authViewModel: AuthViewModel = koinViewModel()
             DashboardKaryawanScreen(
                 onNavigateTo = { route ->
-                    navController.navigate(route)
+                    try {
+                        navController.navigate(route)
+                    } catch (_: Exception) {
+                        // Route not available — ignore
+                    }
                 },
                 onLogout = {
                     authViewModel.logout()

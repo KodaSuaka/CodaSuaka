@@ -103,7 +103,7 @@ class DashboardController extends Controller
                 'sudah_checkout' => $presensi && $presensi->jam_checkout ? true : false,
                 'tugas_aktif' => $tugas,
                 'pengajuan_pending_count' => $pengajuanPendingCount,
-                'sisa_cuti' => $karyawan ? $karyawan->sisa_cuti : 0,
+                'sisa_cuti' => $karyawan ? (int) $karyawan->sisa_cuti : 0,
             ]
         ]);
     }

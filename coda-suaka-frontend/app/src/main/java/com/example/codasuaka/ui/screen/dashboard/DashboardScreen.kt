@@ -104,7 +104,7 @@ fun DashboardScreen(
                         // Navigate based on selection
                         when (index) {
                             0 -> { /* already on dashboard */ }
-                            1 -> onNavigateTo("tugas_tim")
+                            1 -> onNavigateTo("contact_list")
                             2 -> onNavigateTo("contact_list")
                             3 -> onNavigateTo("divisi")
                         }
@@ -522,7 +522,7 @@ private fun DrawerContent(
             label = "Data Persetujuan",
             onClick = {
                 viewModel.closeDrawer()
-                onNavigateTo("data_persetujuan")
+                onNavigateTo("riwayat_kehadiran")
             }
         )
 
@@ -537,10 +537,10 @@ private fun DrawerContent(
 
         DrawerItem(
             icon = Icons.Default.Schedule,
-            label = "Kelola Shift",
+            label = "Kalender",
             onClick = {
                 viewModel.closeDrawer()
-                onNavigateTo("kelola_shift")
+                onNavigateTo("kalender")
             }
         )
 

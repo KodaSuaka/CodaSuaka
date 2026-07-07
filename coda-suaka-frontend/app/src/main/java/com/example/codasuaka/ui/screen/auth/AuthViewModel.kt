@@ -35,26 +35,24 @@ class AuthViewModel(
     val authState: StateFlow<AuthState> = _authState
 
     init {
-        checkAuth()
+        // Langsung navigasi ke Login — tidak ada auto-login ke Dashboard
+        // agar tidak memicu error dari panggilan API dashboard saat token tidak valid.
+        clearTokenAndGoToLogin()
     }
 
     /**
-     * Mengecek apakah token tersimpan dan valid.
-     * Jika token ada → Authenticated (ke Dashboard)
-     * Jika token tidak ada → Unauthenticated (ke Login)
+     * Hapus token tersimpan (jika ada) lalu navigasi ke halaman Login.
+     * Dengan demikian splash screen akan selalu menuju ke Login,
+     * bukan langsung ke Dashboard yang bisa memicu error.
      */
-    private fun checkAuth() {
+    private fun clearTokenAndGoToLogin() {
         viewModelScope.launch {
             try {
-                val token = tokenManager.token.first()
-                _authState.value = if (token.isNullOrEmpty()) {
-                    AuthState.Unauthenticated
-                } else {
-                    AuthState.Authenticated
-                }
-            } catch (e: Exception) {
-                _authState.value = AuthState.Unauthenticated
+                tokenManager.clearAuthData()
+            } catch (_: Exception) {
+                // Abaikan error — yang penting state berubah ke Unauthenticated
             }
+            _authState.value = AuthState.Unauthenticated
         }
     }
 

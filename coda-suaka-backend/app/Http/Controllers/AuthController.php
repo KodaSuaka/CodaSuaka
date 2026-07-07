@@ -23,7 +23,7 @@ class AuthController extends Controller
         if (!$RoleOwner) {
             return response()->json([
                 'status'=>'error',
-                'massage'=>'Role belum tersedia'
+                'message'=>'Role belum tersedia'
             ],500);
         }
         $user = User::create([
@@ -73,7 +73,7 @@ class AuthController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
-                    'role' => $user->role->nama_role,
+                    'role' => $user->role?->nama_role ?? 'Unknown',
                     'instansi_id' => $user->instansi_id,
                     'outlet_id' => $user->outlet_id,
                     'nama_lengkap' => $profil ? $profil->nama_lengkap : 'User'
