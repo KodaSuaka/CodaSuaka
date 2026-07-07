@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.pengajuan
+package com.example.codasuaka.ui.screen.pengajuan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -77,17 +77,24 @@ class PengajuanViewModel(
     private fun loadRiwayat() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
-            val result = pengajuanRepository.getPengajuans()
-            result.onSuccess { dtos ->
-                _uiState.value = _uiState.value.copy(
-                    riwayatPengajuan = dtos.reversed().map { it.toPengajuan() },
-                    isLoading = false
-                )
-            }.onFailure {
+            try {
+                val result = pengajuanRepository.getPengajuans()
+                result.onSuccess { dtos ->
+                    _uiState.value = _uiState.value.copy(
+                        riwayatPengajuan = dtos.reversed().map { it.toPengajuan() },
+                        isLoading = false
+                    )
+                }.onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = it.message ?: "Gagal memuat riwayat pengajuan"
+                    )
+                }
+            } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = it.message ?: "Gagal memuat riwayat pengajuan"
+                    riwayatPengajuan = emptyList(),
+                    errorMessage = null // silent fail — show empty list
                 )
             }
         }

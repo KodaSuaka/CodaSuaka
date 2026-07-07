@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.chat
+package com.example.codasuaka.ui.screen.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,18 +18,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.MessageDto
 import com.example.codasuaka.ui.theme.*
+import kotlinx.coroutines.delay
 
 // ─── Warna chat bubble ──────────────────────────────────────────
-private val ChatBubbleSent = Color(0xFF1A365D)       // Primary
-private val ChatBubbleReceived = Color(0xFFE2E8F0)   // Neutral
+private val ChatBubbleSent = Color(0xFF1A365D)       // Primary Dark
+private val ChatBubbleReceived = Color(0xFFE2E8F0)   // Neutral Light
 private val ChatTextSent = Color(0xFFFFFFFF)
 private val ChatTextReceived = Color(0xFF1A202C)
 private val ChatTimeSent = Color(0xFFFFFFFF).copy(alpha = 0.7f)
@@ -55,7 +54,7 @@ fun ChatDetailScreen(
     // Hapus error setelah 3 detik
     LaunchedEffect(uiState.errorMessage) {
         if (uiState.errorMessage != null) {
-            kotlinx.coroutines.delay(3000)
+            delay(3000)
             viewModel.clearError()
         }
     }
@@ -85,7 +84,7 @@ fun ChatDetailScreen(
                             )
                         }
                         Text(
-                            text = uiState.contactName,
+                            text = uiState.contactName.ifEmpty { "Percakapan" },
                             fontWeight = FontWeight.SemiBold,
                             color = OnPrimary
                         )
@@ -205,11 +204,11 @@ fun ChatDetailScreen(
                                 }
                             }
                         ),
-                        maxLines = 4,
-                        enabled = !uiState.isSending
+                        singleLine = true
                     )
 
-                    FloatingActionButton(
+                    // Send Button
+                    FilledIconButton(
                         onClick = {
                             if (inputText.isNotBlank()) {
                                 viewModel.sendMessage(inputText.trim())
@@ -217,18 +216,25 @@ fun ChatDetailScreen(
                             }
                         },
                         modifier = Modifier.size(48.dp),
-                        containerColor = Primary,
-                        contentColor = OnPrimary,
+                        enabled = inputText.isNotBlank() && !uiState.isSending,
                         shape = CircleShape,
-                        elevation = FloatingActionButtonDefaults.elevation(
-                            defaultElevation = 4.dp
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = Primary
                         )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Send,
-                            contentDescription = "Kirim",
-                            modifier = Modifier.size(22.dp)
-                        )
+                        if (uiState.isSending) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = OnPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Send,
+                                contentDescription = "Kirim",
+                                tint = OnPrimary
+                            )
+                        }
                     }
                 }
             }
@@ -241,39 +247,35 @@ private fun ChatBubble(
     message: MessageDto,
     isSentByMe: Boolean
 ) {
-    val bubbleColor = if (isSentByMe) ChatBubbleSent else ChatBubbleReceived
+    val backgroundColor = if (isSentByMe) ChatBubbleSent else ChatBubbleReceived
     val textColor = if (isSentByMe) ChatTextSent else ChatTextReceived
     val timeColor = if (isSentByMe) ChatTimeSent else ChatTimeReceived
-    val shape = if (isSentByMe) {
-        RoundedCornerShape(16.dp, 4.dp, 16.dp, 16.dp)
-    } else {
-        RoundedCornerShape(4.dp, 16.dp, 16.dp, 16.dp)
-    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
     ) {
         Surface(
-            shape = shape,
-            color = bubbleColor,
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = if (isSentByMe) 16.dp else 4.dp,
+                bottomEnd = if (isSentByMe) 4.dp else 16.dp
+            ),
+            color = backgroundColor,
             shadowElevation = 1.dp
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
                 Text(
-                    text = message.pesan,
+                    text = message.pesan ?: "",
                     color = textColor,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = message.waktu,
+                    text = message.waktu ?: message.createdAt ?: "",
                     color = timeColor,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
         }

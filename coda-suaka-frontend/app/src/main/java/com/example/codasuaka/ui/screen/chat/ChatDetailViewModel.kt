@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.chat
+package com.example.codasuaka.ui.screen.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 data class ChatDetailUiState(
     val messages: List<MessageDto> = emptyList(),
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val isSending: Boolean = false,
     val errorMessage: String? = null,
     val contactName: String = "",
@@ -29,7 +29,7 @@ class ChatDetailViewModel(
     val contactUserId: Int get() = userId
 
     private val _uiState = MutableStateFlow(
-        ChatDetailUiState(contactName = userName)
+        ChatDetailUiState(contactName = userName, contactId = userId)
     )
     val uiState: StateFlow<ChatDetailUiState> = _uiState
 

@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.codasuaka.ui.components.CodaSuakaLogo
+import com.example.codasuaka.ui.screen.components.CodaSuakaLogo
 import com.example.codasuaka.ui.theme.*
 
 @Composable

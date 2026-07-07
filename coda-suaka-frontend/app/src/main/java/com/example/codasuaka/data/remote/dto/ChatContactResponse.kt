@@ -23,29 +23,29 @@ data class ContactDto(
     val id: Int,
 
     @SerializedName("name")
-    val name: String,
+    val name: String? = null,
 
     @SerializedName("email")
-    val email: String,
+    val email: String? = null,
 
     @SerializedName("role")
-    val role: String,
+    val role: String? = null,
 
     @SerializedName("role_id")
-    val roleId: Int,
+    val roleId: Int = 0,
 
     @SerializedName("nama_lengkap")
-    val namaLengkap: String,
+    val namaLengkap: String? = null,
 
     @SerializedName("foto_profil")
-    val fotoProfil: String?,
+    val fotoProfil: String? = null,
 
     @SerializedName("unread_count")
-    val unreadCount: Int,
+    val unreadCount: Int = 0,
 
     @SerializedName("last_message")
-    val lastMessage: String?,
+    val lastMessage: String? = null,
 
     @SerializedName("last_message_time")
-    val lastMessageTime: String?
+    val lastMessageTime: String? = null
 )

@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.chat
+package com.example.codasuaka.ui.screen.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,12 +15,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.ContactDto
 import com.example.codasuaka.data.remote.dto.ContactGroupDto
 import com.example.codasuaka.ui.theme.*
@@ -119,7 +117,7 @@ fun ChatContactListScreen(
                             items(group.contacts, key = { it.id }) { contact ->
                                 ContactItem(
                                     contact = contact,
-                                    onClick = { onContactClick(contact.id, contact.namaLengkap) }
+                                    onClick = { onContactClick(contact.id, contact.namaLengkap ?: contact.name) }
                                 )
                             }
                         }
@@ -171,7 +169,7 @@ private fun ContactItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = contact.namaLengkap,
+                    text = contact.namaLengkap ?: contact.name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = OnSurface,
@@ -180,7 +178,7 @@ private fun ContactItem(
                 )
                 if (contact.lastMessage != null) {
                     Text(
-                        text = contact.lastMessage,
+                        text = contact.lastMessage ?: "",
                         style = MaterialTheme.typography.bodySmall,
                         color = OnSurfaceVariant,
                         maxLines = 1,
@@ -195,21 +193,22 @@ private fun ContactItem(
             ) {
                 if (contact.lastMessageTime != null) {
                     Text(
-                        text = contact.lastMessageTime,
+                        text = contact.lastMessageTime ?: "",
                         style = MaterialTheme.typography.labelSmall,
                         color = OnSurfaceVariant
                     )
                 }
                 if (contact.unreadCount > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Badge(
-                        containerColor = Error,
-                        contentColor = OnPrimary
+                    Surface(
+                        shape = CircleShape,
+                        color = Error
                     ) {
                         Text(
                             text = if (contact.unreadCount > 99) "99+" else contact.unreadCount.toString(),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = OnPrimary
                         )
                     }
                 }

@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.auth
+package com.example.codasuaka.ui.screen.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -45,12 +45,15 @@ class AuthViewModel(
      */
     private fun checkAuth() {
         viewModelScope.launch {
-            val token = tokenManager.token.first()
-            _authState.value = if (token.isNullOrEmpty()) {
-                AuthState.Unauthenticated
-            } else {
-                // TODO: Opsional — validasi token ke server (cek expiry)
-                AuthState.Authenticated
+            try {
+                val token = tokenManager.token.first()
+                _authState.value = if (token.isNullOrEmpty()) {
+                    AuthState.Unauthenticated
+                } else {
+                    AuthState.Authenticated
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.Unauthenticated
             }
         }
     }
@@ -60,7 +63,9 @@ class AuthViewModel(
      */
     fun logout() {
         viewModelScope.launch {
-            tokenManager.clearAuthData()
+            try {
+                tokenManager.clearAuthData()
+            } catch (_: Exception) { }
             _authState.value = AuthState.Unauthenticated
         }
     }

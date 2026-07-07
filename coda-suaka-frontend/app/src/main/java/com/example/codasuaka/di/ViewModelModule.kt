@@ -2,10 +2,10 @@ package com.example.codasuaka.di
 
 import com.example.codasuaka.data.repository.AuthRepositoryImpl
 import com.example.codasuaka.domain.repository.*
-import com.example.codasuaka.ui.auth.AuthViewModel
-import com.example.codasuaka.ui.chat.ChatContactViewModel
-import com.example.codasuaka.ui.chat.ChatDetailViewModel
-import com.example.codasuaka.ui.pengajuan.PengajuanViewModel
+import com.example.codasuaka.ui.screen.auth.AuthViewModel
+import com.example.codasuaka.ui.screen.chat.ChatContactViewModel
+import com.example.codasuaka.ui.screen.chat.ChatDetailViewModel
+import com.example.codasuaka.ui.screen.pengajuan.PengajuanViewModel
 import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanViewModel
 import com.example.codasuaka.ui.screen.divisi.DivisiViewModel

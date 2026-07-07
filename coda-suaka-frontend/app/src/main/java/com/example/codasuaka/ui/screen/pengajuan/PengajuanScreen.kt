@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.pengajuan
+package com.example.codasuaka.ui.screen.pengajuan
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -542,7 +542,7 @@ private fun RiwayatPengajuanItem(
         JenisPengajuan.MENDADAK -> Coral
     }
 
-    val (statusText, statusColor, statusBg) = when (pengajuan.status) {
+    val (statusText, statusColor, statusBg) = when (pengajuan.status.lowercase()) {
         "disetujui" -> Triple("Disetujui", ScoreGreen, ScoreGreenLight)
         "ditolak" -> Triple("Ditolak", Error, Error.copy(alpha = 0.1f))
         else -> Triple("Pending", Amber, AmberLight)

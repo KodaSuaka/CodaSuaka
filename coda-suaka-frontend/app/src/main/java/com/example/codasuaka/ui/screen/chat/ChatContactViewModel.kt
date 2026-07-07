@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.chat
+package com.example.codasuaka.ui.screen.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

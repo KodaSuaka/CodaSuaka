@@ -31,23 +31,23 @@ data class SendMessageResponse(
 
 data class MessageDto(
     @SerializedName("id")
-    val id: Int,
+    val id: Int = 0,
 
     @SerializedName("pengirim_id")
-    val pengirimId: Int,
+    val pengirimId: Int = 0,
 
     @SerializedName("penerima_id")
-    val penerimaId: Int,
+    val penerimaId: Int = 0,
 
     @SerializedName("pesan")
-    val pesan: String,
+    val pesan: String? = null,
 
     @SerializedName("is_read")
-    val isRead: Boolean,
+    val isRead: Boolean = false,
 
     @SerializedName("created_at")
-    val createdAt: String,
+    val createdAt: String? = null,
 
     @SerializedName("waktu")
-    val waktu: String
+    val waktu: String? = null
 )

@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.auth
+package com.example.codasuaka.ui.screen.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.codasuaka.ui.screen.auth.AuthState
 import com.example.codasuaka.ui.theme.Primary
 import com.example.codasuaka.ui.theme.Tertiary
 

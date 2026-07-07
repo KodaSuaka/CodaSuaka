@@ -1,4 +1,4 @@
-package com.example.codasuaka.ui.components
+package com.example.codasuaka.ui.screen.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
