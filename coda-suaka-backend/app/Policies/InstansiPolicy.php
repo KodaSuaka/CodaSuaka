@@ -10,7 +10,7 @@ class InstansiPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin';
+        return $user->role?->nama_role === 'Super Admin' || app(PermissionService::class)->userHasPermission($user, 'manage:instansi');
     }
 
     public function view(User $user, instansi $instansi): bool

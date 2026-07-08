@@ -10,7 +10,7 @@ class TransaksiPaketPolicy
 {
     public function viewAny(User $user): bool
     {
-        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, transaksi_paket $transaksiPaket): bool

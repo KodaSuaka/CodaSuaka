@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Divisi::class, DivisiPolicy::class);
         Gate::policy(jadwal::class, JadwalPolicy::class);
         Gate::policy(penugasan::class, PenugasanPolicy::class);
+        Gate::policy(pengajuan::class, \App\Policies\PengajuanPolicy::class);
         Gate::policy(AnggotaDivisi::class, AnggotaDivisiPolicy::class);
         Gate::policy(attandence::class, AttandencePolicy::class);
         Gate::policy(transaksi_paket::class, TransaksiPaketPolicy::class);

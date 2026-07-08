@@ -10,7 +10,7 @@ class PenugasanPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
+        return $user->role?->nama_role === 'Super Admin' || app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
     public function view(User $user, penugasan $penugasan): bool

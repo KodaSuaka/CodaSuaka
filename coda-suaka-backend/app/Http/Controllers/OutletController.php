@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Validator;
 
 class OutletController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(outlet::class, 'outlet');
+    }
 
     /**
      * GET /api/outlets?instansi_id=xxx

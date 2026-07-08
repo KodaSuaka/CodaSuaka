@@ -92,7 +92,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.LOGIN) {
             val loginViewModel: LoginViewModel = koinViewModel()
             LoginScreen(
-                onLoginSuccess = { role ->
+                onLoginSuccess = { role, permissions ->
                     // Functional roles (Keuangan, Manajemen, Staff) dan Karyawan
                     // semua masuk ke DASHBOARD_KARYAWAN
                     // Owner masuk ke DASHBOARD
