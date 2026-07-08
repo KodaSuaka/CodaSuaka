@@ -38,7 +38,8 @@ val viewModelModule = module {
         presensiRepository = get(),
         penugasanRepository = get(),
         karyawanRepository = get(),
-        pengajuanRepository = get()
+        pengajuanRepository = get(),
+        dashboardRepository = get()
     ) }
 
     // Kelola Outlet

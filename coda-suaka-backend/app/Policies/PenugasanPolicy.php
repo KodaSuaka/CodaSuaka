@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\penugasan;
+use App\Services\PermissionService;
 
 class PenugasanPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, penugasan $penugasan): bool
@@ -19,7 +20,7 @@ class PenugasanPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
     public function update(User $user, penugasan $penugasan): bool
@@ -27,7 +28,7 @@ class PenugasanPolicy
         if ($user->instansi_id !== $penugasan->divisi?->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
     public function delete(User $user, penugasan $penugasan): bool
@@ -35,7 +36,7 @@ class PenugasanPolicy
         if ($user->instansi_id !== $penugasan->divisi?->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
     public function restore(User $user, penugasan $penugasan): bool

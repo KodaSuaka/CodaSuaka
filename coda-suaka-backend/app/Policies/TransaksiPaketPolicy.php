@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\transaksi_paket;
+use App\Services\PermissionService;
 
 class TransaksiPaketPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function view(User $user, transaksi_paket $transaksiPaket): bool
@@ -19,7 +20,7 @@ class TransaksiPaketPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function update(User $user, transaksi_paket $transaksiPaket): bool
@@ -27,7 +28,7 @@ class TransaksiPaketPolicy
         if ($user->instansi_id !== $transaksiPaket->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function delete(User $user, transaksi_paket $transaksiPaket): bool
@@ -35,7 +36,7 @@ class TransaksiPaketPolicy
         if ($user->instansi_id !== $transaksiPaket->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function restore(User $user, transaksi_paket $transaksiPaket): bool

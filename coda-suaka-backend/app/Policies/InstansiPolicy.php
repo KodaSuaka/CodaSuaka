@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\instansi;
+use App\Services\PermissionService;
 
 class InstansiPolicy
 {
@@ -24,7 +25,9 @@ class InstansiPolicy
 
     public function update(User $user, instansi $instansi): bool
     {
-        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id === $instansi->id;
+        if ($user->role?->nama_role === 'Super Admin') return true;
+        if ($user->instansi_id !== $instansi->id) return false;
+        return app(PermissionService::class)->userHasPermission($user, 'manage:instansi');
     }
 
     public function delete(User $user, instansi $instansi): bool

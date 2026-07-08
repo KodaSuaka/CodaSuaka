@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Divisi;
+use App\Services\PermissionService;
 
 class DivisiPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, Divisi $divisi): bool
@@ -19,7 +20,7 @@ class DivisiPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function update(User $user, Divisi $divisi): bool
@@ -27,7 +28,7 @@ class DivisiPolicy
         if ($user->instansi_id !== $divisi->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function delete(User $user, Divisi $divisi): bool
@@ -35,7 +36,7 @@ class DivisiPolicy
         if ($user->instansi_id !== $divisi->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function restore(User $user, Divisi $divisi): bool

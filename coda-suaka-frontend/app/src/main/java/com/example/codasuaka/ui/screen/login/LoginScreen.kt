@@ -22,7 +22,7 @@ import com.example.codasuaka.ui.theme.*
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (role: String) -> Unit,
+    onLoginSuccess: (role: String, permissions: List<String>?) -> Unit,
     onNavigateToRegister: () -> Unit,
     viewModel: LoginViewModel
 ) {
@@ -31,7 +31,7 @@ fun LoginScreen(
 
     LaunchedEffect(uiState.loginSuccess, uiState.userRole) {
         if (uiState.loginSuccess && uiState.userRole != null) {
-            onLoginSuccess(uiState.userRole!!)
+            onLoginSuccess(uiState.userRole!!, uiState.userPermissions)
         }
     }
 

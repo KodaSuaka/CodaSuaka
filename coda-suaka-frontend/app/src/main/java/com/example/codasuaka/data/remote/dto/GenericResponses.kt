@@ -55,7 +55,24 @@ data class KaryawanDashboardData(
     @SerializedName("sudah_checkout") val sudahCheckout: Boolean,
     @SerializedName("tugas_aktif") val tugasAktif: List<PenugasanDto>,
     @SerializedName("pengajuan_pending_count") val pengajuanPendingCount: Int,
-    @SerializedName("sisa_cuti") val sisaCuti: Int
+    @SerializedName("sisa_cuti") val sisaCuti: Int,
+    @SerializedName("role_menu_items") val roleMenuItems: List<RoleMenuDto>? = null,
+    @SerializedName("additional_content") val additionalContent: List<AdditionalContentDto>? = null
+)
+
+data class RoleMenuDto(
+    @SerializedName("id") val id: String,
+    @SerializedName("label") val label: String,
+    @SerializedName("icon") val icon: String,
+    @SerializedName("route") val route: String?,
+    @SerializedName("permission") val permission: String? = null
+)
+
+data class AdditionalContentDto(
+    @SerializedName("id") val id: String,
+    @SerializedName("label") val label: String,
+    @SerializedName("icon") val icon: String,
+    @SerializedName("route") val route: String? = null
 )
 
 // ─── Outlet DTOs ───────────────────────────────────────────────

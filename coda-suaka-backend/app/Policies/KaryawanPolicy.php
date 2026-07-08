@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\karyawan;
+use App\Services\PermissionService;
 
 class KaryawanPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, karyawan $karyawan): bool
@@ -20,7 +21,7 @@ class KaryawanPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function update(User $user, karyawan $karyawan): bool
@@ -28,7 +29,7 @@ class KaryawanPolicy
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function delete(User $user, karyawan $karyawan): bool
@@ -36,7 +37,7 @@ class KaryawanPolicy
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function restore(User $user, karyawan $karyawan): bool

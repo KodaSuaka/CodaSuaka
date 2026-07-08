@@ -10,6 +10,7 @@ use App\Models\karyawan;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
+use App\Services\PermissionService;
 
 class AuthController extends Controller
 {
@@ -41,13 +42,23 @@ class AuthController extends Controller
             'foto_profil'=> null,
         ]);
 
+        $permissions = app(PermissionService::class)->getUserPermissions($user);
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'status' => 'success',
             'message' => 'Registrasi Owner dan Instansi berhasil',
             'data' => [
-                'user' => $user->load('role'),
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role?->nama_role ?? 'Unknown',
+                    'instansi_id' => $user->instansi_id,
+                    'outlet_id' => $user->outlet_id,
+                ],
+                'permissions' => $permissions,
                 'access_token' => $token,
                 'token_type' => 'Bearer'
             ]
@@ -64,6 +75,8 @@ class AuthController extends Controller
         }
         $profil = karyawan::where('user_id', $user->id)->first();
 
+        $permissions = app(PermissionService::class)->getUserPermissions($user);
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -78,6 +91,7 @@ class AuthController extends Controller
                     'outlet_id' => $user->outlet_id,
                     'nama_lengkap' => $profil ? $profil->nama_lengkap : 'User'
                 ],
+                'permissions' => $permissions,
                 'access_token' => $token,
                 'token_type' => 'Bearer'
             ]

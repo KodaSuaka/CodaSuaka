@@ -9,8 +9,13 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        role::firstOrCreate(['nama_role' => 'Owner']);
-        role::firstOrCreate(['nama_role' => 'Karyawan']);
+        // Platform-level roles
         role::firstOrCreate(['nama_role' => 'Super Admin']);
+        role::firstOrCreate(['nama_role' => 'Owner']);
+
+        // Functional roles (replaces flat "Karyawan")
+        role::firstOrCreate(['nama_role' => 'Keuangan']);
+        role::firstOrCreate(['nama_role' => 'Manajemen']);
+        role::firstOrCreate(['nama_role' => 'Staff']);
     }
 }

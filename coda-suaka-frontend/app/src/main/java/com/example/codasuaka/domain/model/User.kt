@@ -11,5 +11,6 @@ data class User(
     val role: String,
     val instansiId: String?,
     val outletId: String?,
-    val token: String
+    val token: String,
+    val permissions: List<String> = emptyList()
 )

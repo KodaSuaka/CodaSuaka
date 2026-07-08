@@ -23,6 +23,7 @@ class AuthRepositoryImpl(
                 val body = response.body()!!
                 val userDto = body.data?.user
                 val token = body.data?.accessToken ?: ""
+                val permissions = body.data?.permissions ?: emptyList()
                 val user = User(
                     id = userDto?.id ?: 0,
                     email = userDto?.email ?: email,
@@ -30,7 +31,8 @@ class AuthRepositoryImpl(
                     role = userDto?.role ?: "",
                     instansiId = userDto?.instansiId,
                     outletId = userDto?.outletId,
-                    token = token
+                    token = token,
+                    permissions = permissions
                 )
                 // Simpan token
                 tokenManager.saveAuthData(
@@ -38,7 +40,8 @@ class AuthRepositoryImpl(
                     email = user.email,
                     name = user.namaLengkap,
                     role = user.role,
-                    userId = user.id.toString()
+                    userId = user.id.toString(),
+                    permissions = permissions
                 )
                 Result.success(user)
             } else {

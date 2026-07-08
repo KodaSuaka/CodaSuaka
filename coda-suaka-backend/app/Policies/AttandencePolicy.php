@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\attandence;
+use App\Services\PermissionService;
 
 class AttandencePolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, attandence $attandence): bool
@@ -30,7 +31,7 @@ class AttandencePolicy
 
     public function delete(User $user, attandence $attandence): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:attendance');
     }
 
     public function restore(User $user, attandence $attandence): bool

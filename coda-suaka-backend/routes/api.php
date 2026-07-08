@@ -120,7 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ═══════════════════════════════════════════════════════════
     //  SUPER ADMIN — Hanya untuk role "Super Admin"
     // ═══════════════════════════════════════════════════════════
-    Route::prefix('super-admin')->middleware('super.admin')->group(function () {
+    Route::prefix('super-admin')->middleware('role:Super Admin')->group(function () {
 
         // Dashboard Super Admin
         Route::get('/dashboard', [SuperAdminController::class, 'dashboard']);

@@ -93,9 +93,14 @@ fun AppNavigation(navController: NavHostController) {
             val loginViewModel: LoginViewModel = koinViewModel()
             LoginScreen(
                 onLoginSuccess = { role ->
-                    val destination = when (role) {
-                        "Karyawan" -> Routes.DASHBOARD_KARYAWAN
-                        else -> Routes.DASHBOARD
+                    // Functional roles (Keuangan, Manajemen, Staff) dan Karyawan
+                    // semua masuk ke DASHBOARD_KARYAWAN
+                    // Owner masuk ke DASHBOARD
+                    val functionalRoles = listOf("Keuangan", "Manajemen", "Staff", "Karyawan")
+                    val destination = if (role in functionalRoles) {
+                        Routes.DASHBOARD_KARYAWAN
+                    } else {
+                        Routes.DASHBOARD // Owner (dan role lain yang tidak dikenal)
                     }
                     navController.navigate(destination) {
                         popUpTo(Routes.LOGIN) { inclusive = true }

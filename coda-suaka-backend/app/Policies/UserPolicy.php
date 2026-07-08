@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\user as UserModel;
+use App\Services\PermissionService;
 
 class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function view(User $user, UserModel $model): bool
@@ -27,8 +28,8 @@ class UserPolicy
         if ($user->instansi_id !== $model->instansi_id) {
             return false;
         }
-        // Users can update themselves, Owner can update anyone in their instansi
-        return $user->id === $model->id || $user->role?->nama_role === 'Owner';
+        // Users can update themselves, or users with manage:karyawan permission
+        return $user->id === $model->id || app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function delete(User $user, UserModel $model): bool
@@ -36,7 +37,7 @@ class UserPolicy
         if ($user->instansi_id !== $model->instansi_id) {
             return false;
         }
-        return $user->role?->nama_role === 'Owner';
+        return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function restore(User $user, UserModel $model): bool

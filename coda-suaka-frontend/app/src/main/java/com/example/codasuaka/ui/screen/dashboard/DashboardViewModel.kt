@@ -26,7 +26,8 @@ data class DashboardUiState(
     val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Tugas Tim, 2 = Pesan, 3 = Divisi,
     val userNamaLengkap: String = "Nama Pengguna",
     val userEmail: String = "",
-    val userRole: String = ""
+    val userRole: String = "",
+    val userPermissions: List<String> = emptyList()
 )
 
 
@@ -55,10 +56,12 @@ class DashboardViewModel(
             val name = tokenManager.getUserName() ?: "Nama Pengguna"
             val email = tokenManager.getUserEmail() ?: ""
             val role = tokenManager.getUserRole() ?: ""
+            val permissions = tokenManager.getUserPermissions()
             _uiState.value = _uiState.value.copy(
                 userNamaLengkap = name,
                 userEmail = email,
-                userRole = role
+                userRole = role,
+                userPermissions = permissions
             )
         }
     }

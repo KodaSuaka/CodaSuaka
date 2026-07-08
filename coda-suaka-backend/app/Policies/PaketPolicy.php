@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\paket;
+use App\Services\PermissionService;
 
 class PaketPolicy
 {
@@ -19,17 +20,17 @@ class PaketPolicy
 
     public function create(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin';
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function update(User $user, paket $paket): bool
     {
-        return $user->role?->nama_role === 'Super Admin';
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function delete(User $user, paket $paket): bool
     {
-        return $user->role?->nama_role === 'Super Admin';
+        return app(PermissionService::class)->userHasPermission($user, 'manage:paket');
     }
 
     public function restore(User $user, paket $paket): bool

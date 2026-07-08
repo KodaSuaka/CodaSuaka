@@ -810,6 +810,8 @@ private fun mapIcon(iconName: String): ImageVector {
         "School" -> Icons.Default.School
         "EmojiEvents" -> Icons.Default.EmojiEvents
         "People" -> Icons.Default.People
+        "PeopleAlt" -> Icons.Default.PeopleAlt
+        "AccountBalance" -> Icons.Default.AccountBalance
         "Settings" -> Icons.Default.Settings
         "Receipt" -> Icons.Default.Receipt
         "Schedule" -> Icons.Default.Schedule
@@ -819,6 +821,7 @@ private fun mapIcon(iconName: String): ImageVector {
         "Person" -> Icons.Default.Person
         "Star" -> Icons.Default.Star
         "Favorite" -> Icons.Default.Favorite
+        "TrendingUp" -> Icons.Default.TrendingUp
         else -> Icons.Default.List
     }
 }

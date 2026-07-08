@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\AnggotaDivisi;
 use App\Models\User;
+use App\Services\PermissionService;
 
 class AnggotaDivisiPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, AnggotaDivisi $anggotaDivisi): bool
@@ -19,7 +20,7 @@ class AnggotaDivisiPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function update(User $user, AnggotaDivisi $anggotaDivisi): bool
@@ -27,7 +28,7 @@ class AnggotaDivisiPolicy
         if ($user->instansi_id !== $anggotaDivisi->divisi?->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function delete(User $user, AnggotaDivisi $anggotaDivisi): bool
@@ -35,7 +36,7 @@ class AnggotaDivisiPolicy
         if ($user->instansi_id !== $anggotaDivisi->divisi?->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function restore(User $user, AnggotaDivisi $anggotaDivisi): bool

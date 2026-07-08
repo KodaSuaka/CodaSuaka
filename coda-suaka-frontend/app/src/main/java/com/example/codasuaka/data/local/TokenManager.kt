@@ -38,6 +38,7 @@ class TokenManager(private val context: Context) {
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_ROLE = "user_role"
         private const val KEY_USER_ID = "user_id"
+        private const val KEY_USER_PERMISSIONS = "user_permissions"
     }
 
     /**
@@ -67,7 +68,8 @@ class TokenManager(private val context: Context) {
         email: String,
         name: String,
         role: String,
-        userId: String
+        userId: String,
+        permissions: List<String>? = null
     ) {
         prefs.edit()
             .putString(KEY_TOKEN, token)
@@ -75,6 +77,7 @@ class TokenManager(private val context: Context) {
             .putString(KEY_USER_NAME, name)
             .putString(KEY_USER_ROLE, role)
             .putString(KEY_USER_ID, userId)
+            .putString(KEY_USER_PERMISSIONS, permissions?.joinToString(",") ?: "")
             .apply()
         cachedToken = token
     }
@@ -99,6 +102,14 @@ class TokenManager(private val context: Context) {
      * Mengembalikan role user dari penyimpanan terenkripsi (synchronous).
      */
     suspend fun getUserRole(): String? = prefs.getString(KEY_USER_ROLE, null)
+
+    /**
+     * Mengembalikan permissions user dari penyimpanan terenkripsi (synchronous).
+     */
+    suspend fun getUserPermissions(): List<String> {
+        val permissionsString = prefs.getString(KEY_USER_PERMISSIONS, null) ?: ""
+        return if (permissionsString.isBlank()) emptyList() else permissionsString.split(",")
+    }
 
     /**
      * Menghapus seluruh data autentikasi (saat logout).

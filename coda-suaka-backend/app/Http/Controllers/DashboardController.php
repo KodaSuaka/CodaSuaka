@@ -9,6 +9,7 @@ use App\Models\outlet;
 use App\Models\pengajuan;
 use App\Models\penugasan;
 use App\Models\User;
+use App\Services\PermissionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -29,7 +30,7 @@ class DashboardController extends Controller
         $userIds = User::where('instansi_id', $instansiId)->pluck('id');
 
         $totalKaryawan = karyawan::whereIn('user_id', $userIds)
-            ->whereHas('user', fn($q) => $q->whereHas('role', fn($r) => $r->where('nama_role', 'Karyawan')))
+            ->whereHas('user', fn($q) => $q->whereHas('role', fn($r) => $r->whereNotIn('nama_role', ['Owner', 'Super Admin'])))
             ->count();
         $totalOutlet = outlet::where('instansi_id', $instansiId)->count();
         $totalDivisi = Divisi::whereHas('outlet', fn($q) => $q->where('instansi_id', $instansiId))->count();
@@ -95,6 +96,11 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
+        // Role-based dashboard menu from PermissionService
+        $permissionService = app(PermissionService::class);
+        $roleMenuItems = $permissionService->getKaryawanDashboardMenu($user);
+        $additionalContent = $permissionService->getKaryawanAdditionalContent($user);
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -105,6 +111,8 @@ class DashboardController extends Controller
                 'tugas_aktif' => $tugas,
                 'pengajuan_pending_count' => $pengajuanPendingCount,
                 'sisa_cuti' => $karyawan ? (int) $karyawan->sisa_cuti : 0,
+                'role_menu_items' => $roleMenuItems,
+                'additional_content' => $additionalContent,
             ]
         ]);
     }

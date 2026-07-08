@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\role;
+use App\Models\role_permission;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -12,6 +13,38 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        $permissionMap = [
+            'Keuangan' => [
+                'view:keuangan',
+                'manage:penugasan',
+                'view:presensi',
+            ],
+            'Manajemen' => [
+                'manage:outlets',
+                'manage:karyawan',
+                'manage:divisi',
+                'manage:jadwal',
+                'manage:penugasan',
+                'manage:pengajuan',
+                'view:presensi',
+            ],
+            'Staff' => [
+                // No special permissions — task-based only
+            ],
+        ];
+
+        foreach ($permissionMap as $roleName => $permissions) {
+            $role = role::where('nama_role', $roleName)->first();
+            if (!$role) {
+                continue;
+            }
+
+            foreach ($permissions as $permission) {
+                role_permission::firstOrCreate([
+                    'role_id' => $role->id,
+                    'permission' => $permission,
+                ]);
+            }
+        }
     }
 }

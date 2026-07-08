@@ -3,6 +3,7 @@ package com.example.codasuaka.ui.screen.dashboard_karyawan
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.PenugasanDto
+import com.example.codasuaka.domain.repository.DashboardRepository
 import com.example.codasuaka.domain.repository.KaryawanRepository
 import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
@@ -100,7 +101,8 @@ class DashboardKaryawanViewModel(
     private val presensiRepository: PresensiRepository,
     private val penugasanRepository: PenugasanRepository,
     private val karyawanRepository: KaryawanRepository,
-    private val pengajuanRepository: PengajuanRepository
+    private val pengajuanRepository: PengajuanRepository,
+    private val dashboardRepository: DashboardRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardKaryawanUiState())
@@ -123,6 +125,7 @@ class DashboardKaryawanViewModel(
                 val presensiResult = presensiRepository.getPresensiToday()
                 val tugasResult = penugasanRepository.getPenugasans(status = "belum,proses")
                 val pengajuanResult = pengajuanRepository.getPengajuans()
+                val dashboardResult = dashboardRepository.getKaryawanDashboard()
 
                 karyawanResult.onSuccess { karyawan ->
                     _uiState.value = _uiState.value.copy(
@@ -167,18 +170,22 @@ class DashboardKaryawanViewModel(
                     val pendingCount = pengajuanList.count { it.status == "pending" }
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    roleMenuItems = listOf(
-                        RoleMenuItem("laporan", "Laporan", "Description", "laporan_keuangan"),
-                        RoleMenuItem("absensi", "Riwayat Absensi", "FactCheck", "riwayat_kehadiran"),
-                        RoleMenuItem("tugas", "Tugas Tim", "Assignment", "tugas_tim")
-                    ),
-                    additionalContent = listOf(
-                        AdditionalMenuItem("pelatihan", "Pelatihan", "School", "pelatihan"),
-                        AdditionalMenuItem("penghargaan", "Penghargaan", "EmojiEvents", "penghargaan")
-                    ),
-                    isLoading = false
-                )
+                dashboardResult.onSuccess { dashboardData ->
+                    val roleMenus = dashboardData.roleMenuItems?.map {
+                        RoleMenuItem(it.id, it.label, it.icon, it.route)
+                    } ?: emptyList()
+
+                    val additionalItems = dashboardData.additionalContent?.map {
+                        AdditionalMenuItem(it.id, it.label, it.icon, it.route)
+                    } ?: emptyList()
+
+                    _uiState.value = _uiState.value.copy(
+                        roleMenuItems = roleMenus,
+                        additionalContent = additionalItems
+                    )
+                }
+
+                _uiState.value = _uiState.value.copy(isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

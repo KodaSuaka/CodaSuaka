@@ -21,7 +21,10 @@ data class LoginData(
     val accessToken: String,
 
     @SerializedName("token_type")
-    val tokenType: String
+    val tokenType: String,
+
+    @SerializedName("permissions")
+    val permissions: List<String>?
 )
 
 data class UserData(

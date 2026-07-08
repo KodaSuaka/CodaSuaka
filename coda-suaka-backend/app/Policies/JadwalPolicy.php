@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\jadwal;
+use App\Services\PermissionService;
 
 class JadwalPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
+        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
     }
 
     public function view(User $user, jadwal $jadwal): bool
@@ -19,7 +20,7 @@ class JadwalPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
     }
 
     public function update(User $user, jadwal $jadwal): bool
@@ -27,7 +28,7 @@ class JadwalPolicy
         if ($user->instansi_id !== $jadwal->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
     }
 
     public function delete(User $user, jadwal $jadwal): bool
@@ -35,7 +36,7 @@ class JadwalPolicy
         if ($user->instansi_id !== $jadwal->outlet?->instansi_id) {
             return false;
         }
-        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin']);
+        return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
     }
 
     public function restore(User $user, jadwal $jadwal): bool
