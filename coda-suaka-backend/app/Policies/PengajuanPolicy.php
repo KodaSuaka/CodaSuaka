@@ -20,7 +20,7 @@ class PengajuanPolicy
             return true;
         }
         // User can view their own pengajuan or if they are the approver
-        return $user->id === $pengajuan->user_id || $user->id === $pengajuan->penyetuju_id;
+        return $user->id === $pengajuan->user_id || $user->id === $pengajuan->disetujui_oleh;
     }
 
     public function create(User $user): bool
