@@ -10,6 +10,7 @@ class JadwalController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(jadwal::class, 'jadwal');
     }
 
     /**

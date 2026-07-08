@@ -22,6 +22,9 @@ interface AuthRepository {
     /** Ambil token yang tersimpan */
     suspend fun getToken(): String?
 
+    /** Verifikasi token ke server — true jika valid */
+    suspend fun verifyToken(): Boolean
+
     /** Hapus data auth (logout) */
     suspend fun logout()
 }

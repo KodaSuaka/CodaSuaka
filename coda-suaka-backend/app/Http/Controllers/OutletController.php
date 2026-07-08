@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Validator;
 
 class OutletController extends Controller
 {
-    public function __construct()
-    {
-    }
 
     /**
      * GET /api/outlets?instansi_id=xxx

@@ -2,6 +2,8 @@ package com.example.codasuaka.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// ── Light Theme ──────────────────────────────────────────
+
 // Primary - Dark Navy Blue
 val Primary = Color(0xFF1A365D)
 val PrimaryLight = Color(0xFF2A4A7F)
@@ -25,3 +27,16 @@ val OnSurfaceVariant = Color(0xFF718096) // Placeholder / hint text
 // Status
 val Error = Color(0xFFE53E3E)
 val Success = Color(0xFF38A169)
+
+// ── Dark Theme ───────────────────────────────────────────
+
+val DarkPrimary = Color(0xFF90CDF4)
+val DarkOnPrimary = Color(0xFF0F2440)
+val DarkSecondary = Color(0xFF4299E1)
+val DarkTertiary = Color(0xFF1A202C)       // Page background (dark)
+val DarkSurface = Color(0xFF2D3748)         // Card / Input background (dark)
+val DarkNeutral = Color(0xFF4A5568)         // Border / Divider (dark)
+val DarkOnSurface = Color(0xFFE2E8F0)      // Main text color (dark)
+val DarkOnSurfaceVariant = Color(0xFFA0AEC0) // Placeholder (dark)
+val DarkError = Color(0xFFFC8181)
+val DarkSuccess = Color(0xFF68D391)

@@ -11,6 +11,7 @@ class PenugasanController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(penugasan::class, 'penugasan');
     }
 
     /**

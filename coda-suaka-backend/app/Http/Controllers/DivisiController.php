@@ -12,6 +12,7 @@ class DivisiController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(Divisi::class, 'divisi');
     }
 
     /**

@@ -6,7 +6,6 @@ import com.example.codasuaka.data.remote.dto.LoginRequest
 import com.example.codasuaka.data.remote.dto.RegisterRequest
 import com.example.codasuaka.domain.model.User
 import com.example.codasuaka.domain.repository.AuthRepository
-import kotlinx.coroutines.flow.first
 
 /**
  * Implementasi dari AuthRepository (domain interface).
@@ -93,7 +92,18 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun getToken(): String? {
-        return tokenManager.token.first()
+        return tokenManager.getToken()
+    }
+
+    override suspend fun verifyToken(): Boolean {
+        return try {
+            val response = apiService.getUser()
+            response.isSuccessful
+        } catch (_: Exception) {
+            // Network error — tidak bisa diverifikasi, anggap valid
+            // agar user tetap bisa akses offline data
+            getToken() != null
+        }
     }
 
     override suspend fun logout() {

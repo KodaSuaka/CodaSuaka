@@ -11,6 +11,7 @@ class AttandenceController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(attandence::class, 'attandence');
     }
 
     /**

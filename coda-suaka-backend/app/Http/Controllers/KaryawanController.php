@@ -12,6 +12,7 @@ class KaryawanController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(karyawan::class, 'karyawan')->except(['me']);
     }
 
     /**

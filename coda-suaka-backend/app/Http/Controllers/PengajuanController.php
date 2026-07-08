@@ -10,6 +10,7 @@ class PengajuanController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(pengajuan::class, 'pengajuan');
     }
 
     /**
@@ -88,17 +89,34 @@ class PengajuanController extends Controller
 
     /**
      * PUT /api/pengajuans/{pengajuan}/approve
-     * Setujui pengajuan (hanya owner/admin)
+     * Setujui pengajuan (hanya Owner / Super Admin yang bisa)
      */
     public function approve(Request $request, pengajuan $pengajuan)
     {
+        $user = $request->user();
+
+        // Only Owner or Super Admin can approve
+        if (!in_array($user->role?->nama_role, ['Owner', 'Super Admin'])) {
+            return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menyetujui pengajuan'], 403);
+        }
+
+        // Prevent self-approval
+        if ($pengajuan->user_id === $user->id) {
+            return response()->json(['status' => 'error', 'message' => 'Anda tidak dapat menyetujui pengajuan sendiri'], 403);
+        }
+
+        // Tenant isolation: pengajuan must belong to same instansi
+        if ($pengajuan->user->instansi_id !== $user->instansi_id) {
+            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
+        }
+
         if ($pengajuan->status !== 'pending') {
             return response()->json(['status' => 'error', 'message' => 'Pengajuan sudah diproses'], 400);
         }
 
         $pengajuan->update([
             'status' => 'disetujui',
-            'disetujui_oleh' => $request->user()->id,
+            'disetujui_oleh' => $user->id,
             'tanggal_disetujui' => now(),
         ]);
 
@@ -122,10 +140,27 @@ class PengajuanController extends Controller
 
     /**
      * PUT /api/pengajuans/{pengajuan}/reject
-     * Tolak pengajuan
+     * Tolak pengajuan (hanya Owner / Super Admin yang bisa)
      */
     public function reject(Request $request, pengajuan $pengajuan)
     {
+        $user = $request->user();
+
+        // Only Owner or Super Admin can reject
+        if (!in_array($user->role?->nama_role, ['Owner', 'Super Admin'])) {
+            return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menolak pengajuan'], 403);
+        }
+
+        // Prevent self-rejection
+        if ($pengajuan->user_id === $user->id) {
+            return response()->json(['status' => 'error', 'message' => 'Anda tidak dapat menolak pengajuan sendiri'], 403);
+        }
+
+        // Tenant isolation
+        if ($pengajuan->user->instansi_id !== $user->instansi_id) {
+            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'alasan_penolakan' => 'required|string',
         ]);
@@ -140,7 +175,7 @@ class PengajuanController extends Controller
 
         $pengajuan->update([
             'status' => 'ditolak',
-            'disetujui_oleh' => $request->user()->id,
+            'disetujui_oleh' => $user->id,
             'tanggal_disetujui' => now(),
             'alasan_penolakan' => $request->alasan_penolakan,
         ]);

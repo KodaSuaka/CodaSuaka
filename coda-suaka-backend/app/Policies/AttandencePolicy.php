@@ -4,61 +4,40 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\attandence;
-use Illuminate\Auth\Access\Response;
 
 class AttandencePolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return in_array($user->role?->nama_role, ['Owner', 'Admin', 'Karyawan']);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, attandence $attandence): bool
     {
-        return false;
+        return $user->instansi_id === $attandence->user?->instansi_id;
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return true; // Any authenticated user can check in
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, attandence $attandence): bool
     {
-        return false;
+        // Users can only update their own attendance
+        return $user->id === $attandence->user_id;
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, attandence $attandence): bool
     {
-        return false;
+        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, attandence $attandence): bool
     {
         return false;
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, attandence $attandence): bool
     {
         return false;

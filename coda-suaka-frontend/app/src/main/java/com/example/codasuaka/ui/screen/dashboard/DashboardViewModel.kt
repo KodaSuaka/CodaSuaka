@@ -15,6 +15,11 @@ import kotlinx.coroutines.launch
 data class DashboardUiState(
     val outletName: String = "",
     val omsetTotal: Long = 0,
+    val totalKaryawan: Int = 0,
+    val totalOutlet: Int = 0,
+    val totalDivisi: Int = 0,
+    val presensiHariIni: Int = 0,
+    val pengajuanPending: Int = 0,
     val isLoading: Boolean = false,
     val isDrawerOpen: Boolean = false,
     val errorMessage: String? = null,
@@ -47,9 +52,9 @@ class DashboardViewModel(
      */
     private fun loadUserData() {
         viewModelScope.launch {
-            val name = tokenManager.userName.first() ?: "Nama Pengguna"
-            val email = tokenManager.userEmail.first() ?: ""
-            val role = tokenManager.userRole.first() ?: ""
+            val name = tokenManager.getUserName() ?: "Nama Pengguna"
+            val email = tokenManager.getUserEmail() ?: ""
+            val role = tokenManager.getUserRole() ?: ""
             _uiState.value = _uiState.value.copy(
                 userNamaLengkap = name,
                 userEmail = email,
@@ -68,9 +73,12 @@ class DashboardViewModel(
             dashboardRepository.getDashboard()
                 .onSuccess { data ->
                     _uiState.value = _uiState.value.copy(
-                        outletName = "Outlet Pusat", // default, bisa diganti dari data user
-                        omsetTotal = 0,
-                        isLoading = false
+                        isLoading = false,
+                        totalKaryawan = data.totalKaryawan,
+                        totalOutlet = data.totalOutlet,
+                        totalDivisi = data.totalDivisi,
+                        presensiHariIni = data.presensiHariIni,
+                        pengajuanPending = data.pengajuanPending
                     )
                 }
                 .onFailure { error ->

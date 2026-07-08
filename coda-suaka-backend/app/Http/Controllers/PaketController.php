@@ -10,6 +10,7 @@ class PaketController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(paket::class, 'paket');
     }
 
     /**

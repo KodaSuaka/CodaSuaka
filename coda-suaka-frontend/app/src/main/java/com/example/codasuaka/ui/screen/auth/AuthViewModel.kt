@@ -3,10 +3,9 @@ package com.example.codasuaka.ui.screen.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.local.TokenManager
-import com.example.codasuaka.data.remote.ApiService
+import com.example.codasuaka.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -28,12 +27,13 @@ sealed class AuthState {
  * Digunakan oleh AuthScreen sebagai gatekeeper sebelum masuk ke
  * Dashboard atau Login.
  *
- * Sekarang melakukan validasi server-side dengan memanggil GET /api/user
- * untuk memastikan token masih valid (belum expired/dicabut).
+ * ISSUE #3 (FIX): Sebelumnya langsung memanggil ApiService.getUser()
+ * dari presentation layer, melanggar Clean Architecture.
+ * Sekarang menggunakan AuthRepository (domain layer) untuk verifikasi.
  */
 class AuthViewModel(
-    private val tokenManager: TokenManager,
-    private val apiService: ApiService
+    private val authRepository: AuthRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -47,7 +47,7 @@ class AuthViewModel(
      * Cek apakah token tersimpan masih valid.
      * 1. Inisialisasi cache token untuk AuthInterceptor
      * 2. Jika token tidak ada di DataStore → Unauthenticated
-     * 3. Jika ada, verifikasi ke server via GET /api/user
+     * 3. Jika ada, verifikasi ke server via AuthRepository.verifyToken()
      *    - Sukses → Authenticated
      *    - Gagal (401) → Unauthenticated
      */
@@ -57,16 +57,16 @@ class AuthViewModel(
                 // Init cache dulu agar AuthInterceptor bisa baca token
                 tokenManager.initCache()
 
-                val token = tokenManager.token.first()
+                val token = tokenManager.getToken()
 
                 if (token.isNullOrBlank()) {
                     _authState.value = AuthState.Unauthenticated
                     return@launch
                 }
 
-                // Verifikasi token ke server
-                val response = apiService.getUser()
-                if (response.isSuccessful) {
+                // Verifikasi token via repository (domain layer)
+                val isValid = authRepository.verifyToken()
+                if (isValid) {
                     _authState.value = AuthState.Authenticated
                 } else {
                     // Token invalid/expired → bersihkan
@@ -76,7 +76,6 @@ class AuthViewModel(
             } catch (_: Exception) {
                 // Kalau gagal (misalnya network error), biarkan tetap Authenticated
                 // agar user bisa buka offline data atau coba lagi nanti.
-                // Hanya jadi Unauthenticated jika respon 401 jelas.
                 val token = tokenManager.getCachedToken()
                 _authState.value = if (!token.isNullOrBlank()) {
                     AuthState.Authenticated
@@ -89,12 +88,11 @@ class AuthViewModel(
 
     /**
      * Logout: hapus data auth, lalu ubah state ke Unauthenticated.
-     * Ini satu-satunya tempat yang boleh menghapus token.
      */
     fun logout() {
         viewModelScope.launch {
             try {
-                tokenManager.clearAuthData()
+                authRepository.logout()
             } catch (_: Exception) {
                 // Abaikan error saat clear, tetap lanjut ubah state
             }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\role_permission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 
 class RolePermissionController extends Controller
@@ -14,6 +15,8 @@ class RolePermissionController extends Controller
 
     public function index(Request $request)
     {
+        Gate::authorize('manage-roles');
+
         $query = role_permission::with('role');
         if ($request->has('role_id')) {
             $query->where('role_id', $request->role_id);
@@ -24,6 +27,8 @@ class RolePermissionController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('manage-roles');
+
         $validator = Validator::make($request->all(), [
             'role_id' => 'required|exists:roles,id',
             'permission' => 'required|string|max:100',
@@ -51,6 +56,7 @@ class RolePermissionController extends Controller
 
     public function destroy(role_permission $role_permission)
     {
+        Gate::authorize('manage-roles');
         $role_permission->delete();
         return response()->json(['status' => 'success', 'message' => 'Permission berhasil dihapus']);
     }
@@ -61,6 +67,8 @@ class RolePermissionController extends Controller
      */
     public function sync(Request $request)
     {
+        Gate::authorize('manage-roles');
+
         $validator = Validator::make($request->all(), [
             'role_id' => 'required|exists:roles,id',
             'permissions' => 'required|array',

@@ -28,7 +28,8 @@ import com.example.codasuaka.ui.theme.*
 private data class MenuItem(
     val label: String,
     val icon: ImageVector,
-    val color: androidx.compose.ui.graphics.Color = Primary
+    val color: androidx.compose.ui.graphics.Color = Primary,
+    val allowedRoles: List<String> = emptyList() // empty = all roles
 )
 
 // ─── DashboardScreen ─────────────────────────────────────────
@@ -104,7 +105,7 @@ fun DashboardScreen(
                         // Navigate based on selection
                         when (index) {
                             0 -> { /* already on dashboard */ }
-                            1 -> onNavigateTo("contact_list")
+                            1 -> onNavigateTo("riwayat_kehadiran")
                             2 -> onNavigateTo("contact_list")
                             3 -> onNavigateTo("divisi")
                         }
@@ -164,8 +165,9 @@ fun DashboardScreen(
                 // ══════════════════════════════════════════════
                 SectionMenuGrid(
                     title = "Menu Utama",
+                    userRole = uiState.userRole,
                     items = listOf(
-                        MenuItem("Kelola Outlet", Icons.Default.Store, Primary),
+                        MenuItem("Kelola Outlet", Icons.Default.Store, Primary, allowedRoles = listOf("Owner")),
                         MenuItem("Jadwal", Icons.Default.CalendarMonth, Primary),
                         MenuItem("Log Absensi", Icons.Default.FactCheck, Secondary)
                     ),
@@ -183,8 +185,9 @@ fun DashboardScreen(
                 // ══════════════════════════════════════════════
                 SectionMenuGrid(
                     title = "Laporan & Status",
+                    userRole = uiState.userRole,
                     items = listOf(
-                        MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, Primary),
+                        MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, Primary, allowedRoles = listOf("Owner")),
                         MenuItem("Status Karyawan", Icons.Default.PeopleAlt, Secondary)
                     ),
                     onItemClick = { label ->
@@ -335,8 +338,15 @@ private fun SectionOmset(
 private fun SectionMenuGrid(
     title: String,
     items: List<MenuItem>,
+    userRole: String = "",
     onItemClick: (String) -> Unit
 ) {
+    // Filter items by role: show if allowedRoles is empty (all) or contains userRole
+    val filteredItems = if (userRole.isBlank()) items
+    else items.filter { it.allowedRoles.isEmpty() || userRole in it.allowedRoles }
+
+    if (filteredItems.isEmpty()) return
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = title,
@@ -348,9 +358,10 @@ private fun SectionMenuGrid(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            // Use Row with wrapping if more items than fit
         ) {
-            items.forEach { item ->
+            filteredItems.forEach { item ->
                 MenuCard(
                     modifier = Modifier.weight(1f),
                     item = item,

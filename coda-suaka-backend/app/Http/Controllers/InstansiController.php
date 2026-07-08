@@ -10,6 +10,7 @@ class InstansiController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(instansi::class, 'instansi');
     }
 
     /**

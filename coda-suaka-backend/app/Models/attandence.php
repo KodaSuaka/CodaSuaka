@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class attandence extends Model
@@ -23,6 +25,15 @@ class attandence extends Model
             'jam_checkin' => 'datetime:H:i:s',
             'jam_checkout' => 'datetime:H:i:s',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
+            $builder->whereHas('user', function (Builder $q) use ($user) {
+                $q->where('instansi_id', $user->instansi_id);
+            });
+        }));
     }
 
     public function user()

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class jadwal extends Model
@@ -20,6 +22,15 @@ class jadwal extends Model
         return [
             'tanggal' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
+            $builder->whereHas('outlet', function (Builder $q) use ($user) {
+                $q->where('instansi_id', $user->instansi_id);
+            });
+        }));
     }
 
     public function outlet()

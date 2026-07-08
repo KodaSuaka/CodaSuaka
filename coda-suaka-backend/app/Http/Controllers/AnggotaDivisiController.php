@@ -10,6 +10,7 @@ class AnggotaDivisiController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(AnggotaDivisi::class, 'anggotaDivisi');
     }
 
     /**

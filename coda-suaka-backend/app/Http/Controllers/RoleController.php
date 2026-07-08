@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 
 class RoleController extends Controller
@@ -14,12 +15,15 @@ class RoleController extends Controller
 
     public function index()
     {
+        Gate::authorize('manage-roles');
         $roles = role::orderBy('nama_role')->get();
         return response()->json(['status' => 'success', 'data' => $roles]);
     }
 
     public function store(Request $request)
     {
+        Gate::authorize('manage-roles');
+
         $validator = Validator::make($request->all(), [
             'nama_role' => 'required|string|max:50|unique:roles,nama_role',
         ]);
@@ -34,11 +38,14 @@ class RoleController extends Controller
 
     public function show(role $role)
     {
+        Gate::authorize('manage-roles');
         return response()->json(['status' => 'success', 'data' => $role->load('permissions')]);
     }
 
     public function update(Request $request, role $role)
     {
+        Gate::authorize('manage-roles');
+
         $validator = Validator::make($request->all(), [
             'nama_role' => 'required|string|max:50|unique:roles,nama_role,' . $role->id,
         ]);
@@ -53,6 +60,7 @@ class RoleController extends Controller
 
     public function destroy(role $role)
     {
+        Gate::authorize('manage-roles');
         $role->delete();
         return response()->json(['status' => 'success', 'message' => 'Role berhasil dihapus']);
     }

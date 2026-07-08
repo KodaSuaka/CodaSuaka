@@ -13,7 +13,7 @@ class OutletPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return in_array($user->role?->nama_role, ['Owner', 'Super Admin', 'Admin', 'Karyawan']);
     }
 
     /**
@@ -21,7 +21,7 @@ class OutletPolicy
      */
     public function view(User $user, outlet $outlet): bool
     {
-        return false;
+        return $user->instansi_id === $outlet->instansi_id;
     }
 
     /**
@@ -29,7 +29,7 @@ class OutletPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
     }
 
     /**
@@ -37,7 +37,10 @@ class OutletPolicy
      */
     public function update(User $user, outlet $outlet): bool
     {
-        return false;
+        if ($user->instansi_id !== $outlet->instansi_id) {
+            return false;
+        }
+        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
     }
 
     /**
@@ -45,7 +48,10 @@ class OutletPolicy
      */
     public function delete(User $user, outlet $outlet): bool
     {
-        return false;
+        if ($user->instansi_id !== $outlet->instansi_id) {
+            return false;
+        }
+        return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
     }
 
     /**

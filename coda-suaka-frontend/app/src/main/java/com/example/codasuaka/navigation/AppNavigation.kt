@@ -29,6 +29,7 @@ import com.example.codasuaka.ui.screen.dashboard.DashboardScreen
 import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanScreen
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanViewModel
+import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganScreen
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -51,6 +52,9 @@ object Routes {
     const val DIVISI = "divisi"
     const val TAMBAH_KARYAWAN = "tambah_karyawan"
     const val PENGAJUAN = "pengajuan"
+    const val LOG_ABSENSI = "log_absensi"
+    const val LAPORAN_KEUANGAN = "laporan_keuangan"
+    const val STATUS_KARYAWAN = "status_karyawan"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -255,6 +259,29 @@ fun AppNavigation(navController: NavHostController) {
             PengajuanScreen(
                 onBack = { navController.popBackStack() },
                 viewModel = pengajuanViewModel
+            )
+        }
+
+        // ── Log Absensi (redirect ke Riwayat Kehadiran) ──
+        composable(Routes.LOG_ABSENSI) {
+            val riwayatKehadiranViewModel: RiwayatKehadiranViewModel = koinViewModel()
+            RiwayatKehadiranScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = riwayatKehadiranViewModel
+            )
+        }
+
+        // ── Laporan Keuangan (placeholder) ──
+        composable(Routes.LAPORAN_KEUANGAN) {
+            LaporanKeuanganScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ── Status Karyawan (redirect ke Kelola Karyawan) ──
+        composable(Routes.STATUS_KARYAWAN) {
+            val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
+            KelolaKaryawanScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = kelolaKaryawanViewModel
             )
         }
     }

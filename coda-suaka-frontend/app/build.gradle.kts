@@ -21,8 +21,13 @@ android {
     }
 
     buildTypes {
-        release {
+        debug {
+            // Debug: no minification for faster builds
             isMinifyEnabled = false
+        }
+        release {
+            isMinifyEnabled = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -54,6 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.remote.creation.core)
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -71,10 +78,17 @@ dependencies {
     // DataStore Preferences untuk token persistence
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    // Security Crypto untuk encrypted storage
+    implementation(libs.androidx.security.crypto)
+
     // Koin - Dependency Injection
     implementation("io.insert-koin:koin-android:3.5.6")
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
 
     // OkHttp Logging Interceptor (untuk debug network)
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+
+    implementation("io.appium:java-client:9.3.0")
+
 }

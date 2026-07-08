@@ -99,7 +99,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/penugasans', PenugasanController::class);
 
     // ─── Paket ─────────────────────────────────────────────────
-    Route::apiResource('/pakets', PaketController::class);
+    // Regular users: read-only. Write only via Super Admin routes below.
+    Route::get('/pakets', [PaketController::class, 'index']);
+    Route::get('/pakets/{paket}', [PaketController::class, 'show']);
 
     // ─── Transaksi Paket ──────────────────────────────────────
     Route::get('/transaksi-pakets', [TransaksiPaketController::class, 'index']);

@@ -10,6 +10,7 @@ class TransaksiPaketController extends Controller
 {
     public function __construct()
     {
+        $this->authorizeResource(transaksi_paket::class, 'transaksi_paket');
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class penugasan extends Model
@@ -21,6 +23,15 @@ class penugasan extends Model
         return [
             'tenggat' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
+            $builder->whereHas('divisi.outlet', function (Builder $q) use ($user) {
+                $q->where('instansi_id', $user->instansi_id);
+            });
+        }));
     }
 
     public function penanggungJawab()
