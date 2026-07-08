@@ -67,7 +67,7 @@ class AttandenceController extends Controller
                 'tanggal' => $today,
                 'jam_checkin' => now()->toTimeString(),
                 'status' => 'hadir',
-                'lokasi_checkin' => $request->lokasi,
+                'lokasi_checkin' => $request->lokasi ?? null,
             ]);
         } else {
             $existing->update([

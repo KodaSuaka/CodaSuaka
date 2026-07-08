@@ -53,9 +53,19 @@ class TenantScope implements Scope
         }
 
         if ($this->callback !== null) {
-            call_user_func($this->callback, $builder, $user);
+            // Only apply callback if user has an instansi_id to avoid "parameter must not be null" errors
+            if ($user->instansi_id !== null) {
+                call_user_func($this->callback, $builder, $user);
+            } else {
+                // If user has no instansi, they shouldn't see any tenant-specific data
+                $builder->whereRaw('1 = 0');
+            }
         } elseif ($this->column !== null) {
-            $builder->where($this->column, $user->instansi_id);
+            if ($user->instansi_id !== null) {
+                $builder->where($this->column, $user->instansi_id);
+            } else {
+                $builder->whereRaw('1 = 0');
+            }
         }
     }
 }
