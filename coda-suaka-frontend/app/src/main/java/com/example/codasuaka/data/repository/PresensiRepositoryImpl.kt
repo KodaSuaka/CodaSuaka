@@ -25,7 +25,7 @@ class PresensiRepositoryImpl(
     }
 
     override suspend fun checkin(lokasi: String?): Result<PresensiDto> = runCatching {
-        val body = if (lokasi != null) mapOf("lokasi" to lokasi) else null
+        val body = if (lokasi != null) mapOf("lokasi" to lokasi) else emptyMap()
         val response = apiService.checkin(body)
         if (response.isSuccessful && response.body()?.status == "success") {
             response.body()?.data ?: throw Exception("Gagal checkin")
