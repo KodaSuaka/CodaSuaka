@@ -18,7 +18,9 @@ class OutletFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'nama_outlet' => fake()->company(),
+            'alamat_outlet' => fake()->address(),
+            'is_active' => true,
         ];
     }
 }

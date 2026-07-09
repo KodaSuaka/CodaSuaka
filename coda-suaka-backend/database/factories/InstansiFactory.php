@@ -18,7 +18,8 @@ class InstansiFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'nama_instansi' => fake()->company(),
+            'paket_id' => null,
         ];
     }
 }

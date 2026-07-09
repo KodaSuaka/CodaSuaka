@@ -33,8 +33,7 @@ class TransaksiKasTest extends TestCase
             ->create(['instansi_id' => $this->instansi->id]);
     }
 
-    /** @test */
-    public function user_dapat_melihat_daftar_transaksi_kas()
+    public function test_user_dapat_melihat_daftar_transaksi_kas()
     {
         // Arrange
         TransaksiKas::factory()
@@ -55,8 +54,7 @@ class TransaksiKasTest extends TestCase
             ]);
     }
 
-    /** @test */
-    public function user_dapat_membuat_entri_kas_baru()
+    public function test_user_dapat_membuat_entri_kas_baru()
     {
         // Arrange
         $payload = [
@@ -83,8 +81,7 @@ class TransaksiKasTest extends TestCase
             ]);
     }
 
-    /** @test */
-    public function validasi_gagal_saat_nominal_negatif()
+    public function test_validasi_gagal_saat_nominal_negatif()
     {
         // Arrange
         $payload = [
@@ -102,8 +99,7 @@ class TransaksiKasTest extends TestCase
         $response->assertStatus(422);
     }
 
-    /** @test */
-    public function user_tidak_bisa_melihat_transaksi_instansi_lain()
+    public function test_user_tidak_bisa_melihat_transaksi_instansi_lain()
     {
         // Arrange
         $instansiLain = instansi::factory()->create();

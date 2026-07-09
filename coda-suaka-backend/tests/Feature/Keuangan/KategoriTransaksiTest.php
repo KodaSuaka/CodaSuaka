@@ -30,8 +30,7 @@ class KategoriTransaksiTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function user_dapat_melihat_daftar_kategori_transaksi()
+    public function test_user_dapat_melihat_daftar_kategori_transaksi()
     {
         // Arrange
         $kategori = KategoriTransaksi::factory()
@@ -52,8 +51,7 @@ class KategoriTransaksiTest extends TestCase
             ]);
     }
 
-    /** @test */
-    public function user_dapat_membuat_kategori_transaksi_baru()
+    public function test_user_dapat_membuat_kategori_transaksi_baru()
     {
         // Arrange
         $payload = [
@@ -79,8 +77,7 @@ class KategoriTransaksiTest extends TestCase
             ]);
     }
 
-    /** @test */
-    public function user_tidak_bisa_melihat_kategori_instansi_lain()
+    public function test_user_tidak_bisa_melihat_kategori_instansi_lain()
     {
         // Arrange
         $instansiLain = instansi::factory()->create();
@@ -98,8 +95,7 @@ class KategoriTransaksiTest extends TestCase
         $this->assertCount(0, $data);
     }
 
-    /** @test */
-    public function validasi_gagal_saat_tipe_tidak_valid()
+    public function test_validasi_gagal_saat_tipe_tidak_valid()
     {
         // Arrange
         $payload = [
