@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('pengajuans', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('jenis', ['cuti', 'izin', 'sakit'])->default('izin');
+            $table->enum('jenis', ['cuti_tahunan', 'izin_sakit', 'mendadak'])->default('izin_sakit');
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->text('keterangan')->nullable();

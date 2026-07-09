@@ -42,7 +42,7 @@ class PengajuanController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'jenis' => 'required|in:cuti,izin,sakit',
+            'jenis' => 'required|in:cuti_tahunan,izin_sakit,mendadak',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'keterangan' => 'nullable|string',
@@ -52,8 +52,8 @@ class PengajuanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
-        // Jika cuti, cek sisa cuti
-        if ($request->jenis === 'cuti') {
+        // Jika cuti tahunan, cek sisa cuti
+        if ($request->jenis === 'cuti_tahunan') {
             $karyawan = $user->profilKaryawan;
             if ($karyawan && $karyawan->sisa_cuti <= 0) {
                 return response()->json(['status' => 'error', 'message' => 'Sisa cuti Anda habis'], 400);
@@ -113,7 +113,7 @@ class PengajuanController extends Controller
         }
 
         // Check remaining leave balance before approving cuti
-        if ($pengajuan->jenis === 'cuti') {
+        if ($pengajuan->jenis === 'cuti_tahunan') {
             $karyawan = $pengajuan->user->profilKaryawan;
             if (!$karyawan || $karyawan->sisa_cuti <= 0) {
                 return response()->json(['status' => 'error', 'message' => 'Sisa cuti karyawan habis, tidak dapat menyetujui'], 400);
@@ -127,7 +127,7 @@ class PengajuanController extends Controller
         ]);
 
         // Jika cuti, kurangi sisa cuti (hitung hari kerja, exclude weekend)
-        if ($pengajuan->jenis === 'cuti') {
+        if ($pengajuan->jenis === 'cuti_tahunan') {
             $karyawan = $pengajuan->user->profilKaryawan;
             if ($karyawan) {
                 // Ensure dates are Carbon instances

@@ -253,13 +253,14 @@ class LaporanKeuanganViewModel(
         metodePembayaran: String? = null,
         keterangan: String? = null
     ) {
-        _uiState.value = _uiState.value.copy(
-            formTipe = tipe ?: _uiState.value.formTipe,
-            formNominal = nominal ?: _uiState.value.formNominal,
-            formKategoriId = kategoriId ?: _uiState.value.formKategoriId,
-            formTanggal = tanggal ?: _uiState.value.formTanggal,
-            formMetodePembayaran = metodePembayaran ?: _uiState.value.formMetodePembayaran,
-            formKeterangan = keterangan ?: _uiState.value.formKeterangan
+        val current = _uiState.value
+        _uiState.value = current.copy(
+            formTipe = tipe ?: current.formTipe,
+            formNominal = nominal ?: current.formNominal,
+            formKategoriId = kategoriId ?: current.formKategoriId,
+            formTanggal = tanggal ?: current.formTanggal,
+            formMetodePembayaran = metodePembayaran ?: current.formMetodePembayaran,
+            formKeterangan = keterangan ?: current.formKeterangan
         )
     }
 
