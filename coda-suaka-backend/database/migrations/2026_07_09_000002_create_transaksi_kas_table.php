@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('transaksi_kas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('instansi_id')->constrained('instansis')->cascadeOnDelete();
+            $table->foreignUuid('instansi_id')->constrained('instansis')->cascadeOnDelete();
             $table->foreignId('outlet_id')->nullable()->constrained('outlets')->nullOnDelete();
             $table->foreignId('kategori_transaksi_id')->nullable()->constrained('kategori_transaksis')->nullOnDelete();
             $table->date('tanggal');

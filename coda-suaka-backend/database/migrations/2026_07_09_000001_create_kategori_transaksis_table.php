@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('kategori_transaksis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('instansi_id')->constrained('instansis')->cascadeOnDelete();
+            $table->foreignUuid('instansi_id')->constrained('instansis')->cascadeOnDelete();
             $table->string('nama_kategori', 150);
             $table->enum('tipe', ['masuk', 'keluar']);
             $table->enum('sifat', ['operasional', 'non_operasional']);
