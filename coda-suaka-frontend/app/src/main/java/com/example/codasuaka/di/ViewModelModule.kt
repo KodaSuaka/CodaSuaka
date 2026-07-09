@@ -80,4 +80,7 @@ val viewModelModule = module {
             chatRepository = get<ChatRepository>()
         )
     }
+
+    // Keuangan
+    viewModel { LaporanKeuanganViewModel(keuanganRepository = get()) }
 }

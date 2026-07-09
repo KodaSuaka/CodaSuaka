@@ -30,6 +30,7 @@ import com.example.codasuaka.ui.screen.dashboard.DashboardViewModel
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanScreen
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanViewModel
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganScreen
+import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -276,9 +277,13 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        // ── Laporan Keuangan (placeholder) ──
+        // ── Buku Kas (Laporan Keuangan) ──
         composable(Routes.LAPORAN_KEUANGAN) {
-            LaporanKeuanganScreen(onBack = { navController.popBackStack() })
+            val laporanKeuanganViewModel: LaporanKeuanganViewModel = koinViewModel()
+            LaporanKeuanganScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = laporanKeuanganViewModel
+            )
         }
 
         // ── Status Karyawan (redirect ke Kelola Karyawan) ──

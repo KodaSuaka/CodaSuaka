@@ -21,6 +21,7 @@ class RolePermissionSeeder extends Seeder
                 'manage:jadwal',
                 'manage:penugasan',
                 'view:keuangan',
+                'manage:keuangan',
                 'manage:pengajuan',
                 'view:presensi',
                 'manage:role_permissions',
@@ -28,6 +29,7 @@ class RolePermissionSeeder extends Seeder
             ],
             'Keuangan' => [
                 'view:keuangan',
+                'manage:keuangan',
                 'view:presensi',
             ],
             'Manajemen' => [

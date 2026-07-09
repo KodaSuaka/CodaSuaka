@@ -239,4 +239,80 @@ interface ApiService {
     suspend fun markChatRead(
         @Path("userId") userId: Int
     ): Response<ApiStatusResponse>
+
+    // ─── Keuangan: Kategori Transaksi ──────────────────────────
+
+    @GET("api/kategori-transaksis")
+    suspend fun getKategoriTransaksis(
+        @Query("tipe") tipe: String? = null,
+        @Query("active_only") activeOnly: Boolean? = null
+    ): Response<KategoriTransaksiListResponse>
+
+    @GET("api/kategori-transaksis/{id}")
+    suspend fun getKategoriTransaksi(
+        @Path("id") id: Int
+    ): Response<KategoriTransaksiSingleResponse>
+
+    @POST("api/kategori-transaksis")
+    suspend fun createKategoriTransaksi(
+        @Body request: CreateKategoriTransaksiRequest
+    ): Response<KategoriTransaksiSingleResponse>
+
+    @PUT("api/kategori-transaksis/{id}")
+    suspend fun updateKategoriTransaksi(
+        @Path("id") id: Int,
+        @Body request: Map<String, @JvmSuppressWildcards Any>
+    ): Response<KategoriTransaksiSingleResponse>
+
+    @DELETE("api/kategori-transaksis/{id}")
+    suspend fun deleteKategoriTransaksi(
+        @Path("id") id: Int
+    ): Response<ApiStatusResponse>
+
+    // ─── Keuangan: Transaksi Kas ──────────────────────────────
+
+    @GET("api/transaksi-kas")
+    suspend fun getTransaksiKasList(
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("tipe") tipe: String? = null,
+        @Query("kategori_transaksi_id") kategoriTransaksiId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<TransaksiKasListResponse>
+
+    @GET("api/transaksi-kas/saldo")
+    suspend fun getSaldo(
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null
+    ): Response<SaldoResponse>
+
+    @GET("api/transaksi-kas/laporan/laba-rugi")
+    suspend fun getLabaRugi(
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null
+    ): Response<LabaRugiResponse>
+
+    @GET("api/transaksi-kas/{id}")
+    suspend fun getTransaksiKas(
+        @Path("id") id: Int
+    ): Response<TransaksiKasSingleResponse>
+
+    @POST("api/transaksi-kas")
+    suspend fun createTransaksiKas(
+        @Body request: CreateTransaksiKasRequest
+    ): Response<TransaksiKasSingleResponse>
+
+    @PUT("api/transaksi-kas/{id}")
+    suspend fun updateTransaksiKas(
+        @Path("id") id: Int,
+        @Body request: UpdateTransaksiKasRequest
+    ): Response<TransaksiKasSingleResponse>
+
+    @DELETE("api/transaksi-kas/{id}")
+    suspend fun deleteTransaksiKas(
+        @Path("id") id: Int
+    ): Response<ApiStatusResponse>
 }

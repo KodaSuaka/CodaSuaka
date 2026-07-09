@@ -17,6 +17,7 @@ class PermissionService
         'manage:jadwal',
         'manage:penugasan',
         'view:keuangan',
+        'manage:keuangan',
         'manage:pengajuan',
         'view:presensi',
         'manage:paket',
@@ -39,6 +40,7 @@ class PermissionService
             'manage:jadwal',
             'manage:penugasan',
             'view:keuangan',
+            'manage:keuangan',
             'manage:pengajuan',
             'view:presensi',
             'manage:role_permissions',
@@ -46,6 +48,7 @@ class PermissionService
         ],
         'Keuangan' => [
             'view:keuangan',
+            'manage:keuangan',
             'view:presensi',
         ],
         'Manajemen' => [

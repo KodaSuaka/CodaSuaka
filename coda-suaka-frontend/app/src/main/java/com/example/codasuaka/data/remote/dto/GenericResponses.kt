@@ -441,3 +441,123 @@ data class InstansiData(
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
 )
+
+// ─── Keuangan: Kategori Transaksi DTOs ──────────────────────────
+
+data class KategoriTransaksiListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<KategoriTransaksiDto>
+)
+
+data class KategoriTransaksiSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: KategoriTransaksiDto?
+)
+
+data class KategoriTransaksiDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("instansi_id") val instansiId: Int,
+    @SerializedName("nama_kategori") val namaKategori: String,
+    @SerializedName("tipe") val tipe: String, // masuk / keluar
+    @SerializedName("sifat") val sifat: String, // operasional / non_operasional
+    @SerializedName("termasuk_hpp") val termasukHpp: Boolean,
+    @SerializedName("is_default") val isDefault: Boolean,
+    @SerializedName("is_active") val isActive: Boolean,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class CreateKategoriTransaksiRequest(
+    @SerializedName("nama_kategori") val namaKategori: String,
+    @SerializedName("tipe") val tipe: String,
+    @SerializedName("sifat") val sifat: String,
+    @SerializedName("termasuk_hpp") val termasukHpp: Boolean? = null
+)
+
+// ─── Keuangan: Transaksi Kas DTOs ──────────────────────────────
+
+data class TransaksiKasListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<TransaksiKasDto>,
+    @SerializedName("meta") val meta: PaginationMeta?
+)
+
+data class TransaksiKasSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: TransaksiKasDto?
+)
+
+data class TransaksiKasDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("instansi_id") val instansiId: Int,
+    @SerializedName("outlet_id") val outletId: Int?,
+    @SerializedName("kategori_transaksi_id") val kategoriTransaksiId: Int?,
+    @SerializedName("tanggal") val tanggal: String,
+    @SerializedName("tipe") val tipe: String, // masuk / keluar
+    @SerializedName("nominal") val nominal: Double,
+    @SerializedName("metode_pembayaran") val metodePembayaran: String?,
+    @SerializedName("keterangan") val keterangan: String?,
+    @SerializedName("lampiran_url") val lampiranUrl: String?,
+    @SerializedName("dokumen_transaksi_id") val dokumenTransaksiId: Int?,
+    @SerializedName("created_by") val createdBy: Int?,
+    @SerializedName("kategori_transaksi") val kategoriTransaksi: KategoriTransaksiDto?,
+    @SerializedName("outlet") val outlet: OutletDto?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class CreateTransaksiKasRequest(
+    @SerializedName("tanggal") val tanggal: String,
+    @SerializedName("tipe") val tipe: String,
+    @SerializedName("nominal") val nominal: Double,
+    @SerializedName("kategori_transaksi_id") val kategoriTransaksiId: Int? = null,
+    @SerializedName("outlet_id") val outletId: Int? = null,
+    @SerializedName("metode_pembayaran") val metodePembayaran: String? = null,
+    @SerializedName("keterangan") val keterangan: String? = null
+)
+
+data class UpdateTransaksiKasRequest(
+    @SerializedName("tanggal") val tanggal: String? = null,
+    @SerializedName("tipe") val tipe: String? = null,
+    @SerializedName("nominal") val nominal: Double? = null,
+    @SerializedName("kategori_transaksi_id") val kategoriTransaksiId: Int? = null,
+    @SerializedName("outlet_id") val outletId: Int? = null,
+    @SerializedName("metode_pembayaran") val metodePembayaran: String? = null,
+    @SerializedName("keterangan") val keterangan: String? = null
+)
+
+data class SaldoResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: SaldoData
+)
+
+data class SaldoData(
+    @SerializedName("total_masuk") val totalMasuk: Double,
+    @SerializedName("total_keluar") val totalKeluar: Double,
+    @SerializedName("saldo_akhir") val saldoAkhir: Double,
+    @SerializedName("start_date") val startDate: String?,
+    @SerializedName("end_date") val endDate: String?
+)
+
+data class LabaRugiResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: LabaRugiData
+)
+
+data class LabaRugiData(
+    @SerializedName("pendapatan") val pendapatan: Double,
+    @SerializedName("hpp") val hpp: Double,
+    @SerializedName("beban_operasional") val bebanOperasional: Double,
+    @SerializedName("laba_rugi") val labaRugi: Double,
+    @SerializedName("start_date") val startDate: String?,
+    @SerializedName("end_date") val endDate: String?
+)
+
+data class PaginationMeta(
+    @SerializedName("current_page") val currentPage: Int,
+    @SerializedName("last_page") val lastPage: Int,
+    @SerializedName("per_page") val perPage: Int,
+    @SerializedName("total") val total: Int
+)

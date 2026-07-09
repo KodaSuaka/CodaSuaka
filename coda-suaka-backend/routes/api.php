@@ -19,6 +19,8 @@ use App\Http\Controllers\TransaksiPaketController;
 use App\Http\Controllers\InstansiController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\KategoriTransaksiController;
+use App\Http\Controllers\TransaksiKasController;
 
 /*
 |--------------------------------------------------------------------------
@@ -108,6 +110,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/transaksi-pakets', [TransaksiPaketController::class, 'store']);
     Route::get('/transaksi-pakets/{transaksi_paket}', [TransaksiPaketController::class, 'show']);
     Route::put('/transaksi-pakets/{transaksi_paket}', [TransaksiPaketController::class, 'update']);
+
+    // ─── Keuangan: Kategori Transaksi ─────────────────────────
+    Route::apiResource('/kategori-transaksis', KategoriTransaksiController::class);
+
+    // ─── Keuangan: Buku Kas (Transaksi Kas) ───────────────────
+    Route::prefix('transaksi-kas')->group(function () {
+        Route::get('/', [TransaksiKasController::class, 'index']);
+        Route::post('/', [TransaksiKasController::class, 'store']);
+        Route::get('/saldo', [TransaksiKasController::class, 'saldo']);
+        Route::get('/laporan/laba-rugi', [TransaksiKasController::class, 'labaRugi']);
+        Route::get('/{transaksi_kas}', [TransaksiKasController::class, 'show']);
+        Route::put('/{transaksi_kas}', [TransaksiKasController::class, 'update']);
+        Route::delete('/{transaksi_kas}', [TransaksiKasController::class, 'destroy']);
+    });
 
     // ─── Chat / Kontak ────────────────────────────────────────
     Route::prefix('chat')->group(function () {

@@ -119,21 +119,31 @@ class DashboardController extends Controller
 
     /**
      * GET /api/dashboard/omset
-     * Omset (untuk kepentingan dashboard - placeholder)
+     * Omset — dihitung dari total transaksi kas masuk (operasional).
      */
     public function omset(Request $request)
     {
+        $user = $request->user();
         $startDate = $request->get('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->get('end_date', now()->toDateString());
 
-        // Placeholder - nanti bisa diintegrasikan dengan modul transaksi
+        // Total pemasukan operasional = omset
+        $totalOmset = \App\Models\TransaksiKas::where('instansi_id', $user->instansi_id)
+            ->where('tipe', 'masuk')
+            ->whereDate('tanggal', '>=', $startDate)
+            ->whereDate('tanggal', '<=', $endDate)
+            ->whereHas('kategoriTransaksi', function ($q) {
+                $q->where('sifat', 'operasional');
+            })
+            ->sum('nominal');
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'total_omset' => 0,
-                'message' => 'Fitur omset akan diintegrasikan dengan modul transaksi'
+                'total_omset' => (float) $totalOmset,
+                'message' => null,
             ]
         ]);
     }

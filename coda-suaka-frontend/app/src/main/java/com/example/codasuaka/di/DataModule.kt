@@ -97,4 +97,9 @@ val dataModule = module {
     single<PenugasanRepository> {
         PenugasanRepositoryImpl(apiService = get())
     }
+
+    // Keuangan
+    single<KeuanganRepository> {
+        KeuanganRepositoryImpl(apiService = get())
+    }
 }

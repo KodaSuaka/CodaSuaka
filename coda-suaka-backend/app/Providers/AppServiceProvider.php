@@ -15,6 +15,8 @@ use App\Models\attandence;
 use App\Models\transaksi_paket;
 use App\Models\instansi;
 use App\Models\paket;
+use App\Models\KategoriTransaksi;
+use App\Models\TransaksiKas;
 use App\Policies\OutletPolicy;
 use App\Policies\KaryawanPolicy;
 use App\Policies\DivisiPolicy;
@@ -26,6 +28,8 @@ use App\Policies\TransaksiPaketPolicy;
 use App\Policies\InstansiPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\PaketPolicy;
+use App\Policies\KategoriTransaksiPolicy;
+use App\Policies\TransaksiKasPolicy;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -57,6 +61,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(instansi::class, InstansiPolicy::class);
         Gate::policy(paket::class, PaketPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(KategoriTransaksi::class, KategoriTransaksiPolicy::class);
+        Gate::policy(TransaksiKas::class, TransaksiKasPolicy::class);
 
         // ─── Gate definitions ─────────────────────────────────────
 

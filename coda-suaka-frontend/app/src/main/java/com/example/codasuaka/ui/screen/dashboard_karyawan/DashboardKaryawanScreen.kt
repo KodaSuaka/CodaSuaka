@@ -172,6 +172,58 @@ fun DashboardKaryawanScreen(
                 onSisaCutiClick = { onNavigateTo("pengajuan") }
             )
 
+            // ══════════════════════════════════════════════════
+            // 6. Logout
+            // ══════════════════════════════════════════════════
+            var showLogoutConfirm by remember { mutableStateOf(false) }
+
+            OutlinedButton(
+                onClick = { showLogoutConfirm = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Coral),
+                border = BorderStroke(1.dp, Coral.copy(alpha = 0.5f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Logout",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+            }
+
+            // ── Konfirmasi Logout ──
+            if (showLogoutConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutConfirm = false },
+                    title = { Text("Logout") },
+                    text = { Text("Yakin ingin keluar dari akun ini?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showLogoutConfirm = false
+                                onLogout()
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Coral)
+                        ) {
+                            Text("Logout")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutConfirm = false }) {
+                            Text("Batal")
+                        }
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
