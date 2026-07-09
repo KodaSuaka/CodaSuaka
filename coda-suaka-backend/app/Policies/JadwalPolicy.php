@@ -10,7 +10,7 @@ class JadwalPolicy
 {
     public function viewAny(User $user): bool
     {
-        return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
+        return $user->instansi_id !== null;
     }
 
     public function view(User $user, jadwal $jadwal): bool

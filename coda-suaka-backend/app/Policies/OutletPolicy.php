@@ -10,7 +10,7 @@ class OutletPolicy
 {
     public function viewAny(User $user): bool
     {
-        return app(PermissionService::class)->userHasPermission($user, 'manage:outlets');
+        return $user->instansi_id !== null;
     }
 
     public function view(User $user, outlet $outlet): bool

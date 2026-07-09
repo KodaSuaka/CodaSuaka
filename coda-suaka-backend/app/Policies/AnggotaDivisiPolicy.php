@@ -10,7 +10,7 @@ class AnggotaDivisiPolicy
 {
     public function viewAny(User $user): bool
     {
-        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
+        return $user->instansi_id !== null;
     }
 
     public function view(User $user, AnggotaDivisi $anggotaDivisi): bool

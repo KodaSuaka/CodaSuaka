@@ -28,7 +28,6 @@ class RolePermissionSeeder extends Seeder
             ],
             'Keuangan' => [
                 'view:keuangan',
-                'manage:penugasan',
                 'view:presensi',
             ],
             'Manajemen' => [

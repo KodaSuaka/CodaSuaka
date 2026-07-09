@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\role;
 use App\Models\outlet;
 use App\Models\karyawan;
+use App\Models\pengajuan;
 use App\Models\Divisi;
 use App\Models\jadwal;
 use App\Models\penugasan;

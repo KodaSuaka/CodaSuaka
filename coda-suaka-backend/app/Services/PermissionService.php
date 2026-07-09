@@ -46,7 +46,6 @@ class PermissionService
         ],
         'Keuangan' => [
             'view:keuangan',
-            'manage:penugasan',
             'view:presensi',
         ],
         'Manajemen' => [

@@ -10,7 +10,7 @@ class PenugasanPolicy
 {
     public function viewAny(User $user): bool
     {
-        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
+        return $user->instansi_id !== null;
     }
 
     public function view(User $user, penugasan $penugasan): bool
