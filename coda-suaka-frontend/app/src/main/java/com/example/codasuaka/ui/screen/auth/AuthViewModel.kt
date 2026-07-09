@@ -51,7 +51,7 @@ class AuthViewModel(
      *    - Sukses → Authenticated
      *    - Gagal (401) → Unauthenticated
      */
-    private fun checkAuthStatus() {
+    internal fun checkAuthStatus() {
         viewModelScope.launch {
             try {
                 // Init cache dulu agar AuthInterceptor bisa baca token
