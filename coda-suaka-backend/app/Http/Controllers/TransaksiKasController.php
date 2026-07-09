@@ -7,6 +7,7 @@ use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class TransaksiKasController extends Controller
 {
@@ -70,8 +71,14 @@ class TransaksiKasController extends Controller
             'tanggal' => 'required|date',
             'tipe' => 'required|in:masuk,keluar',
             'nominal' => 'required|numeric|min:0',
-            'kategori_transaksi_id' => 'nullable|exists:kategori_transaksis,id',
-            'outlet_id' => 'nullable|exists:outlets,id',
+            'kategori_transaksi_id' => [
+                'nullable',
+                Rule::exists('kategori_transaksis', 'id')->where('instansi_id', $user->instansi_id),
+            ],
+            'outlet_id' => [
+                'nullable',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
             'metode_pembayaran' => 'nullable|string|max:100',
             'keterangan' => 'nullable|string',
             'lampiran_url' => 'nullable|string|max:255',
@@ -113,12 +120,20 @@ class TransaksiKasController extends Controller
      */
     public function update(Request $request, TransaksiKas $transaksi_kas)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'tanggal' => 'sometimes|required|date',
             'tipe' => 'sometimes|required|in:masuk,keluar',
             'nominal' => 'sometimes|required|numeric|min:0',
-            'kategori_transaksi_id' => 'nullable|exists:kategori_transaksis,id',
-            'outlet_id' => 'nullable|exists:outlets,id',
+            'kategori_transaksi_id' => [
+                'nullable',
+                Rule::exists('kategori_transaksis', 'id')->where('instansi_id', $user->instansi_id),
+            ],
+            'outlet_id' => [
+                'nullable',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
             'metode_pembayaran' => 'nullable|string|max:100',
             'keterangan' => 'nullable|string',
             'lampiran_url' => 'nullable|string|max:255',

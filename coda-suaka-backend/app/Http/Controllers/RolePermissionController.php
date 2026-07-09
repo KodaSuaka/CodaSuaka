@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\role_permission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 
@@ -79,20 +80,33 @@ class RolePermissionController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
-        role_permission::where('role_id', $request->role_id)->delete();
+        try {
+            DB::beginTransaction();
 
-        $newPermissions = [];
-        foreach ($request->permissions as $perm) {
-            $newPermissions[] = role_permission::create([
-                'role_id' => $request->role_id,
-                'permission' => $perm,
+            role_permission::where('role_id', $request->role_id)->delete();
+
+            $newPermissions = [];
+            foreach ($request->permissions as $perm) {
+                $newPermissions[] = role_permission::create([
+                    'role_id' => $request->role_id,
+                    'permission' => $perm,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Permissions berhasil disinkronisasi',
+                'data' => $newPermissions
             ]);
-        }
+        } catch (\Throwable $e) {
+            DB::rollBack();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Permissions berhasil disinkronisasi',
-            'data' => $newPermissions
-        ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menyinkronisasi permissions: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

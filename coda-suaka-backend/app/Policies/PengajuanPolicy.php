@@ -15,8 +15,24 @@ class PengajuanPolicy
 
     public function view(User $user, pengajuan $pengajuan): bool
     {
-        // User can view their own pengajuan or if they are the approver
-        return $user->id === $pengajuan->user_id || $user->id === $pengajuan->disetujui_oleh;
+        // User can view their own pengajuan
+        if ($user->id === $pengajuan->user_id) {
+            return true;
+        }
+
+        // User can view if they are the approver
+        if ($user->id === $pengajuan->disetujui_oleh) {
+            return true;
+        }
+
+        // User with manage:pengajuan permission in the same tenant can view any pengajuan
+        // (needed for managers to review pending requests before approve/reject)
+        if (app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
+            // Must be same tenant
+            return $user->instansi_id === $pengajuan->user->instansi_id;
+        }
+
+        return false;
     }
 
     public function create(User $user): bool

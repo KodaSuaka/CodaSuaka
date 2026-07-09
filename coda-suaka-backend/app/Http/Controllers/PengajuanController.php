@@ -95,10 +95,8 @@ class PengajuanController extends Controller
     {
         $user = $request->user();
 
-        // Only Owner can approve
-        if ($user->role?->nama_role !== 'Owner') {
-            return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menyetujui pengajuan'], 403);
-        }
+        // Gunakan Policy untuk cek permission (manage:pengajuan)
+        $this->authorize('approve', $pengajuan);
 
         // Prevent self-approval
         if ($pengajuan->user_id === $user->id) {
@@ -161,10 +159,8 @@ class PengajuanController extends Controller
     {
         $user = $request->user();
 
-        // Only Owner can reject
-        if ($user->role?->nama_role !== 'Owner') {
-            return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menolak pengajuan'], 403);
-        }
+        // Gunakan Policy untuk cek permission (manage:pengajuan)
+        $this->authorize('reject', $pengajuan);
 
         // Prevent self-rejection
         if ($pengajuan->user_id === $user->id) {

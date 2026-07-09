@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\penugasan;
 use App\Models\Divisi;
+use App\Models\karyawan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -51,11 +52,27 @@ class PenugasanController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'judul' => 'required|string|max:200',
             'deskripsi' => 'nullable|string',
-            'penanggung_jawab_id' => 'required|exists:karyawans,id',
-            'divisi_id' => 'nullable|exists:divisis,id',
+            'penanggung_jawab_id' => [
+                'required',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (!karyawan::where('id', $value)->exists()) {
+                        $fail('Karyawan tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
+            'divisi_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !Divisi::where('id', $value)->exists()) {
+                        $fail('Divisi tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
             'tenggat' => 'nullable|date',
             'status' => 'sometimes|in:belum,proses,selesai,batal',
         ]);
@@ -97,11 +114,28 @@ class PenugasanController extends Controller
      */
     public function update(Request $request, penugasan $penugasan)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'judul' => 'sometimes|required|string|max:200',
             'deskripsi' => 'nullable|string',
-            'penanggung_jawab_id' => 'sometimes|required|exists:karyawans,id',
-            'divisi_id' => 'nullable|exists:divisis,id',
+            'penanggung_jawab_id' => [
+                'sometimes',
+                'required',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (!karyawan::where('id', $value)->exists()) {
+                        $fail('Karyawan tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
+            'divisi_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !Divisi::where('id', $value)->exists()) {
+                        $fail('Divisi tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
             'tenggat' => 'nullable|date',
             'status' => 'sometimes|in:belum,proses,selesai,batal',
         ]);

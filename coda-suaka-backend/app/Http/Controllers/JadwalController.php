@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\jadwal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class JadwalController extends Controller
 {
@@ -42,12 +43,17 @@ class JadwalController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'nama_event' => 'required|string|max:200',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'required|date',
             'kategori' => 'required|in:meeting,training,event,libur,lainnya',
-            'outlet_id' => 'nullable|exists:outlets,id',
+            'outlet_id' => [
+                'nullable',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
         ]);
 
         if ($validator->fails()) {
@@ -86,12 +92,17 @@ class JadwalController extends Controller
      */
     public function update(Request $request, jadwal $jadwal)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'nama_event' => 'sometimes|required|string|max:200',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'sometimes|required|date',
             'kategori' => 'sometimes|required|in:meeting,training,event,libur,lainnya',
-            'outlet_id' => 'nullable|exists:outlets,id',
+            'outlet_id' => [
+                'nullable',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
         ]);
 
         if ($validator->fails()) {
