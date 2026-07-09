@@ -5,7 +5,7 @@ namespace Tests\Feature\Keuangan;
 use App\Models\User;
 use App\Models\instansi;
 use App\Models\KategoriTransaksi;
-use App\Models\Role;
+use App\Models\role;
 use App\Models\TransaksiKas;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -23,7 +23,7 @@ class TransaksiKasTest extends TestCase
         parent::setUp();
 
         $this->instansi = instansi::factory()->create();
-        $role = Role::factory()->create(['name' => 'Owner']);
+        $role = role::factory()->create(['nama_role' => 'Owner']);
         $this->user = User::factory()->create([
             'instansi_id' => $this->instansi->id,
             'role_id' => $role->id,
