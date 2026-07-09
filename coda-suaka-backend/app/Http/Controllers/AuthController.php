@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\instansi;
 use App\Models\role;
 use App\Models\karyawan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
@@ -15,10 +16,6 @@ use App\Services\PermissionService;
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request){
-        $instansi = instansi::create([
-            'nama_instansi'=>$request->nama_instansi,
-            'paket_id'=>null
-        ]);
         $RoleOwner = role::where('nama_role','Owner')->first();
 
         if (!$RoleOwner) {
@@ -27,20 +24,31 @@ class AuthController extends Controller
                 'message'=>'Role belum tersedia'
             ],500);
         }
-        $user = User::create([
-            'name'=> $request->nama_pemilik,
-            'email'=> $request->email,
-            'password'=>Hash::make($request->password),
-            'role_id'=> $RoleOwner->id,
-            'instansi_id'=>$instansi->id,
-            'outlet_id'=> null,
-        ]);
-        $karyawan = karyawan::create([
-            'user_id'=> $user->id,
-            'nama_lengkap'=> $request->nama_pemilik,
-            'kontak'=> null,
-            'foto_profil'=> null,
-        ]);
+
+        $user = DB::transaction(function () use ($request, $RoleOwner) {
+            $instansi = instansi::create([
+                'nama_instansi'=>$request->nama_instansi,
+                'paket_id'=>null
+            ]);
+
+            $user = User::create([
+                'name'=> $request->nama_pemilik,
+                'email'=> $request->email,
+                'password'=>Hash::make($request->password),
+                'role_id'=> $RoleOwner->id,
+                'instansi_id'=>$instansi->id,
+                'outlet_id'=> null,
+            ]);
+
+            karyawan::create([
+                'user_id'=> $user->id,
+                'nama_lengkap'=> $request->nama_pemilik,
+                'kontak'=> null,
+                'foto_profil'=> null,
+            ]);
+
+            return $user;
+        });
 
         $permissions = app(PermissionService::class)->getUserPermissions($user);
 

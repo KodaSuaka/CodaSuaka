@@ -42,6 +42,7 @@ class PermissionService
             'manage:pengajuan',
             'view:presensi',
             'manage:role_permissions',
+            'manage:paket',
         ],
         'Keuangan' => [
             'view:keuangan',
@@ -68,11 +69,6 @@ class PermissionService
     public function userHasPermission(User $user, string $permission): bool
     {
         $roleName = $user->role?->nama_role;
-
-        // Super Admin has all permissions
-        if ($roleName === 'Super Admin') {
-            return true;
-        }
 
         // Check from database role_permissions first
         $hasPermission = $user->role?->permissions()
@@ -111,11 +107,6 @@ class PermissionService
     public function getUserPermissions(User $user): Collection
     {
         $roleName = $user->role?->nama_role;
-
-        // Super Admin — all permissions
-        if ($roleName === 'Super Admin') {
-            return collect(self::PERMISSIONS);
-        }
 
         // Get from database role_permissions
         $dbPermissions = $user->role?->permissions->pluck('permission') ?? collect();

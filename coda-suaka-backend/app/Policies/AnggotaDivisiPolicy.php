@@ -10,7 +10,7 @@ class AnggotaDivisiPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin' || app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
+        return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
     public function view(User $user, AnggotaDivisi $anggotaDivisi): bool

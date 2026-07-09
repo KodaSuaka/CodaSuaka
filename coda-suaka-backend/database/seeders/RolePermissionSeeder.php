@@ -14,6 +14,18 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         $permissionMap = [
+            'Owner' => [
+                'manage:outlets',
+                'manage:karyawan',
+                'manage:divisi',
+                'manage:jadwal',
+                'manage:penugasan',
+                'view:keuangan',
+                'manage:pengajuan',
+                'view:presensi',
+                'manage:role_permissions',
+                'manage:paket',
+            ],
             'Keuangan' => [
                 'view:keuangan',
                 'manage:penugasan',

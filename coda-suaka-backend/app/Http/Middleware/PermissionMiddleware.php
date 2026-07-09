@@ -30,11 +30,6 @@ class PermissionMiddleware
         $permissionService = app(PermissionService::class);
         $requiredPermissions = explode('|', $permissions);
 
-        // Super Admin bypasses all permission checks
-        if ($user->role?->nama_role === 'Super Admin') {
-            return $next($request);
-        }
-
         foreach ($requiredPermissions as $permission) {
             if ($permissionService->userHasPermission($user, trim($permission))) {
                 return $next($request);

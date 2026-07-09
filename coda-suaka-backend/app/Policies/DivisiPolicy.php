@@ -10,7 +10,7 @@ class DivisiPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
+        return $user->instansi_id !== null;
     }
 
     public function view(User $user, Divisi $divisi): bool

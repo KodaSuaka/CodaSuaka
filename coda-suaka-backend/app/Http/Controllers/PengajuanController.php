@@ -89,14 +89,14 @@ class PengajuanController extends Controller
 
     /**
      * PUT /api/pengajuans/{pengajuan}/approve
-     * Setujui pengajuan (hanya Owner / Super Admin yang bisa)
+     * Setujui pengajuan (hanya Owner yang bisa)
      */
     public function approve(Request $request, pengajuan $pengajuan)
     {
         $user = $request->user();
 
-        // Only Owner or Super Admin can approve
-        if (!in_array($user->role?->nama_role, ['Owner', 'Super Admin'])) {
+        // Only Owner can approve
+        if ($user->role?->nama_role !== 'Owner') {
             return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menyetujui pengajuan'], 403);
         }
 
@@ -114,6 +114,14 @@ class PengajuanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Pengajuan sudah diproses'], 400);
         }
 
+        // Check remaining leave balance before approving cuti
+        if ($pengajuan->jenis === 'cuti') {
+            $karyawan = $pengajuan->user->profilKaryawan;
+            if (!$karyawan || $karyawan->sisa_cuti <= 0) {
+                return response()->json(['status' => 'error', 'message' => 'Sisa cuti karyawan habis, tidak dapat menyetujui'], 400);
+            }
+        }
+
         $pengajuan->update([
             'status' => 'disetujui',
             'disetujui_oleh' => $user->id,
@@ -124,9 +132,16 @@ class PengajuanController extends Controller
         if ($pengajuan->jenis === 'cuti') {
             $karyawan = $pengajuan->user->profilKaryawan;
             if ($karyawan) {
-                $hariCuti = $pengajuan->tanggal_mulai->diffInDaysFiltered(function ($date) {
+                // Ensure dates are Carbon instances
+                $mulai = \Carbon\Carbon::parse($pengajuan->tanggal_mulai);
+                $selesai = \Carbon\Carbon::parse($pengajuan->tanggal_selesai);
+
+                $hariCuti = $mulai->diffInDaysFiltered(function ($date) {
                     return !$date->isSaturday() && !$date->isSunday();
-                }, $pengajuan->tanggal_selesai) + 1;
+                }, $selesai) + 1;
+
+                // Cap decrement to prevent negative balance
+                $hariCuti = min($hariCuti, $karyawan->sisa_cuti);
                 $karyawan->decrement('sisa_cuti', $hariCuti);
             }
         }
@@ -140,14 +155,14 @@ class PengajuanController extends Controller
 
     /**
      * PUT /api/pengajuans/{pengajuan}/reject
-     * Tolak pengajuan (hanya Owner / Super Admin yang bisa)
+     * Tolak pengajuan (hanya Owner yang bisa)
      */
     public function reject(Request $request, pengajuan $pengajuan)
     {
         $user = $request->user();
 
-        // Only Owner or Super Admin can reject
-        if (!in_array($user->role?->nama_role, ['Owner', 'Super Admin'])) {
+        // Only Owner can reject
+        if ($user->role?->nama_role !== 'Owner') {
             return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menolak pengajuan'], 403);
         }
 

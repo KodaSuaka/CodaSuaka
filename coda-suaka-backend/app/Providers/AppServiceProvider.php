@@ -59,31 +59,18 @@ class AppServiceProvider extends ServiceProvider
 
         // ─── Gate definitions ─────────────────────────────────────
 
-        // Only Super Admin
-        Gate::define('super-admin', function (User $user) {
-            return $user->role?->nama_role === 'Super Admin';
-        });
-
         // Only Owner of an instansi
         Gate::define('owner', function (User $user) {
             return $user->role?->nama_role === 'Owner';
         });
 
-        // Owner or Super Admin
-        Gate::define('owner-or-super-admin', function (User $user) {
-            return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
-        });
-
-        // Manage roles & permissions — prevents privilege escalation
+        // Manage roles & permissions — uses granular permission check
         Gate::define('manage-roles', function (User $user) {
-            return in_array($user->role?->nama_role, ['Owner', 'Super Admin']);
+            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:role_permissions');
         });
 
         // Access a specific instansi's data (tenant-scoped)
         Gate::define('access-instansi', function (User $user, $instansiId) {
-            if ($user->role?->nama_role === 'Super Admin') {
-                return true;
-            }
             return $user->instansi_id === (int) $instansiId;
         });
     }

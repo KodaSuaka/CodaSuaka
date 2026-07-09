@@ -153,16 +153,22 @@ class AttandenceController extends Controller
         $bulan = $request->get('bulan', now()->month);
         $tahun = $request->get('tahun', now()->year);
 
-        // Karyawan dalam instansi
+        // Karyawan dalam instansi — eager load users to avoid N+1
         $userIds = User::where('instansi_id', $user->instansi_id)->pluck('id');
+
+        // Load all users with their karyawan profile in one query
+        $users = User::whereIn('id', $userIds)
+            ->with('profilKaryawan')
+            ->get()
+            ->keyBy('id');
 
         $rekap = attandence::whereIn('user_id', $userIds)
             ->whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
             ->get()
             ->groupBy('user_id')
-            ->map(function ($items, $userId) {
-                $user = User::find($userId);
+            ->map(function ($items, $userId) use ($users) {
+                $user = $users->get($userId);
                 return [
                     'user_id' => $userId,
                     'nama_lengkap' => $user?->profilKaryawan?->nama_lengkap ?? $user?->name,

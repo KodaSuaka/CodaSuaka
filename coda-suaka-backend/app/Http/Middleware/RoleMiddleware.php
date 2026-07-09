@@ -12,9 +12,9 @@ class RoleMiddleware
      * Ensures the authenticated user has one of the specified roles.
      *
      * Usage:
-     *   Route::middleware('role:super-admin')->group(...)
-     *   Route::middleware('role:owner')->group(...)
-     *   Route::middleware('role:super-admin,owner')->group(...)
+     *   Route::middleware('role:Super Admin')->group(...)
+     *   Route::middleware('role:Owner')->group(...)
+     *   Route::middleware('role:Super Admin,Owner')->group(...)
      */
     public function handle(Request $request, Closure $next, string ...$roles)
     {

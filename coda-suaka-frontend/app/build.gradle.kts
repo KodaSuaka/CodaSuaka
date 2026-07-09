@@ -89,6 +89,4 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
 
-    implementation("io.appium:java-client:9.3.0")
-
 }

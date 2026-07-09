@@ -10,15 +10,11 @@ class PengajuanPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin' || $user->instansi_id !== null;
+        return $user->instansi_id !== null;
     }
 
     public function view(User $user, pengajuan $pengajuan): bool
     {
-        // Super Admin can view all
-        if ($user->role?->nama_role === 'Super Admin') {
-            return true;
-        }
         // User can view their own pengajuan or if they are the approver
         return $user->id === $pengajuan->user_id || $user->id === $pengajuan->disetujui_oleh;
     }

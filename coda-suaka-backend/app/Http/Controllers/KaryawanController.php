@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\karyawan;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -85,33 +86,37 @@ class KaryawanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
-        // Buat user account
-        $newUser = User::create([
-            'name' => $request->nama_lengkap,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role_id' => $request->role_id,
-            'instansi_id' => $instansiId,
-            'outlet_id' => $request->outlet_id,
-        ]);
+        $result = DB::transaction(function () use ($request, $instansiId) {
+            // Buat user account
+            $newUser = User::create([
+                'name' => $request->nama_lengkap,
+                'email' => $request->email,
+                'password' => bcrypt($request->password),
+                'role_id' => $request->role_id,
+                'instansi_id' => $instansiId,
+                'outlet_id' => $request->outlet_id,
+            ]);
 
-        // Buat profil karyawan
-        $karyawan = karyawan::create([
-            'user_id' => $newUser->id,
-            'nama_lengkap' => $request->nama_lengkap,
-            'kontak' => $request->kontak,
-            'alamat' => $request->alamat,
-            'foto_profil' => null,
-            'outlet_id' => $request->outlet_id,
-            'sisa_cuti' => $request->sisa_cuti ?? 0,
-        ]);
+            // Buat profil karyawan
+            $karyawan = karyawan::create([
+                'user_id' => $newUser->id,
+                'nama_lengkap' => $request->nama_lengkap,
+                'kontak' => $request->kontak,
+                'alamat' => $request->alamat,
+                'foto_profil' => null,
+                'outlet_id' => $request->outlet_id,
+                'sisa_cuti' => $request->sisa_cuti ?? 0,
+            ]);
 
-        $karyawan->load(['user.role', 'outlet']);
+            $karyawan->load(['user.role', 'outlet']);
+
+            return $karyawan;
+        });
 
         return response()->json([
             'status' => 'success',
             'message' => 'Karyawan berhasil ditambahkan',
-            'data' => $karyawan
+            'data' => $result
         ], 201);
     }
 
@@ -160,9 +165,12 @@ class KaryawanController extends Controller
      */
     public function destroy(karyawan $karyawan)
     {
-        // Hapus profil karyawan terlebih dahulu, baru user (karena cascade)
-        $karyawan->delete();
-        $karyawan->user()->delete();
+        DB::transaction(function () use ($karyawan) {
+            // Hapus profil karyawan terlebih dahulu, baru user (karena cascade)
+            $karyawan->delete();
+            $karyawan->user()->delete();
+        });
+
         return response()->json(['status' => 'success', 'message' => 'Karyawan berhasil dihapus']);
     }
 }

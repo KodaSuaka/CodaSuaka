@@ -10,7 +10,7 @@ class JadwalPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role?->nama_role === 'Super Admin' || app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
+        return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
     }
 
     public function view(User $user, jadwal $jadwal): bool

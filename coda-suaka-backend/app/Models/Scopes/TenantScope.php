@@ -47,17 +47,12 @@ class TenantScope implements Scope
 
         $user = Auth::user();
 
-        // Super Admin bypasses tenant scoping — they see all data
-        if ($user->role?->nama_role === 'Super Admin') {
-            return;
-        }
-
         if ($this->callback !== null) {
             // Only apply callback if user has an instansi_id to avoid "parameter must not be null" errors
             if ($user->instansi_id !== null) {
                 call_user_func($this->callback, $builder, $user);
             } else {
-                // If user has no instansi, they shouldn't see any tenant-specific data
+                // If user has no instansi (e.g. Super Admin), they shouldn't see any tenant-specific data
                 $builder->whereRaw('1 = 0');
             }
         } elseif ($this->column !== null) {
