@@ -533,6 +533,7 @@ private fun TransaksiCard(
 //  FORM DIALOG (Tambah / Edit)
 // ═══════════════════════════════════════════════════════════════
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormTransaksiDialog(
     isEditing: Boolean,

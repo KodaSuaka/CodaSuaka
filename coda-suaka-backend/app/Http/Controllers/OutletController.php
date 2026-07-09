@@ -14,17 +14,14 @@ class OutletController extends Controller
     }
 
     /**
-     * GET /api/outlets?instansi_id=xxx
-     * Ambil semua outlet milik instansi user (atau filter by instansi_id param)
+     * GET /api/outlets
+     * Ambil semua outlet milik instansi user (difilter otomatis oleh TenantScope).
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $instansiId = $request->get('instansi_id', $user->instansi_id);
-
-        // Owner/Admin boleh lihat semua outlet instansinya
-        $outlets = outlet::where('instansi_id', $instansiId)
-            ->orderBy('nama_outlet')
+        // TenantScope global sudah otomatis memfilter berdasarkan instansi_id user,
+        // sehingga tidak perlu WHERE instansi_id eksplisit di sini.
+        $outlets = outlet::orderBy('nama_outlet')
             ->get();
 
         return response()->json([
