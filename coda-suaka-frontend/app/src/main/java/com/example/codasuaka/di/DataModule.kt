@@ -2,23 +2,35 @@ package com.example.codasuaka.di
 
 import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.data.remote.ApiService
-import com.example.codasuaka.data.remote.dto.NullableIntAdapter
 import com.example.codasuaka.data.remote.interceptor.AuthInterceptor
 import com.example.codasuaka.data.repository.*
 import com.example.codasuaka.domain.repository.*
-import com.google.gson.GsonBuilder
+import com.google.gson.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
 
 /**
- * Module Koin untuk dependency data layer.
- * Bertanggung jawab menyediakan Retrofit, ApiService, Repository.
- * Menggunakan base URL VPS (codasuaka.my.id).
+ * Gson adapter untuk Int? yang toleran terhadap object JSON.
+ * Jika value JSON bukan number (misal object User dari relasi Laravel),
+ * return null alih-alih crash dengan "Expected an int but got BEGIN_OBJECT".
  */
+private class NullableIntAdapter : JsonDeserializer<Int?>, JsonSerializer<Int?> {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Int? {
+        return try {
+            if (json.isJsonPrimitive && json.asJsonPrimitive.isNumber) json.asInt else null
+        } catch (e: Exception) { null }
+    }
+
+    override fun serialize(src: Int?, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+        return if (src == null) JsonNull.INSTANCE else JsonPrimitive(src)
+    }
+}
+
 val dataModule = module {
     // OkHttp Client dengan interceptor
     single {
@@ -42,10 +54,13 @@ val dataModule = module {
     }
 
     // Gson instance dengan adapter toleran untuk Int?
+    // NullableIntAdapter mencegah crash "Expected an int but got BEGIN_OBJECT"
+    // saat field `created_by` dari Laravel masih terlanjur berupa object User.
     single {
         GsonBuilder()
             .registerTypeAdapter(Int::class.java, NullableIntAdapter())
             .registerTypeAdapter(Int::class.javaPrimitiveType, NullableIntAdapter())
+            .registerTypeAdapter(Integer::class.java, NullableIntAdapter())
             .create()
     }
 
