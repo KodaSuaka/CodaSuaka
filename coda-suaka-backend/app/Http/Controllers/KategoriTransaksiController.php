@@ -18,13 +18,14 @@ class KategoriTransaksiController extends Controller
 
     /**
      * GET /api/kategori-transaksis
-     * Daftar kategori transaksi milik instansi user.
+     * Daftar kategori transaksi: template global + custom milik instansi user.
      */
     public function index(Request $request)
     {
         $user = $request->user();
 
-        $query = KategoriTransaksi::where('instansi_id', $user->instansi_id)
+        $query = KategoriTransaksi::forInstansi($user->instansi_id)
+            ->orderBy('instansi_id', 'asc')  // global muncul duluan
             ->orderBy('tipe')
             ->orderBy('nama_kategori');
 
@@ -45,6 +46,7 @@ class KategoriTransaksiController extends Controller
 
     /**
      * POST /api/kategori-transaksis
+     * Membuat kategori custom untuk instansi user (bukan global).
      */
     public function store(Request $request)
     {
@@ -87,6 +89,11 @@ class KategoriTransaksiController extends Controller
      */
     public function update(Request $request, KategoriTransaksi $kategori_transaksi)
     {
+        // Cegah edit kategori global (hanya boleh oleh Super Admin nantinya)
+        if ($kategori_transaksi->isGlobal()) {
+            return $this->error('Kategori template global tidak dapat diedit', 422);
+        }
+
         $validator = Validator::make($request->all(), [
             'nama_kategori' => 'sometimes|required|string|max:150',
             'tipe' => 'sometimes|required|in:masuk,keluar',
@@ -111,9 +118,9 @@ class KategoriTransaksiController extends Controller
      */
     public function destroy(KategoriTransaksi $kategori_transaksi)
     {
-        // Cegah hapus kategori default
-        if ($kategori_transaksi->is_default) {
-            return $this->error('Kategori default tidak dapat dihapus', 422);
+        // Cegah hapus kategori global (template)
+        if ($kategori_transaksi->isGlobal()) {
+            return $this->error('Kategori template global tidak dapat dihapus', 422);
         }
 
         $kategori_transaksi->delete();

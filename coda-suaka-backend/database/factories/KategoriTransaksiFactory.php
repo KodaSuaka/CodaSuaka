@@ -29,6 +29,17 @@ class KategoriTransaksiFactory extends Factory
     }
 
     /**
+     * Set kategori sebagai template global (instansi_id = null).
+     */
+    public function global(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'instansi_id' => null,
+            'is_default' => true,
+        ]);
+    }
+
+    /**
      * Indicate that the kategori is for pemasukan.
      */
     public function pemasukan(): static

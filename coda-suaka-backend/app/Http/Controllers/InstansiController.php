@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\instansi;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class InstansiController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(instansi::class, 'instansi');
@@ -24,10 +27,10 @@ class InstansiController extends Controller
             ->first();
 
         if (!$instansi) {
-            return response()->json(['status' => 'error', 'message' => 'Instansi tidak ditemukan'], 404);
+            return $this->error('Instansi tidak ditemukan', 404);
         }
 
-        return response()->json(['status' => 'success', 'data' => $instansi]);
+        return $this->success($instansi);
     }
 
     /**
@@ -43,10 +46,10 @@ class InstansiController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+            return $this->error('Validasi gagal', 422, $validator->errors());
         }
 
         $instansi->update($request->only(['nama_instansi']));
-        return response()->json(['status' => 'success', 'message' => 'Instansi berhasil diperbarui', 'data' => $instansi]);
+        return $this->success($instansi, 'Instansi berhasil diperbarui');
     }
 }

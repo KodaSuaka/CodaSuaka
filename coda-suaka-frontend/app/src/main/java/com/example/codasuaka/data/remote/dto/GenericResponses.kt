@@ -39,7 +39,7 @@ data class OmsetResponse(
 data class OmsetData(
     @SerializedName("start_date") val startDate: String,
     @SerializedName("end_date") val endDate: String,
-    @SerializedName("total_omset") val totalOmset: Long,
+    @SerializedName("total_omset") val totalOmset: Double,
     @SerializedName("message") val message: String?
 )
 
@@ -92,7 +92,7 @@ data class OutletDto(
     @SerializedName("id") val id: Int,
     @SerializedName("nama_outlet") val namaOutlet: String,
     @SerializedName("alamat_outlet") val alamatOutlet: String?,
-    @SerializedName("instansi_id") val instansiId: Int?,
+    @SerializedName("instansi_id") val instansiId: String?,
     @SerializedName("is_active") val isActive: Boolean?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
@@ -420,7 +420,7 @@ data class UserInfoData(
     @SerializedName("name") val name: String?,
     @SerializedName("email") val email: String,
     @SerializedName("role_id") val roleId: Int,
-    @SerializedName("instansi_id") val instansiId: Int?,
+    @SerializedName("instansi_id") val instansiId: String?,
     @SerializedName("outlet_id") val outletId: Int?,
     @SerializedName("role") val role: RoleDto?,
     @SerializedName("profil_karyawan") val profilKaryawan: KaryawanDto?,
@@ -435,7 +435,7 @@ data class InstansiResponse(
 )
 
 data class InstansiData(
-    @SerializedName("id") val id: Int,
+    @SerializedName("id") val id: String,
     @SerializedName("nama_instansi") val namaInstansi: String,
     @SerializedName("alamat") val alamat: String?,
     @SerializedName("created_at") val createdAt: String?,
@@ -457,7 +457,7 @@ data class KategoriTransaksiSingleResponse(
 
 data class KategoriTransaksiDto(
     @SerializedName("id") val id: Int,
-    @SerializedName("instansi_id") val instansiId: Int,
+    @SerializedName("instansi_id") val instansiId: String?, // nullable karena global template punya null
     @SerializedName("nama_kategori") val namaKategori: String,
     @SerializedName("tipe") val tipe: String, // masuk / keluar
     @SerializedName("sifat") val sifat: String, // operasional / non_operasional
@@ -491,7 +491,7 @@ data class TransaksiKasSingleResponse(
 
 data class TransaksiKasDto(
     @SerializedName("id") val id: Int,
-    @SerializedName("instansi_id") val instansiId: Int,
+    @SerializedName("instansi_id") val instansiId: String,
     @SerializedName("outlet_id") val outletId: Int?,
     @SerializedName("kategori_transaksi_id") val kategoriTransaksiId: Int?,
     @SerializedName("tanggal") val tanggal: String,

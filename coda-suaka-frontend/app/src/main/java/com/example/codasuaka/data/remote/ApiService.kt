@@ -273,6 +273,7 @@ interface ApiService {
 
     @GET("api/transaksi-kas")
     suspend fun getTransaksiKasList(
+        @Query("page") page: Int? = null,
         @Query("outlet_id") outletId: Int? = null,
         @Query("tipe") tipe: String? = null,
         @Query("kategori_transaksi_id") kategoriTransaksiId: Int? = null,

@@ -78,7 +78,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Access a specific instansi's data (tenant-scoped)
         Gate::define('access-instansi', function (User $user, $instansiId) {
-            return $user->instansi_id === (int) $instansiId;
+            return $user->instansi_id === $instansiId;
         });
     }
 }

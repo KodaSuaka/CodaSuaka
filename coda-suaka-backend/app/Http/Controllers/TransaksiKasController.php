@@ -73,7 +73,13 @@ class TransaksiKasController extends Controller
             'nominal' => 'required|numeric|min:0',
             'kategori_transaksi_id' => [
                 'nullable',
-                Rule::exists('kategori_transaksis', 'id')->where('instansi_id', $user->instansi_id),
+                Rule::exists('kategori_transaksis', 'id')
+                    ->where(function ($query) use ($user) {
+                        // Boleh pilih kategori global (instansi_id = null)
+                        // atau kategori custom milik instansi user
+                        $query->whereNull('instansi_id')
+                            ->orWhere('instansi_id', $user->instansi_id);
+                    }),
             ],
             'outlet_id' => [
                 'nullable',
@@ -128,7 +134,11 @@ class TransaksiKasController extends Controller
             'nominal' => 'sometimes|required|numeric|min:0',
             'kategori_transaksi_id' => [
                 'nullable',
-                Rule::exists('kategori_transaksis', 'id')->where('instansi_id', $user->instansi_id),
+                Rule::exists('kategori_transaksis', 'id')
+                    ->where(function ($query) use ($user) {
+                        $query->whereNull('instansi_id')
+                            ->orWhere('instansi_id', $user->instansi_id);
+                    }),
             ],
             'outlet_id' => [
                 'nullable',

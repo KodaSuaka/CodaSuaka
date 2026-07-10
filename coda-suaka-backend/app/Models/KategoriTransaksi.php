@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -31,10 +31,35 @@ class KategoriTransaksi extends Model
         ];
     }
 
-    protected static function booted(): void
+    // ─── Scopes ────────────────────────────────────────────────
+
+    /**
+     * Scope untuk menampilkan kategori template global (instansi_id = null)
+     * digabung dengan kategori custom milik instansi tertentu.
+     */
+    public function scopeForInstansi(Builder $query, string $instansiId): Builder
     {
-        static::addGlobalScope(new TenantScope('instansi_id'));
+        return $query->whereNull('instansi_id')
+            ->orWhere('instansi_id', $instansiId);
     }
+
+    /**
+     * Scope hanya kategori non-global (milik instansi tertentu).
+     */
+    public function scopeCustomOnly(Builder $query): Builder
+    {
+        return $query->whereNotNull('instansi_id');
+    }
+
+    /**
+     * Scope hanya kategori template global.
+     */
+    public function scopeGlobalOnly(Builder $query): Builder
+    {
+        return $query->whereNull('instansi_id');
+    }
+
+    // ─── Relasi ────────────────────────────────────────────────
 
     public function instansi()
     {
@@ -44,5 +69,23 @@ class KategoriTransaksi extends Model
     public function transaksiKas()
     {
         return $this->hasMany(TransaksiKas::class, 'kategori_transaksi_id');
+    }
+
+    // ─── Helper ────────────────────────────────────────────────
+
+    /**
+     * Cek apakah kategori ini adalah template global.
+     */
+    public function isGlobal(): bool
+    {
+        return $this->instansi_id === null;
+    }
+
+    /**
+     * Cek apakah kategori ini milik instansi tertentu.
+     */
+    public function isCustom(): bool
+    {
+        return $this->instansi_id !== null;
     }
 }

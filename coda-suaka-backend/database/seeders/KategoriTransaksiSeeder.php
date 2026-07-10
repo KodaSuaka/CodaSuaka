@@ -3,15 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\KategoriTransaksi;
-use App\Models\instansi;
 use Illuminate\Database\Seeder;
 
 class KategoriTransaksiSeeder extends Seeder
 {
     /**
-     * Kategori default yang dibuat untuk setiap instansi baru.
+     * Kategori template/global yang berlaku untuk semua instansi.
+     * Cukup dibuat sekali (instansi_id = null), bukan per-instansi.
      */
-    private array $defaultKategoris = [
+    private array $globalKategoris = [
         ['nama_kategori' => 'Penjualan Barang',       'tipe' => 'masuk',  'sifat' => 'operasional',     'termasuk_hpp' => false],
         ['nama_kategori' => 'Pendapatan Jasa',        'tipe' => 'masuk',  'sifat' => 'operasional',     'termasuk_hpp' => false],
         ['nama_kategori' => 'Pembelian Bahan/Stok',   'tipe' => 'keluar', 'sifat' => 'operasional',     'termasuk_hpp' => true],
@@ -26,28 +26,24 @@ class KategoriTransaksiSeeder extends Seeder
     ];
 
     /**
-     * Seed kategori default untuk semua instansi yang ada.
+     * Seed kategori template global (hanya sekali, bukan per-instansi).
      */
     public function run(): void
     {
-        $instansis = instansi::all();
-
-        foreach ($instansis as $instansi) {
-            foreach ($this->defaultKategoris as $kategori) {
-                KategoriTransaksi::firstOrCreate(
-                    [
-                        'instansi_id' => $instansi->id,
-                        'nama_kategori' => $kategori['nama_kategori'],
-                    ],
-                    [
-                        'tipe' => $kategori['tipe'],
-                        'sifat' => $kategori['sifat'],
-                        'termasuk_hpp' => $kategori['termasuk_hpp'],
-                        'is_default' => true,
-                        'is_active' => true,
-                    ]
-                );
-            }
+        foreach ($this->globalKategoris as $kategori) {
+            KategoriTransaksi::firstOrCreate(
+                [
+                    'instansi_id' => null,
+                    'nama_kategori' => $kategori['nama_kategori'],
+                ],
+                [
+                    'tipe' => $kategori['tipe'],
+                    'sifat' => $kategori['sifat'],
+                    'termasuk_hpp' => $kategori['termasuk_hpp'],
+                    'is_default' => true,
+                    'is_active' => true,
+                ]
+            );
         }
     }
 }

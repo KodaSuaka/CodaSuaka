@@ -66,6 +66,7 @@ class KeuanganRepositoryImpl(
     // ─── Transaksi Kas ────────────────────────────────────────
 
     override suspend fun getTransaksiKasList(
+        page: Int?,
         outletId: Int?,
         tipe: String?,
         kategoriTransaksiId: Int?,
@@ -74,7 +75,7 @@ class KeuanganRepositoryImpl(
         perPage: Int?
     ): Result<Pair<List<TransaksiKasDto>, PaginationMeta?>> = runCatching {
         val response = apiService.getTransaksiKasList(
-            outletId, tipe, kategoriTransaksiId, startDate, endDate, perPage
+            page, outletId, tipe, kategoriTransaksiId, startDate, endDate, perPage
         )
         if (response.isSuccessful) {
             val body = response.body()

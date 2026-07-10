@@ -10,13 +10,24 @@ use App\Models\pengajuan;
 use App\Models\penugasan;
 use App\Models\User;
 use App\Services\PermissionService;
+use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
+        // Middleware closure — berjalan setelah auth:sanctum
+        $this->middleware(function (Request $request, $next) {
+            // Pastikan user terautentikasi
+            if (!$request->user()) {
+                return $this->error('Unauthenticated', 401);
+            }
+            return $next($request);
+        });
     }
 
     /**
@@ -27,6 +38,12 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $instansiId = $user->instansi_id;
+
+        // Hanya Owner yang bisa akses dashboard utama
+        if ($user->role?->nama_role !== 'Owner') {
+            return $this->error('Forbidden: Hanya Owner yang dapat mengakses dashboard ini', 403);
+        }
+
         $userIds = User::where('instansi_id', $instansiId)->pluck('id');
 
         $totalKaryawan = karyawan::whereIn('user_id', $userIds)
@@ -53,16 +70,13 @@ class DashboardController extends Controller
             'selesai' => penugasan::whereIn('created_by', $userIds)->where('status', 'selesai')->count(),
         ];
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'total_karyawan' => $totalKaryawan,
-                'total_outlet' => $totalOutlet,
-                'total_divisi' => $totalDivisi,
-                'presensi_hari_ini' => $presensiHariIni,
-                'pengajuan_pending' => $pengajuanPending,
-                'tugas_stats' => $tugasStats,
-            ]
+        return $this->success([
+            'total_karyawan' => $totalKaryawan,
+            'total_outlet' => $totalOutlet,
+            'total_divisi' => $totalDivisi,
+            'presensi_hari_ini' => $presensiHariIni,
+            'pengajuan_pending' => $pengajuanPending,
+            'tugas_stats' => $tugasStats,
         ]);
     }
 
@@ -101,19 +115,16 @@ class DashboardController extends Controller
         $roleMenuItems = $permissionService->getKaryawanDashboardMenu($user);
         $additionalContent = $permissionService->getKaryawanAdditionalContent($user);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'karyawan' => $karyawan,
-                'presensi_hari_ini' => $presensi,
-                'sudah_checkin' => $presensi && $presensi->jam_checkin ? true : false,
-                'sudah_checkout' => $presensi && $presensi->jam_checkout ? true : false,
-                'tugas_aktif' => $tugas,
-                'pengajuan_pending_count' => $pengajuanPendingCount,
-                'sisa_cuti' => $karyawan ? (int) $karyawan->sisa_cuti : 0,
-                'role_menu_items' => $roleMenuItems,
-                'additional_content' => $additionalContent,
-            ]
+        return $this->success([
+            'karyawan' => $karyawan,
+            'presensi_hari_ini' => $presensi,
+            'sudah_checkin' => $presensi && $presensi->jam_checkin ? true : false,
+            'sudah_checkout' => $presensi && $presensi->jam_checkout ? true : false,
+            'tugas_aktif' => $tugas,
+            'pengajuan_pending_count' => $pengajuanPendingCount,
+            'sisa_cuti' => $karyawan ? (int) $karyawan->sisa_cuti : 0,
+            'role_menu_items' => $roleMenuItems,
+            'additional_content' => $additionalContent,
         ]);
     }
 
@@ -137,14 +148,11 @@ class DashboardController extends Controller
             })
             ->sum('nominal');
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'total_omset' => (float) $totalOmset,
-                'message' => null,
-            ]
+        return $this->success([
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'total_omset' => (float) $totalOmset,
+            'message' => null,
         ]);
     }
 }

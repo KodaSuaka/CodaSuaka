@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\outlet;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class OutletController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(outlet::class, 'outlet');
@@ -24,10 +27,7 @@ class OutletController extends Controller
         $outlets = outlet::orderBy('nama_outlet')
             ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $outlets
-        ]);
+        return $this->success($outlets);
     }
 
     /**
@@ -45,7 +45,7 @@ class OutletController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+            return $this->error('Validasi gagal', 422, $validator->errors());
         }
 
         $outlet = outlet::create([
@@ -55,11 +55,7 @@ class OutletController extends Controller
             'is_active' => $request->is_active ?? true,
         ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Outlet berhasil ditambahkan',
-            'data' => $outlet
-        ], 201);
+        return $this->success($outlet, 'Outlet berhasil ditambahkan', 201);
     }
 
     /**
@@ -68,9 +64,9 @@ class OutletController extends Controller
     public function show(Request $request, outlet $outlet)
     {
         if ($outlet->instansi_id !== $request->user()->instansi_id) {
-            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
+            return $this->error('Forbidden', 403);
         }
-        return response()->json(['status' => 'success', 'data' => $outlet]);
+        return $this->success($outlet);
     }
 
     /**
@@ -79,7 +75,7 @@ class OutletController extends Controller
     public function update(Request $request, outlet $outlet)
     {
         if ($outlet->instansi_id !== $request->user()->instansi_id) {
-            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
+            return $this->error('Forbidden', 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -89,16 +85,12 @@ class OutletController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+            return $this->error('Validasi gagal', 422, $validator->errors());
         }
 
         $outlet->update($request->only(['nama_outlet', 'alamat_outlet', 'is_active']));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Outlet berhasil diperbarui',
-            'data' => $outlet
-        ]);
+        return $this->success($outlet, 'Outlet berhasil diperbarui');
     }
 
     /**
@@ -107,9 +99,9 @@ class OutletController extends Controller
     public function destroy(Request $request, outlet $outlet)
     {
         if ($outlet->instansi_id !== $request->user()->instansi_id) {
-            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
+            return $this->error('Forbidden', 403);
         }
         $outlet->delete();
-        return response()->json(['status' => 'success', 'message' => 'Outlet berhasil dihapus']);
+        return $this->success(null, 'Outlet berhasil dihapus');
     }
 }

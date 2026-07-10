@@ -114,6 +114,7 @@ class LaporanKeuanganViewModel(
             }
 
             keuanganRepository.getTransaksiKasList(
+                page = page,
                 tipe = _uiState.value.filterTipe,
                 kategoriTransaksiId = _uiState.value.filterKategoriId,
                 startDate = _uiState.value.filterStartDate,
@@ -398,15 +399,17 @@ class LaporanKeuanganViewModel(
 
     companion object {
         fun formatRupiah(amount: Double): String {
-            val str = amount.toLong().toString()
+            val isNegative = amount < 0
+            val absStr = kotlin.math.abs(amount).toLong().toString()
             val sb = StringBuilder()
             var count = 0
-            for (i in str.lastIndex downTo 0) {
+            for (i in absStr.lastIndex downTo 0) {
                 if (count > 0 && count % 3 == 0) sb.insert(0, '.')
-                sb.insert(0, str[i])
+                sb.insert(0, absStr[i])
                 count++
             }
-            return "Rp $sb"
+            val prefix = if (isNegative) "-Rp " else "Rp "
+            return "$prefix$sb"
         }
     }
 }

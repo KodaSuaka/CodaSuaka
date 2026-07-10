@@ -27,6 +27,7 @@ interface KeuanganRepository {
     // ─── Transaksi Kas ────────────────────────────────────────
 
     suspend fun getTransaksiKasList(
+        page: Int? = null,
         outletId: Int? = null,
         tipe: String? = null,
         kategoriTransaksiId: Int? = null,
