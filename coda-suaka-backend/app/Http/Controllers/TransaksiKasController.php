@@ -239,30 +239,24 @@ class TransaksiKasController extends Controller
             $query->whereDate('tanggal', '<=', $request->end_date);
         }
 
-        $transaksis = $query->with('kategoriTransaksi')->get();
+        // ─── Gunakan aggregate query, bukan get() + loop PHP ───
+        // Hitung pendapatan (masuk, operasional)
+        $pendapatan = (float) (clone $query)
+            ->where('tipe', 'masuk')
+            ->whereHas('kategoriTransaksi', fn($q) => $q->where('sifat', 'operasional'))
+            ->sum('nominal');
 
-        $pendapatan = 0;
-        $hpp = 0;
-        $bebanOperasional = 0;
+        // Hitung HPP (keluar, termasuk_hpp = true)
+        $hpp = (float) (clone $query)
+            ->where('tipe', 'keluar')
+            ->whereHas('kategoriTransaksi', fn($q) => $q->where('termasuk_hpp', true))
+            ->sum('nominal');
 
-        foreach ($transaksis as $t) {
-            $kategori = $t->kategoriTransaksi;
-            if (!$kategori) continue;
-
-            if ($kategori->sifat === 'non_operasional') {
-                continue; // skip modal, prive, pinjaman
-            }
-
-            if ($t->tipe === 'masuk') {
-                $pendapatan += (float) $t->nominal;
-            } elseif ($t->tipe === 'keluar') {
-                if ($kategori->termasuk_hpp) {
-                    $hpp += (float) $t->nominal;
-                } else {
-                    $bebanOperasional += (float) $t->nominal;
-                }
-            }
-        }
+        // Hitung beban operasional (keluar, operasional, bukan HPP)
+        $bebanOperasional = (float) (clone $query)
+            ->where('tipe', 'keluar')
+            ->whereHas('kategoriTransaksi', fn($q) => $q->where('sifat', 'operasional')->where('termasuk_hpp', false))
+            ->sum('nominal');
 
         $labaRugi = $pendapatan - $hpp - $bebanOperasional;
 

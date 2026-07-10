@@ -85,21 +85,6 @@ class PenugasanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
-        // LOG: Deteksi potensi data hilang karena TenantScope via divisi_id nullable
-        if ($request->divisi_id === null) {
-            \Log::warning('[PenugasanController] STORE with null divisi_id — penugasan akan INVISIBLE via TenantScope callback karena divisi_id null', [
-                'user_id' => $user->id,
-                'user_instansi_id' => $user->instansi_id,
-                'judul' => $request->judul,
-                'divisi_id' => $request->divisi_id,
-            ]);
-        } else {
-            \Log::debug('[PenugasanController] STORE with divisi_id', [
-                'divisi_id' => $request->divisi_id,
-                'judul' => $request->judul,
-            ]);
-        }
-
         $penugasan = penugasan::create([
             'judul' => $request->judul,
             'deskripsi' => $request->deskripsi,

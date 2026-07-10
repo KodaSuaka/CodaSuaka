@@ -8,18 +8,46 @@ use Illuminate\Support\Collection;
 class PermissionService
 {
     /**
+     * Cache per request untuk hasil pengecekan permission.
+     * Key: "user_{id}:permission_{name}" => bool
+     */
+    private array $permissionCache = [];
+
+    /**
+     * Cache permissionset per user untuk menghindari multiple query.
+     * Key: "user_{id}" => Collection of permission strings
+     */
+    private array $userPermissionsCache = [];
+
+    /**
      * Check if a user has a specific permission.
      * Single source of truth: database role_permissions table.
+     * Hasil dicache per request untuk menghindari query berulang.
      */
     public function userHasPermission(User $user, string $permission): bool
     {
+        $cacheKey = 'user_' . $user->id . ':permission_' . $permission;
+
+        if (array_key_exists($cacheKey, $this->permissionCache)) {
+            return $this->permissionCache[$cacheKey];
+        }
+
         if ($user->role === null) {
+            $this->permissionCache[$cacheKey] = false;
             return false;
         }
 
-        return $user->role->permissions()
-            ->where('permission', $permission)
-            ->exists();
+        // Gunakan relationship yang sudah di-load jika ada, hindari query
+        if ($user->relationLoaded('role') && $user->role->relationLoaded('permissions')) {
+            $result = $user->role->permissions->contains('permission', $permission);
+        } else {
+            $result = $user->role->permissions()
+                ->where('permission', $permission)
+                ->exists();
+        }
+
+        $this->permissionCache[$cacheKey] = $result;
+        return $result;
     }
 
     /**
@@ -36,15 +64,25 @@ class PermissionService
     }
 
     /**
-     * Get all permissions for a user from the database.
+     * Get semua permissions untuk user dari database.
+     * Hasil dicache per request.
      */
     public function getUserPermissions(User $user): Collection
     {
+        $cacheKey = 'user_' . $user->id;
+
+        if (array_key_exists($cacheKey, $this->userPermissionsCache)) {
+            return $this->userPermissionsCache[$cacheKey];
+        }
+
         if ($user->role === null) {
+            $this->userPermissionsCache[$cacheKey] = collect();
             return collect();
         }
 
-        return $user->role->permissions->pluck('permission');
+        $permissions = $user->role->permissions->pluck('permission');
+        $this->userPermissionsCache[$cacheKey] = $permissions;
+        return $permissions;
     }
 
     /**

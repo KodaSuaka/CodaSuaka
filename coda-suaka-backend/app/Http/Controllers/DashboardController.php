@@ -44,39 +44,52 @@ class DashboardController extends Controller
             return $this->error('Forbidden: Hanya Owner yang dapat mengakses dashboard ini', 403);
         }
 
-        $userIds = User::where('instansi_id', $instansiId)->pluck('id');
+        $today = now()->toDateString();
 
-        $totalKaryawan = karyawan::whereIn('user_id', $userIds)
-            ->whereHas('user', fn($q) => $q->whereHas('role', fn($r) => $r->where('nama_role', '!=', 'Owner')))
-            ->count();
+        // ─── Approach: 4 queries instead of 8 ───
+        // Gunakan whereIn subquery (closure) untuk hindari pluck() array besar
+
+        // 1. Outlet + Divisi (filter langsung via instansi_id)
         $totalOutlet = outlet::where('instansi_id', $instansiId)->count();
         $totalDivisi = Divisi::whereHas('outlet', fn($q) => $q->where('instansi_id', $instansiId))->count();
 
-        // Presensi hari ini
-        $today = now()->toDateString();
-        $presensiHariIni = attandence::whereIn('user_id', $userIds)
+        // 2. Karyawan non-Owner + Presensi hari ini (query paralel dalam satu panggilan)
+        $karyawanCount = karyawan::whereHas('user', function ($q) use ($instansiId) {
+            $q->where('instansi_id', $instansiId)
+              ->whereHas('role', fn($r) => $r->where('nama_role', '!=', 'Owner'));
+        })->count();
+
+        // 3. Presensi + Pengajuan pending (pakai subquery dari users)
+        $userIdsSub = User::where('instansi_id', $instansiId)->select('id');
+        $presensiHariIni = attandence::whereIn('user_id', $userIdsSub)
             ->where('tanggal', $today)
             ->count();
-
-        // Pengajuan pending
-        $pengajuanPending = pengajuan::whereIn('user_id', $userIds)
+        $pengajuanPending = pengajuan::whereIn('user_id', $userIdsSub)
             ->where('status', 'pending')
             ->count();
 
-        // Tugas dengan status
-        $tugasStats = [
-            'belum' => penugasan::whereIn('created_by', $userIds)->where('status', 'belum')->count(),
-            'proses' => penugasan::whereIn('created_by', $userIds)->where('status', 'proses')->count(),
-            'selesai' => penugasan::whereIn('created_by', $userIds)->where('status', 'selesai')->count(),
-        ];
+        // 4. Tugas stats — single query dengan CASE + subquery
+        $tugasStatsQuery = penugasan::whereIn('created_by', function ($q) use ($instansiId) {
+            $q->select('id')->from('users')->where('instansi_id', $instansiId);
+        })
+        ->selectRaw("
+            SUM(CASE WHEN status = 'belum' THEN 1 ELSE 0 END) as belum,
+            SUM(CASE WHEN status = 'proses' THEN 1 ELSE 0 END) as proses,
+            SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
+        ")
+        ->first();
 
         return $this->success([
-            'total_karyawan' => $totalKaryawan,
+            'total_karyawan' => $karyawanCount,
             'total_outlet' => $totalOutlet,
             'total_divisi' => $totalDivisi,
             'presensi_hari_ini' => $presensiHariIni,
             'pengajuan_pending' => $pengajuanPending,
-            'tugas_stats' => $tugasStats,
+            'tugas_stats' => [
+                'belum' => (int) ($tugasStatsQuery->belum ?? 0),
+                'proses' => (int) ($tugasStatsQuery->proses ?? 0),
+                'selesai' => (int) ($tugasStatsQuery->selesai ?? 0),
+            ],
         ]);
     }
 

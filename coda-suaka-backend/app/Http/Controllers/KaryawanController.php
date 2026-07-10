@@ -24,31 +24,14 @@ class KaryawanController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $instansiId = $user->instansi_id;
 
-        // Ambil semua user_id dalam instansi ini
-        $userIds = User::where('instansi_id', $instansiId)->pluck('id');
-
-        $query = karyawan::whereIn('user_id', $userIds)
-            ->with(['user.role', 'outlet']);
+        $query = karyawan::with(['user.role', 'outlet']);
 
         if ($request->has('outlet_id')) {
             $query->where('outlet_id', $request->outlet_id);
         }
 
         $karyawans = $query->orderBy('nama_lengkap')->get();
-
-        // LOG: Deteksi potensi data hilang karena TenantScope + outlet_id null
-        $totalUsers = count($userIds);
-        $totalKaryawans = count($karyawans);
-        if ($totalKaryawans < $totalUsers) {
-            \Log::warning('[KaryawanController] INDEX — jumlah karyawan (' . $totalKaryawans . ') lebih sedikit dari user (' . $totalUsers . ') dalam instansi. Kemungkinan data hilang karena TenantScope dengan outlet_id null.', [
-                'instansi_id' => $instansiId,
-                'total_users_in_instansi' => $totalUsers,
-                'total_karyawans_returned' => $totalKaryawans,
-                'user_id' => $user->id,
-            ]);
-        }
 
         return response()->json(['status' => 'success', 'data' => $karyawans]);
     }
