@@ -54,7 +54,7 @@ class TransaksiKas extends Model
         return $this->belongsTo(KategoriTransaksi::class, 'kategori_transaksi_id');
     }
 
-    public function createdBy()
+    public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');
     }

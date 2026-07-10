@@ -502,6 +502,7 @@ data class TransaksiKasDto(
     @SerializedName("lampiran_url") val lampiranUrl: String?,
     @SerializedName("dokumen_transaksi_id") val dokumenTransaksiId: Int?,
     @SerializedName("created_by") val createdBy: Int?,
+    @SerializedName("created_by_user") val createdByUser: UserData?,
     @SerializedName("kategori_transaksi") val kategoriTransaksi: KategoriTransaksiDto?,
     @SerializedName("outlet") val outlet: OutletDto?,
     @SerializedName("created_at") val createdAt: String?,

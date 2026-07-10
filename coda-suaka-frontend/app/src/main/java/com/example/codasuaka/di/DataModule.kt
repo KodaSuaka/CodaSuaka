@@ -2,9 +2,11 @@ package com.example.codasuaka.di
 
 import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.data.remote.ApiService
+import com.example.codasuaka.data.remote.dto.NullableIntAdapter
 import com.example.codasuaka.data.remote.interceptor.AuthInterceptor
 import com.example.codasuaka.data.repository.*
 import com.example.codasuaka.domain.repository.*
+import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
@@ -39,12 +41,20 @@ val dataModule = module {
             .build()
     }
 
+    // Gson instance dengan adapter toleran untuk Int?
+    single {
+        GsonBuilder()
+            .registerTypeAdapter(Int::class.java, NullableIntAdapter())
+            .registerTypeAdapter(Int::class.javaPrimitiveType, NullableIntAdapter())
+            .create()
+    }
+
     // Retrofit instance — menggunakan BASE_URL dari BuildConfig
     single {
         Retrofit.Builder()
             .baseUrl(com.example.codasuaka.BuildConfig.BASE_URL)
             .client(get())
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(get()))
             .build()
     }
 

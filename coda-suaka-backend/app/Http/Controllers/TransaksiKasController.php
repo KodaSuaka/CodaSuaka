@@ -26,7 +26,7 @@ class TransaksiKasController extends Controller
     {
         $user = $request->user();
 
-        $query = TransaksiKas::with(['kategoriTransaksi', 'outlet', 'createdBy'])
+        $query = TransaksiKas::with(['kategoriTransaksi', 'outlet', 'createdByUser'])
             ->where('instansi_id', $user->instansi_id);
 
         // Filter by outlet
@@ -107,7 +107,7 @@ class TransaksiKasController extends Controller
             'created_by' => $user->id,
         ]);
 
-        $transaksi->load(['kategoriTransaksi', 'outlet', 'createdBy']);
+        $transaksi->load(['kategoriTransaksi', 'outlet', 'createdByUser']);
 
         return $this->success($transaksi, 'Entri kas berhasil ditambahkan', 201);
     }
@@ -117,7 +117,7 @@ class TransaksiKasController extends Controller
      */
     public function show(TransaksiKas $transaksi_kas)
     {
-        $transaksi_kas->load(['kategoriTransaksi', 'outlet', 'createdBy']);
+        $transaksi_kas->load(['kategoriTransaksi', 'outlet', 'createdByUser']);
         return $this->success($transaksi_kas);
     }
 
@@ -158,7 +158,7 @@ class TransaksiKasController extends Controller
             'outlet_id', 'metode_pembayaran', 'keterangan', 'lampiran_url',
         ]));
 
-        $transaksi_kas->load(['kategoriTransaksi', 'outlet', 'createdBy']);
+        $transaksi_kas->load(['kategoriTransaksi', 'outlet', 'createdByUser']);
 
         return $this->success($transaksi_kas, 'Entri kas berhasil diperbarui');
     }
