@@ -392,7 +392,10 @@ class SuperAdminController extends Controller
             ], 422);
         }
 
-        $paket = paket::create($request->all());
+        $paket = paket::create($request->only([
+            'nama_paket', 'harga', 'deskripsi', 'fitur',
+            'durasi_hari', 'max_outlet', 'max_karyawan_per_outlet', 'is_active',
+        ]));
 
         return response()->json([
             'status' => 'success',
@@ -425,7 +428,10 @@ class SuperAdminController extends Controller
             ], 422);
         }
 
-        $paket->update($request->all());
+        $paket->update($request->only([
+            'nama_paket', 'harga', 'deskripsi', 'fitur',
+            'durasi_hari', 'max_outlet', 'max_karyawan_per_outlet', 'is_active',
+        ]));
 
         return response()->json([
             'status' => 'success',

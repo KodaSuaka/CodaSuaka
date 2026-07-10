@@ -13,9 +13,13 @@ class PermissionService
      */
     public function userHasPermission(User $user, string $permission): bool
     {
-        return $user->role?->permissions()
+        if ($user->role === null) {
+            return false;
+        }
+
+        return $user->role->permissions()
             ->where('permission', $permission)
-            ->exists() ?? false;
+            ->exists();
     }
 
     /**
@@ -36,7 +40,11 @@ class PermissionService
      */
     public function getUserPermissions(User $user): Collection
     {
-        return $user->role?->permissions->pluck('permission') ?? collect();
+        if ($user->role === null) {
+            return collect();
+        }
+
+        return $user->role->permissions->pluck('permission');
     }
 
     /**

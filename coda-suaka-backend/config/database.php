@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
-use Pdo\Mysql;
+use PDO\Mysql;
 
 return [
 
