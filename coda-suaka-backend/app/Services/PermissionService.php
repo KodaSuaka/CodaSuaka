@@ -8,85 +8,14 @@ use Illuminate\Support\Collection;
 class PermissionService
 {
     /**
-     * All recognized permission keys in the system.
-     */
-    public const PERMISSIONS = [
-        'manage:outlets',
-        'manage:karyawan',
-        'manage:divisi',
-        'manage:jadwal',
-        'manage:penugasan',
-        'view:keuangan',
-        'manage:keuangan',
-        'manage:pengajuan',
-        'view:presensi',
-        'manage:paket',
-        'manage:instansi',
-        'manage:owners',
-        'manage:role_permissions',
-        'manage:attendance',
-    ];
-
-    /**
-     * Hard-coded permission map for functional roles.
-     * These are also seeded in the database, but this serves
-     * as a fallback and quick reference.
-     */
-    private const ROLE_PERMISSION_MAP = [
-        'Owner' => [
-            'manage:outlets',
-            'manage:karyawan',
-            'manage:divisi',
-            'manage:jadwal',
-            'manage:penugasan',
-            'view:keuangan',
-            'manage:keuangan',
-            'manage:pengajuan',
-            'view:presensi',
-            'manage:role_permissions',
-            'manage:paket',
-        ],
-        'Keuangan' => [
-            'view:keuangan',
-            'manage:keuangan',
-            'view:presensi',
-        ],
-        'Manajemen' => [
-            'manage:outlets',
-            'manage:karyawan',
-            'manage:divisi',
-            'manage:jadwal',
-            'manage:penugasan',
-            'manage:pengajuan',
-            'view:presensi',
-        ],
-        'Staff' => [
-            // No special permissions — task-based only
-        ],
-    ];
-
-    /**
      * Check if a user has a specific permission.
+     * Single source of truth: database role_permissions table.
      */
     public function userHasPermission(User $user, string $permission): bool
     {
-        $roleName = $user->role?->nama_role;
-
-        // Check from database role_permissions first
-        $hasPermission = $user->role?->permissions()
+        return $user->role?->permissions()
             ->where('permission', $permission)
-            ->exists();
-
-        if ($hasPermission) {
-            return true;
-        }
-
-        // Fallback: check hard-coded map
-        if (isset(self::ROLE_PERMISSION_MAP[$roleName])) {
-            return in_array($permission, self::ROLE_PERMISSION_MAP[$roleName], true);
-        }
-
-        return false;
+            ->exists() ?? false;
     }
 
     /**
@@ -103,20 +32,11 @@ class PermissionService
     }
 
     /**
-     * Get all permissions for a user.
-     * Merges database role_permissions with hard-coded defaults.
+     * Get all permissions for a user from the database.
      */
     public function getUserPermissions(User $user): Collection
     {
-        $roleName = $user->role?->nama_role;
-
-        // Get from database role_permissions
-        $dbPermissions = $user->role?->permissions->pluck('permission') ?? collect();
-
-        // Merge with hard-coded map as fallback
-        $defaultPermissions = collect(self::ROLE_PERMISSION_MAP[$roleName] ?? []);
-
-        return $dbPermissions->merge($defaultPermissions)->unique()->values();
+        return $user->role?->permissions->pluck('permission') ?? collect();
     }
 
     /**

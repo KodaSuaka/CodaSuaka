@@ -49,9 +49,10 @@ class KategoriTransaksiPolicy
      */
     public function update(User $user, KategoriTransaksi $kategoriTransaksi): bool
     {
-        // Kategori global tidak bisa diedit oleh siapapun dari endpoint ini
+        // Global template check dilakukan di Controller (return 422 + pesan jelas),
+        // policy cukup memastikan user punya akses manage:keuangan.
         if ($kategoriTransaksi->isGlobal()) {
-            return false;
+            return app(PermissionService::class)->userHasPermission($user, 'manage:keuangan');
         }
 
         if ($user->instansi_id !== $kategoriTransaksi->instansi_id) {
@@ -66,9 +67,9 @@ class KategoriTransaksiPolicy
      */
     public function delete(User $user, KategoriTransaksi $kategoriTransaksi): bool
     {
-        // Kategori global tidak bisa dihapus
+        // Global template check dilakukan di Controller (return 422 + pesan jelas).
         if ($kategoriTransaksi->isGlobal()) {
-            return false;
+            return app(PermissionService::class)->userHasPermission($user, 'manage:keuangan');
         }
 
         if ($user->instansi_id !== $kategoriTransaksi->instansi_id) {

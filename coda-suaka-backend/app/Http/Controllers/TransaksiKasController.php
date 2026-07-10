@@ -215,7 +215,7 @@ class TransaksiKasController extends Controller
     }
 
     /**
-     * GET /api/transaksi-kas/laporan-lab rugi
+     * GET /api/transaksi-kas/laporan/laba-rugi
      * Hitung Pendapatan - Beban HPP - Beban Operasional = Laba/Rugi.
      */
     public function labaRugi(Request $request)

@@ -54,13 +54,21 @@ class PengajuanPolicy
 
     public function approve(User $user, pengajuan $pengajuan): bool
     {
-        // Approval logic is handled in PengajuanController@approve for complex checks
-        // but we define the base permission here.
-        return app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan');
+        // Must have manage:pengajuan permission AND be in the same tenant
+        if (!app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
+            return false;
+        }
+
+        return $user->instansi_id === $pengajuan->user->instansi_id;
     }
 
     public function reject(User $user, pengajuan $pengajuan): bool
     {
-        return app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan');
+        // Must have manage:pengajuan permission AND be in the same tenant
+        if (!app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
+            return false;
+        }
+
+        return $user->instansi_id === $pengajuan->user->instansi_id;
     }
 }
