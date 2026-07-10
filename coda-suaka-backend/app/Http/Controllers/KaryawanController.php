@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class KaryawanController extends Controller
 {
@@ -36,6 +37,18 @@ class KaryawanController extends Controller
         }
 
         $karyawans = $query->orderBy('nama_lengkap')->get();
+
+        // LOG: Deteksi potensi data hilang karena TenantScope + outlet_id null
+        $totalUsers = count($userIds);
+        $totalKaryawans = count($karyawans);
+        if ($totalKaryawans < $totalUsers) {
+            \Log::warning('[KaryawanController] INDEX — jumlah karyawan (' . $totalKaryawans . ') lebih sedikit dari user (' . $totalUsers . ') dalam instansi. Kemungkinan data hilang karena TenantScope dengan outlet_id null.', [
+                'instansi_id' => $instansiId,
+                'total_users_in_instansi' => $totalUsers,
+                'total_karyawans_returned' => $totalKaryawans,
+                'user_id' => $user->id,
+            ]);
+        }
 
         return response()->json(['status' => 'success', 'data' => $karyawans]);
     }
@@ -78,7 +91,10 @@ class KaryawanController extends Controller
             'kontak' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
             'role_id' => 'required|exists:roles,id',
-            'outlet_id' => 'nullable|exists:outlets,id',
+            'outlet_id' => [
+                'nullable',
+                Rule::exists('outlets', 'id')->where('instansi_id', $instansiId),
+            ],
             'sisa_cuti' => 'nullable|integer|min:0',
         ]);
 
@@ -134,11 +150,16 @@ class KaryawanController extends Controller
      */
     public function update(Request $request, karyawan $karyawan)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'nama_lengkap' => 'sometimes|required|string|max:255',
             'kontak' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
-            'outlet_id' => 'nullable|exists:outlets,id',
+            'outlet_id' => [
+                'nullable',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
             'sisa_cuti' => 'nullable|integer|min:0',
             'foto_profil' => 'nullable|string',
         ]);

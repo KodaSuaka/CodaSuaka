@@ -18,8 +18,21 @@ class Divisi extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
-            $builder->whereHas('outlet', function (Builder $q) use ($user) {
-                $q->where('instansi_id', $user->instansi_id);
+            // outlet_id di tabel divisis adalah NOT NULL (constrained),
+            // jadi whereHas outlet sudah cukup aman.
+            // Tapi untuk jaga-jaga jika ada data lama, gunakan fallback via ketuaKaryawan
+            $builder->where(function ($q) use ($user) {
+                $q->whereHas('outlet', function (Builder $q) use ($user) {
+                    $q->where('instansi_id', $user->instansi_id);
+                });
+                // Fallback: jika outlet_id NULL (data legacy), scope via user pembuat
+                // Karena tidak ada created_by di divisi, fallback via ketua_karyawan_id → user
+                $q->orWhere(function ($subQ) use ($user) {
+                    $subQ->whereNull('outlet_id')
+                         ->whereHas('ketuaKaryawan.user', function (Builder $q) use ($user) {
+                             $q->where('instansi_id', $user->instansi_id);
+                         });
+                });
             });
         }));
     }

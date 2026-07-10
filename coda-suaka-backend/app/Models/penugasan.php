@@ -28,8 +28,19 @@ class penugasan extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
-            $builder->whereHas('divisi.outlet', function (Builder $q) use ($user) {
-                $q->where('instansi_id', $user->instansi_id);
+            $builder->where(function ($q) use ($user) {
+                // Jika penugasan memiliki divisi, scope via divisi → outlet → instansi
+                $q->whereHas('divisi.outlet', function (Builder $q) use ($user) {
+                    $q->where('instansi_id', $user->instansi_id);
+                });
+                // Fallback: jika divisi_id NULL, scope via pembuat (created_by → user.instansi_id)
+                // karena created_by adalah foreign key yang NOT NULL
+                $q->orWhere(function ($subQ) use ($user) {
+                    $subQ->whereNull('divisi_id')
+                         ->whereHas('pembuat', function (Builder $q) use ($user) {
+                             $q->where('instansi_id', $user->instansi_id);
+                         });
+                });
             });
         }));
     }

@@ -42,23 +42,50 @@ class TenantScope implements Scope
     {
         // Skip scope when no authenticated user (e.g., CLI commands, login)
         if (!Auth::hasUser()) {
+            \Log::debug('[TenantScope] SKIP — no authenticated user', ['model' => get_class($model)]);
             return;
         }
 
         $user = Auth::user();
+        $modelClass = get_class($model);
 
         if ($this->callback !== null) {
-            // Only apply callback if user has an instansi_id to avoid "parameter must not be null" errors
             if ($user->instansi_id !== null) {
+                \Log::debug('[TenantScope] APPLY callback', [
+                    'model' => $modelClass,
+                    'user_id' => $user->id,
+                    'user_instansi_id' => $user->instansi_id,
+                ]);
+
+                // Log the SQL before applying callback to debug relationship-based filtering
+                $sqlBefore = $builder->toSql();
                 call_user_func($this->callback, $builder, $user);
+                $sqlAfter = $builder->toSql();
+                \Log::debug('[TenantScope] CALLBACK applied', [
+                    'model' => $modelClass,
+                    'sql_before' => $sqlBefore,
+                    'sql_after' => $sqlAfter,
+                ]);
             } else {
-                // If user has no instansi (e.g. Super Admin), they shouldn't see any tenant-specific data
+                \Log::debug('[TenantScope] BLOCK — user has no instansi_id (callback mode)', [
+                    'model' => $modelClass,
+                    'user_id' => $user->id,
+                ]);
                 $builder->whereRaw('1 = 0');
             }
         } elseif ($this->column !== null) {
             if ($user->instansi_id !== null) {
+                \Log::debug('[TenantScope] APPLY direct column', [
+                    'model' => $modelClass,
+                    'column' => $this->column,
+                    'value' => $user->instansi_id,
+                ]);
                 $builder->where($this->column, $user->instansi_id);
             } else {
+                \Log::debug('[TenantScope] BLOCK — user has no instansi_id (column mode)', [
+                    'model' => $modelClass,
+                    'user_id' => $user->id,
+                ]);
                 $builder->whereRaw('1 = 0');
             }
         }

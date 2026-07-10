@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Divisi;
-use App\Models\AnggotaDivisi;
 use App\Models\karyawan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class DivisiController extends Controller
 {
@@ -35,11 +35,25 @@ class DivisiController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'nama_divisi' => 'required|string|max:100',
             'deskripsi' => 'nullable|string',
-            'ketua_karyawan_id' => 'nullable|exists:karyawans,id',
-            'outlet_id' => 'required|exists:outlets,id',
+            'ketua_karyawan_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !karyawan::whereHas('user', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
+                        $fail('Karyawan tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
+            'outlet_id' => [
+                'required',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
         ]);
 
         if ($validator->fails()) {
@@ -70,11 +84,26 @@ class DivisiController extends Controller
      */
     public function update(Request $request, Divisi $divisi)
     {
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'nama_divisi' => 'sometimes|required|string|max:100',
             'deskripsi' => 'nullable|string',
-            'ketua_karyawan_id' => 'nullable|exists:karyawans,id',
-            'outlet_id' => 'sometimes|required|exists:outlets,id',
+            'ketua_karyawan_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !karyawan::whereHas('user', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
+                        $fail('Karyawan tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
+            'outlet_id' => [
+                'sometimes',
+                'required',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
         ]);
 
         if ($validator->fails()) {

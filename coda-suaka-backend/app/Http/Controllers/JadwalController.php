@@ -60,6 +60,16 @@ class JadwalController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
+        // LOG: Deteksi potensi data hilang karena TenantScope via outlet_id nullable
+        if ($request->outlet_id === null) {
+            \Log::warning('[JadwalController] STORE with null outlet_id — jadwal akan INVISIBLE via TenantScope callback karena outlet_id null', [
+                'user_id' => $user->id,
+                'user_instansi_id' => $user->instansi_id,
+                'nama_event' => $request->nama_event,
+                'outlet_id' => $request->outlet_id,
+            ]);
+        }
+
         $jadwal = jadwal::create([
             'nama_event' => $request->nama_event,
             'deskripsi' => $request->deskripsi,

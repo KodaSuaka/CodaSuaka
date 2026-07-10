@@ -60,7 +60,9 @@ class PenugasanController extends Controller
             'penanggung_jawab_id' => [
                 'required',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!karyawan::where('id', $value)->exists()) {
+                    if (!karyawan::whereHas('user', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
                         $fail('Karyawan tidak ditemukan di instansi Anda');
                     }
                 },
@@ -68,7 +70,9 @@ class PenugasanController extends Controller
             'divisi_id' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !Divisi::where('id', $value)->exists()) {
+                    if ($value && !Divisi::whereHas('outlet', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
                         $fail('Divisi tidak ditemukan di instansi Anda');
                     }
                 },
@@ -79,6 +83,21 @@ class PenugasanController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        // LOG: Deteksi potensi data hilang karena TenantScope via divisi_id nullable
+        if ($request->divisi_id === null) {
+            \Log::warning('[PenugasanController] STORE with null divisi_id — penugasan akan INVISIBLE via TenantScope callback karena divisi_id null', [
+                'user_id' => $user->id,
+                'user_instansi_id' => $user->instansi_id,
+                'judul' => $request->judul,
+                'divisi_id' => $request->divisi_id,
+            ]);
+        } else {
+            \Log::debug('[PenugasanController] STORE with divisi_id', [
+                'divisi_id' => $request->divisi_id,
+                'judul' => $request->judul,
+            ]);
         }
 
         $penugasan = penugasan::create([
@@ -123,7 +142,9 @@ class PenugasanController extends Controller
                 'sometimes',
                 'required',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!karyawan::where('id', $value)->exists()) {
+                    if (!karyawan::whereHas('user', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
                         $fail('Karyawan tidak ditemukan di instansi Anda');
                     }
                 },
@@ -131,7 +152,9 @@ class PenugasanController extends Controller
             'divisi_id' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !Divisi::where('id', $value)->exists()) {
+                    if ($value && !Divisi::whereHas('outlet', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
                         $fail('Divisi tidak ditemukan di instansi Anda');
                     }
                 },
