@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
  */
 data class DashboardUiState(
     val outletName: String = "",
-    val omsetTotal: Long = 0,
+    val omsetTotal: Double = 0.0,
     val totalKaryawan: Int = 0,
     val totalOutlet: Int = 0,
     val totalDivisi: Int = 0,

@@ -208,7 +208,7 @@ fun DashboardScreen(
 
 @Composable
 private fun SectionOmset(
-    omsetTotal: Long,
+    omsetTotal: Double,
     onCariOmset: (startDate: String, endDate: String) -> Unit
 ) {
     var startDate by remember { mutableStateOf("") }
@@ -245,7 +245,7 @@ private fun SectionOmset(
 
             // ── Nilai Omset ──
             Text(
-                text = "Rp ${formatRupiah(omsetTotal)}",
+                text = formatRupiah(omsetTotal),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = Primary,
@@ -616,14 +616,16 @@ private fun DrawerItem(
  * Memformat angka ke format Rupiah tanpa desimal.
  * Contoh: 15750000 → "15.750.000"
  */
-private fun formatRupiah(amount: Long): String {
-    val str = amount.toString()
+private fun formatRupiah(amount: Double): String {
+    val isNegative = amount < 0
+    val absStr = kotlin.math.abs(amount).toLong().toString()
     val sb = StringBuilder()
     var count = 0
-    for (i in str.lastIndex downTo 0) {
+    for (i in absStr.lastIndex downTo 0) {
         if (count > 0 && count % 3 == 0) sb.insert(0, '.')
-        sb.insert(0, str[i])
+        sb.insert(0, absStr[i])
         count++
     }
-    return sb.toString()
+    val prefix = if (isNegative) "-Rp " else "Rp "
+    return "$prefix$sb"
 }
