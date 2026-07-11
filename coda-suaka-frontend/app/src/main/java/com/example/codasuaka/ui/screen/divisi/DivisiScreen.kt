@@ -609,7 +609,7 @@ private fun AnggotaSection(
 private fun DialogTambahDivisi(
     namaDivisi: String,
     deskripsi: String,
-    selectedKetuaId: Int?,
+    selectedKetuaId: String?,
     selectedOutletId: Int,
     anggotaTerpilih: List<Karyawan>,
     availableKaryawan: List<Karyawan>,
@@ -619,7 +619,7 @@ private fun DialogTambahDivisi(
     errorMessage: String?,
     onNamaDivisiChange: (String) -> Unit,
     onDeskripsiChange: (String) -> Unit,
-    onKetuaChange: (Int?) -> Unit,
+    onKetuaChange: (String?) -> Unit,
     onOutletChange: (Int) -> Unit,
     onTambahAnggota: (Karyawan) -> Unit,
     onHapusAnggota: (Karyawan) -> Unit,
@@ -725,14 +725,12 @@ private fun DialogTambahDivisi(
                     onKetuaSelected = onKetuaChange
                 )
 
-                // Outlet Dropdown (hanya jika >1 outlet)
-                if (outlets.size > 1) {
-                    OutletDropdownDivisi(
-                        outlets = outlets,
-                        selectedOutletId = selectedOutletId,
-                        onOutletSelected = onOutletChange
-                    )
-                }
+                // Outlet Dropdown (selalu tampilkan)
+                OutletDropdownDivisi(
+                    outlets = outlets,
+                    selectedOutletId = selectedOutletId,
+                    onOutletSelected = onOutletChange
+                )
 
                 // ── Anggota Section ──
                 AnggotaSection(
@@ -782,7 +780,7 @@ private fun DialogTambahDivisi(
 private fun DialogEditDivisi(
     namaDivisi: String,
     deskripsi: String,
-    selectedKetuaId: Int?,
+    selectedKetuaId: String?,
     selectedOutletId: Int,
     anggotaTerpilih: List<Karyawan>,
     availableKaryawan: List<Karyawan>,
@@ -793,7 +791,7 @@ private fun DialogEditDivisi(
     errorMessage: String?,
     onNamaDivisiChange: (String) -> Unit,
     onDeskripsiChange: (String) -> Unit,
-    onKetuaChange: (Int?) -> Unit,
+    onKetuaChange: (String?) -> Unit,
     onOutletChange: (Int) -> Unit,
     onTambahAnggota: (Karyawan) -> Unit,
     onHapusAnggota: (Karyawan) -> Unit,
@@ -900,14 +898,12 @@ private fun DialogEditDivisi(
                     onKetuaSelected = onKetuaChange
                 )
 
-                // Outlet Dropdown (hanya jika >1 outlet)
-                if (outlets.size > 1) {
-                    OutletDropdownDivisi(
-                        outlets = outlets,
-                        selectedOutletId = selectedOutletId,
-                        onOutletSelected = onOutletChange
-                    )
-                }
+                // Outlet Dropdown (selalu tampilkan)
+                OutletDropdownDivisi(
+                    outlets = outlets,
+                    selectedOutletId = selectedOutletId,
+                    onOutletSelected = onOutletChange
+                )
 
                 // ── Anggota Section ──
                 AnggotaSection(
@@ -977,11 +973,11 @@ private fun DialogEditDivisi(
 @Composable
 private fun KetuaDropdown(
     karyawanList: List<Karyawan>,
-    selectedKetuaId: Int?,
-    onKetuaSelected: (Int?) -> Unit
+    selectedKetuaId: String?,
+    onKetuaSelected: (String?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedKaryawan = karyawanList.find { it.id == selectedKetuaId?.toString() }
+    val selectedKaryawan = karyawanList.find { it.id == selectedKetuaId }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -1024,7 +1020,7 @@ private fun KetuaDropdown(
                 DropdownMenuItem(
                     text = { Text(karyawan.namaLengkap) },
                     onClick = {
-                        onKetuaSelected(karyawan.id.toIntOrNull())
+                        onKetuaSelected(karyawan.id)
                         expanded = false
                     }
                 )

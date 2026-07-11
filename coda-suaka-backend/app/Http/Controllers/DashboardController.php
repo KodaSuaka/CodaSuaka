@@ -151,14 +151,11 @@ class DashboardController extends Controller
         $startDate = $request->get('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->get('end_date', now()->toDateString());
 
-        // Total pemasukan operasional = omset
+        // Total pemasukan = omset (selaras dengan buku kas — semua tipe masuk)
         $totalOmset = \App\Models\TransaksiKas::where('instansi_id', $user->instansi_id)
             ->where('tipe', 'masuk')
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
-            ->whereHas('kategoriTransaksi', function ($q) {
-                $q->where('sifat', 'operasional');
-            })
             ->sum('nominal');
 
         return $this->success([

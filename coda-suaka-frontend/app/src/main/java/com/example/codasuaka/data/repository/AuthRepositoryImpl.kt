@@ -34,6 +34,9 @@ class AuthRepositoryImpl(
                     token = token,
                     permissions = permissions
                 )
+                // Hapus data auth lama sebelum menyimpan yang baru
+                // (mencegah conflict token antar user di device yang sama)
+                tokenManager.clearAuthData()
                 // Simpan token
                 tokenManager.saveAuthData(
                     token = token,
@@ -77,6 +80,9 @@ class AuthRepositoryImpl(
                     outletId = null,
                     token = token
                 )
+                // Hapus data auth lama sebelum menyimpan yang baru
+                // (mencegah conflict token antar user di device yang sama)
+                tokenManager.clearAuthData()
                 tokenManager.saveAuthData(
                     token = token,
                     email = email,

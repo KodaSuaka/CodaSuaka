@@ -38,7 +38,6 @@ private val InfoColor = Color(0xFF3B82F6)
 private val InfoBg = Color(0xFFDBEAFE)
 private val WarningColor = Color(0xFFF59E0B)
 private val WarningBg = Color(0xFFFEF3C7)
-private val SurfaceCard = Color(0xFFF8FAFC)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -239,7 +238,7 @@ private fun FilterBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceCard)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         // Filter Tipe
@@ -309,7 +308,7 @@ private fun SaldoRingkasanCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         if (isLoading) {
@@ -376,7 +375,7 @@ private fun TransaksiCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(

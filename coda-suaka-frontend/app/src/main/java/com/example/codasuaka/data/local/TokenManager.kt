@@ -17,6 +17,16 @@ import androidx.security.crypto.MasterKey
  */
 class TokenManager(private val context: Context) {
 
+    companion object {
+        private const val PREFS_FILE_NAME = "codasuaka_secure_auth_prefs"
+        private const val KEY_TOKEN = "access_token"
+        private const val KEY_USER_EMAIL = "user_email"
+        private const val KEY_USER_NAME = "user_name"
+        private const val KEY_USER_ROLE = "user_role"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USER_PERMISSIONS = "user_permissions"
+    }
+
     private val prefs: SharedPreferences by lazy {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -29,16 +39,6 @@ class TokenManager(private val context: Context) {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-    }
-
-    companion object {
-        private const val PREFS_FILE_NAME = "codasuaka_secure_auth_prefs"
-        private const val KEY_TOKEN = "access_token"
-        private const val KEY_USER_EMAIL = "user_email"
-        private const val KEY_USER_NAME = "user_name"
-        private const val KEY_USER_ROLE = "user_role"
-        private const val KEY_USER_ID = "user_id"
-        private const val KEY_USER_PERMISSIONS = "user_permissions"
     }
 
     /**
@@ -71,6 +71,7 @@ class TokenManager(private val context: Context) {
         userId: String,
         permissions: List<String>? = null
     ) {
+        val oldToken = cachedToken
         prefs.edit()
             .putString(KEY_TOKEN, token)
             .putString(KEY_USER_EMAIL, email)

@@ -574,14 +574,12 @@ private fun DialogTambahKaryawan(
                     onRoleSelected = onRoleChange
                 )
 
-                // Outlet Dropdown (hanya jika >1 outlet)
-                if (outlets.size > 1) {
-                    OutletDropdown(
-                        outlets = outlets,
-                        selectedOutletId = selectedOutletId,
-                        onOutletSelected = onOutletChange
-                    )
-                }
+                // Outlet Dropdown (selalu tampilkan agar user bisa memilih outlet)
+                OutletDropdown(
+                    outlets = outlets,
+                    selectedOutletId = selectedOutletId,
+                    onOutletSelected = onOutletChange
+                )
 
                 // Tombol Simpan
                 Button(
@@ -749,14 +747,12 @@ private fun DialogEditKaryawan(
                     )
                 )
 
-                // Outlet Dropdown (hanya jika >1 outlet)
-                if (outlets.size > 1) {
-                    OutletDropdown(
-                        outlets = outlets,
-                        selectedOutletId = selectedOutletId,
-                        onOutletSelected = onOutletChange
-                    )
-                }
+                // Outlet Dropdown (selalu tampilkan agar user bisa memilih outlet)
+                OutletDropdown(
+                    outlets = outlets,
+                    selectedOutletId = selectedOutletId,
+                    onOutletSelected = onOutletChange
+                )
 
                 // Baris Tombol: Hapus | Simpan
                 Row(

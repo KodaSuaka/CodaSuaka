@@ -51,7 +51,7 @@ data class DivisiUiState(
     // ── Form Fields ──
     val formNamaDivisi: String = "",
     val formDeskripsi: String = "",
-    val formKetuaKaryawanId: Int? = null,
+    val formKetuaKaryawanId: String? = null,
     val formOutletId: Int = 0,
     val editingDivisiId: Int? = null,
     // ── Anggota Management ──
@@ -168,7 +168,7 @@ class DivisiViewModel(
             dialogMode = DivisiDialogMode.Edit(divisi),
             formNamaDivisi = divisi.namaDivisi,
             formDeskripsi = divisi.deskripsi,
-            formKetuaKaryawanId = divisi.ketua?.id?.toIntOrNull(),
+            formKetuaKaryawanId = divisi.ketua?.id,
             formOutletId = divisi.outlet?.id ?: 0,
             editingDivisiId = divisi.id,
             formAnggota = divisi.anggota.toMutableList(),
@@ -202,7 +202,7 @@ class DivisiViewModel(
         _uiState.value = _uiState.value.copy(formDeskripsi = value, errorMessage = null)
     }
 
-    fun onFormKetuaChange(karyawanId: Int?) {
+    fun onFormKetuaChange(karyawanId: String?) {
         _uiState.value = _uiState.value.copy(formKetuaKaryawanId = karyawanId, errorMessage = null)
     }
 
@@ -258,11 +258,10 @@ class DivisiViewModel(
             val request = CreateDivisiRequest(
                 namaDivisi = state.formNamaDivisi.trim(),
                 deskripsi = state.formDeskripsi.trim().ifEmpty { null },
-                ketuaKaryawanId = state.formKetuaKaryawanId?.toString(),
+                ketuaKaryawanId = state.formKetuaKaryawanId,
                 outletId = state.formOutletId.takeIf { it > 0 }
                     ?: (state.outlets.firstOrNull()?.id ?: 0)
             )
-
             divisiRepository.createDivisi(request).onSuccess { dto ->
                 val newDivisi = dto.toDivisi(state.karyawanList, state.outlets)
                 _uiState.value = _uiState.value.copy(
@@ -304,10 +303,9 @@ class DivisiViewModel(
             val request = UpdateDivisiRequest(
                 namaDivisi = state.formNamaDivisi.trim(),
                 deskripsi = state.formDeskripsi.trim().ifEmpty { null },
-                ketuaKaryawanId = state.formKetuaKaryawanId?.toString(),
+                ketuaKaryawanId = state.formKetuaKaryawanId,
                 outletId = state.formOutletId.takeIf { it > 0 }
             )
-
             divisiRepository.updateDivisi(id, request).onSuccess {
                 // Reload divisi list
                 divisiRepository.getDivisis().onSuccess { dtos ->
