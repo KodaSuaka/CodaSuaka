@@ -12,7 +12,13 @@ import java.time.format.DateTimeFormatter
 
 /**
  * State untuk halaman Laporan Keuangan (Buku Kas).
+ *
+ * Metode pembayaran yang valid untuk form.
  */
+private val VALID_METODE_PEMBAYARAN = listOf(
+    "Tunai", "Transfer", "QRIS", "Kartu Kredit", "Kartu Debit", "Lainnya"
+)
+
 data class LaporanKeuanganUiState(
     // Daftar transaksi
     val transaksiList: List<TransaksiKasDto> = emptyList(),
@@ -267,13 +273,47 @@ class LaporanKeuanganViewModel(
 
     fun submitForm() {
         val state = _uiState.value
+
+        // Validasi nominal
         val nominal = state.formNominal.replace(".", "").replace(",", ".").toDoubleOrNull()
         if (nominal == null || nominal <= 0) {
             _uiState.value = _uiState.value.copy(submitError = "Nominal harus diisi dengan angka valid")
             return
         }
+        if (nominal > 999999999999.99) {
+            _uiState.value = _uiState.value.copy(submitError = "Nominal melebihi batas maksimum")
+            return
+        }
+
+        // Validasi kategori
         if (state.formKategoriId == null) {
             _uiState.value = _uiState.value.copy(submitError = "Pilih kategori transaksi")
+            return
+        }
+
+        // Validasi tanggal
+        try {
+            val tanggal = LocalDate.parse(state.formTanggal, DateTimeFormatter.ISO_LOCAL_DATE)
+            if (tanggal.isAfter(LocalDate.now())) {
+                _uiState.value = _uiState.value.copy(submitError = "Tanggal tidak boleh melebihi hari ini")
+                return
+            }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(submitError = "Format tanggal tidak valid")
+            return
+        }
+
+        // Validasi metode pembayaran (jika diisi)
+        if (state.formMetodePembayaran.isNotBlank() &&
+            state.formMetodePembayaran !in VALID_METODE_PEMBAYARAN
+        ) {
+            _uiState.value = _uiState.value.copy(submitError = "Metode pembayaran tidak valid")
+            return
+        }
+
+        // Validasi keterangan (max 1000 karakter)
+        if (state.formKeterangan.length > 1000) {
+            _uiState.value = _uiState.value.copy(submitError = "Keterangan maksimal 1000 karakter")
             return
         }
 

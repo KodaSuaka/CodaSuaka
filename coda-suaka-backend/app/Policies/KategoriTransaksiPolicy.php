@@ -69,14 +69,22 @@ class KategoriTransaksiPolicy
     {
         // Global template check dilakukan di Controller (return 422 + pesan jelas).
         if ($kategoriTransaksi->isGlobal()) {
-            return app(PermissionService::class)->userHasPermission($user, 'manage:keuangan');
+            return app(PermissionService::class)->userHasPermission($user, 'delete:keuangan');
         }
 
         if ($user->instansi_id !== $kategoriTransaksi->instansi_id) {
             return false;
         }
 
-        return app(PermissionService::class)->userHasPermission($user, 'manage:keuangan');
+        return app(PermissionService::class)->userHasPermission($user, 'delete:keuangan');
+    }
+
+    /**
+     * User bisa mengekspor data kategori transaksi (PDF/Excel).
+     */
+    public function export(User $user): bool
+    {
+        return app(PermissionService::class)->userHasPermission($user, 'export:keuangan');
     }
 
     public function restore(User $user, KategoriTransaksi $kategoriTransaksi): bool

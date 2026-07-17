@@ -13,6 +13,18 @@ class TransaksiKasController extends Controller
 {
     use ApiResponse;
 
+    /**
+     * Daftar metode pembayaran yang valid.
+     */
+    private const METODE_PEMBAYARAN_VALID = [
+        'Tunai', 'Transfer', 'QRIS', 'Kartu Kredit', 'Kartu Debit', 'Lainnya',
+    ];
+
+    /**
+     * Nominal maksimum yang diizinkan.
+     */
+    private const NOMINAL_MAX = 999999999999.99;
+
     public function __construct()
     {
         $this->authorizeResource(TransaksiKas::class, 'transaksi_kas');
@@ -68,15 +80,18 @@ class TransaksiKasController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'tanggal' => 'required|date',
+            'tanggal' => 'required|date|before_or_equal:today',
             'tipe' => 'required|in:masuk,keluar',
-            'nominal' => 'required|numeric|min:0',
+            'nominal' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:' . self::NOMINAL_MAX,
+            ],
             'kategori_transaksi_id' => [
                 'nullable',
                 Rule::exists('kategori_transaksis', 'id')
                     ->where(function ($query) use ($user) {
-                        // Boleh pilih kategori global (instansi_id = null)
-                        // atau kategori custom milik instansi user
                         $query->whereNull('instansi_id')
                             ->orWhere('instansi_id', $user->instansi_id);
                     }),
@@ -85,8 +100,13 @@ class TransaksiKasController extends Controller
                 'nullable',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
             ],
-            'metode_pembayaran' => 'nullable|string|max:100',
-            'keterangan' => 'nullable|string',
+            'metode_pembayaran' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::in(self::METODE_PEMBAYARAN_VALID),
+            ],
+            'keterangan' => 'nullable|string|max:1000',
             'lampiran_url' => 'nullable|string|max:255',
         ]);
 
@@ -129,9 +149,15 @@ class TransaksiKasController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'tanggal' => 'sometimes|required|date',
+            'tanggal' => 'sometimes|required|date|before_or_equal:today',
             'tipe' => 'sometimes|required|in:masuk,keluar',
-            'nominal' => 'sometimes|required|numeric|min:0',
+            'nominal' => [
+                'sometimes',
+                'required',
+                'numeric',
+                'min:0',
+                'max:' . self::NOMINAL_MAX,
+            ],
             'kategori_transaksi_id' => [
                 'nullable',
                 Rule::exists('kategori_transaksis', 'id')
@@ -144,8 +170,13 @@ class TransaksiKasController extends Controller
                 'nullable',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
             ],
-            'metode_pembayaran' => 'nullable|string|max:100',
-            'keterangan' => 'nullable|string',
+            'metode_pembayaran' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::in(self::METODE_PEMBAYARAN_VALID),
+            ],
+            'keterangan' => 'nullable|string|max:1000',
             'lampiran_url' => 'nullable|string|max:255',
         ]);
 

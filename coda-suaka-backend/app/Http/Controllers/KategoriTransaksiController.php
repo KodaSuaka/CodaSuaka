@@ -6,6 +6,7 @@ use App\Models\KategoriTransaksi;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class KategoriTransaksiController extends Controller
 {
@@ -53,7 +54,14 @@ class KategoriTransaksiController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'nama_kategori' => 'required|string|max:150',
+            'nama_kategori' => [
+                'required',
+                'string',
+                'max:150',
+                Rule::unique('kategori_transaksis')
+                    ->where('instansi_id', $user->instansi_id)
+                    ->where('tipe', $request->tipe),
+            ],
             'tipe' => 'required|in:masuk,keluar',
             'sifat' => 'required|in:operasional,non_operasional',
             'termasuk_hpp' => 'sometimes|boolean',
@@ -94,8 +102,19 @@ class KategoriTransaksiController extends Controller
             return $this->error('Kategori template global tidak dapat diedit', 422);
         }
 
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
-            'nama_kategori' => 'sometimes|required|string|max:150',
+            'nama_kategori' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:150',
+                Rule::unique('kategori_transaksis')
+                    ->where('instansi_id', $user->instansi_id)
+                    ->where('tipe', $request->tipe ?? $kategori_transaksi->tipe)
+                    ->ignore($kategori_transaksi->id),
+            ],
             'tipe' => 'sometimes|required|in:masuk,keluar',
             'sifat' => 'sometimes|required|in:operasional,non_operasional',
             'termasuk_hpp' => 'sometimes|boolean',

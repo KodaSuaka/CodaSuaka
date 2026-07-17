@@ -80,5 +80,22 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('access-instansi', function (User $user, $instansiId) {
             return $user->instansi_id === $instansiId;
         });
+
+        // ─── Financial Gate Definitions ────────────────────────────
+
+        // Export keuangan (PDF/Excel)
+        Gate::define('export-keuangan', function (User $user) {
+            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'export:keuangan');
+        });
+
+        // Delete keuangan (penghapusan transaksi/kategori)
+        Gate::define('delete-keuangan', function (User $user) {
+            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'delete:keuangan');
+        });
+
+        // Approve keuangan (persetujuan transaksi)
+        Gate::define('approve-keuangan', function (User $user) {
+            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'approve:keuangan');
+        });
     }
 }

@@ -22,6 +22,9 @@ class RolePermissionSeeder extends Seeder
                 'manage:penugasan',
                 'view:keuangan',
                 'manage:keuangan',
+                'export:keuangan',
+                'delete:keuangan',
+                'approve:keuangan',
                 'manage:pengajuan',
                 'view:presensi',
                 'manage:role_permissions',
@@ -30,6 +33,8 @@ class RolePermissionSeeder extends Seeder
             'Keuangan' => [
                 'view:keuangan',
                 'manage:keuangan',
+                'export:keuangan',
+                'delete:keuangan',
                 'view:presensi',
             ],
             'Manajemen' => [
@@ -38,6 +43,8 @@ class RolePermissionSeeder extends Seeder
                 'manage:divisi',
                 'manage:jadwal',
                 'manage:penugasan',
+                'view:keuangan',
+                'approve:keuangan',
                 'manage:pengajuan',
                 'view:presensi',
             ],
