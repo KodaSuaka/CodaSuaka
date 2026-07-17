@@ -10,6 +10,18 @@ class TransaksiKas extends Model
 {
     use HasFactory;
 
+    /**
+     * Daftar metode pembayaran yang valid.
+     */
+    public const METODE_PEMBAYARAN_VALID = [
+        'Tunai', 'Transfer', 'QRIS', 'Kartu Kredit', 'Kartu Debit', 'Lainnya',
+    ];
+
+    /**
+     * Nominal maksimum yang diizinkan.
+     */
+    public const NOMINAL_MAX = 999999999999.99;
+
     protected $table = 'transaksi_kas';
 
     protected $fillable = [

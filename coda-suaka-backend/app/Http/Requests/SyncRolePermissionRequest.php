@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class Storerole_permissionRequest extends FormRequest
+class SyncRolePermissionRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,7 +16,8 @@ class Storerole_permissionRequest extends FormRequest
     {
         return [
             'role_id' => 'required|exists:roles,id',
-            'permission' => 'required|string|max:100',
+            'permissions' => 'required|array',
+            'permissions.*' => 'string|max:100',
         ];
     }
 
@@ -25,8 +26,9 @@ class Storerole_permissionRequest extends FormRequest
         return [
             'role_id.required' => 'Role wajib dipilih.',
             'role_id.exists' => 'Role tidak valid.',
-            'permission.required' => 'Permission wajib diisi.',
-            'permission.max' => 'Permission maksimal 100 karakter.',
+            'permissions.required' => 'Permissions wajib diisi.',
+            'permissions.array' => 'Format permissions tidak valid.',
+            'permissions.*.max' => 'Setiap permission maksimal 100 karakter.',
         ];
     }
 }

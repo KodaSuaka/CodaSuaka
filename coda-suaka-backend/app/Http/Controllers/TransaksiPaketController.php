@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Storetransaksi_paketRequest;
+use App\Http\Requests\Updatetransaksi_paketRequest;
 use App\Models\transaksi_paket;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class TransaksiPaketController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(transaksi_paket::class, 'transaksi_paket');
@@ -29,27 +33,15 @@ class TransaksiPaketController extends Controller
         }
 
         $transaksis = $query->orderBy('created_at', 'desc')->get();
-        return response()->json(['status' => 'success', 'data' => $transaksis]);
+        return $this->success($transaksis);
     }
 
     /**
      * POST /api/transaksi-pakets
      */
-    public function store(Request $request)
+    public function store(Storetransaksi_paketRequest $request)
     {
         $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'paket_id' => 'required|exists:pakets,id',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_berakhir' => 'nullable|date|after:tanggal_mulai',
-            'total_harga' => 'required|numeric|min:0',
-            'status' => 'sometimes|in:pending,aktif,kedaluwarsa,dibatalkan',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
 
         $transaksi = transaksi_paket::create([
             'instansi_id' => $user->instansi_id,
@@ -62,11 +54,7 @@ class TransaksiPaketController extends Controller
 
         $transaksi->load(['instansi', 'paket']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Transaksi paket berhasil ditambahkan',
-            'data' => $transaksi
-        ], 201);
+        return $this->success($transaksi, 'Transaksi paket berhasil ditambahkan', 201);
     }
 
     /**
@@ -75,30 +63,17 @@ class TransaksiPaketController extends Controller
     public function show(transaksi_paket $transaksi_paket)
     {
         $transaksi_paket->load(['instansi', 'paket']);
-        return response()->json(['status' => 'success', 'data' => $transaksi_paket]);
+        return $this->success($transaksi_paket);
     }
 
     /**
      * PUT /api/transaksi-pakets/{transaksi_paket}
      */
-    public function update(Request $request, transaksi_paket $transaksi_paket)
+    public function update(Updatetransaksi_paketRequest $request, transaksi_paket $transaksi_paket)
     {
-        $validator = Validator::make($request->all(), [
-            'status' => 'sometimes|required|in:pending,aktif,kedaluwarsa,dibatalkan',
-            'bukti_pembayaran' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $transaksi_paket->update($request->only(['status', 'bukti_pembayaran']));
         $transaksi_paket->load(['instansi', 'paket']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Transaksi berhasil diperbarui',
-            'data' => $transaksi_paket
-        ]);
+        return $this->success($transaksi_paket, 'Transaksi berhasil diperbarui');
     }
 }

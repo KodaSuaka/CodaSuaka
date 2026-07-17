@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SendChatRequest;
 use App\Models\Chat;
 use App\Models\User;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class ChatController extends Controller
 {
-    use \App\Traits\ApiResponse;
+    use ApiResponse;
 
     /**
      * GET /api/chat/contacts
@@ -75,10 +76,7 @@ class ChatController extends Controller
             ];
         })->values();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $grouped,
-        ]);
+        return $this->success($grouped);
     }
 
     /**
@@ -91,7 +89,7 @@ class ChatController extends Controller
 
         // Validasi: pastikan satu instansi
         if ($currentUser->instansi_id !== $user->instansi_id) {
-            return $this->errorResponse('User tidak dalam instansi yang sama.', 403);
+            return $this->error('User tidak dalam instansi yang sama.', 403);
         }
 
         // Ambil pesan antara kedua user
@@ -122,37 +120,25 @@ class ChatController extends Controller
             ];
         });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $messages,
-        ]);
+        return $this->success($messages);
     }
 
     /**
      * POST /api/chat/send
      * Kirim pesan ke user tertentu.
      */
-    public function send(Request $request)
+    public function send(SendChatRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'penerima_id' => 'required|exists:users,id',
-            'pesan' => 'required|string|max:5000',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->errorResponse($validator->errors()->first(), 422);
-        }
-
         $currentUser = $request->user();
         $penerima = User::find($request->penerima_id);
 
         if (!$penerima) {
-            return $this->errorResponse('Penerima tidak ditemukan.', 404);
+            return $this->error('Penerima tidak ditemukan.', 404);
         }
 
         // Validasi: pastikan satu instansi
         if ($currentUser->instansi_id !== $penerima->instansi_id) {
-            return $this->errorResponse('Penerima tidak dalam instansi yang sama.', 403);
+            return $this->error('Penerima tidak dalam instansi yang sama.', 403);
         }
 
         $chat = Chat::create([
@@ -162,19 +148,15 @@ class ChatController extends Controller
             'is_read' => false,
         ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Pesan berhasil dikirim.',
-            'data' => [
-                'id' => $chat->id,
-                'pengirim_id' => $chat->pengirim_id,
-                'penerima_id' => $chat->penerima_id,
-                'pesan' => $chat->pesan,
-                'is_read' => $chat->is_read,
-                'created_at' => $chat->created_at->toDateTimeString(),
-                'waktu' => $chat->created_at->diffForHumans(),
-            ],
-        ], 201);
+        return $this->success([
+            'id' => $chat->id,
+            'pengirim_id' => $chat->pengirim_id,
+            'penerima_id' => $chat->penerima_id,
+            'pesan' => $chat->pesan,
+            'is_read' => $chat->is_read,
+            'created_at' => $chat->created_at->toDateTimeString(),
+            'waktu' => $chat->created_at->diffForHumans(),
+        ], 'Pesan berhasil dikirim.', 201);
     }
 
     /**
@@ -190,20 +172,6 @@ class ChatController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Pesan ditandai sudah dibaca.',
-        ]);
-    }
-
-    /**
-     * Response error helper.
-     */
-    private function errorResponse(string $message, int $code)
-    {
-        return response()->json([
-            'status' => 'error',
-            'message' => $message,
-        ], $code);
+        return $this->success(null, 'Pesan ditandai sudah dibaca.');
     }
 }

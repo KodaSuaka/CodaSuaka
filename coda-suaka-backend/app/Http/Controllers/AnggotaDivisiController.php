@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAnggotaDivisiRequest;
 use App\Models\AnggotaDivisi;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class AnggotaDivisiController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(AnggotaDivisi::class, 'anggotaDivisi');
@@ -25,31 +28,22 @@ class AnggotaDivisiController extends Controller
         }
 
         $anggota = $query->orderBy('created_at')->get();
-        return response()->json(['status' => 'success', 'data' => $anggota]);
+        return $this->success($anggota);
     }
 
     /**
      * POST /api/anggota-divisis
      * Tambah anggota ke divisi
      */
-    public function store(Request $request)
+    public function store(StoreAnggotaDivisiRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'divisi_id' => 'required|exists:divisis,id',
-            'karyawan_id' => 'required|exists:karyawans,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         // Cek duplicate
         $exists = AnggotaDivisi::where('divisi_id', $request->divisi_id)
             ->where('karyawan_id', $request->karyawan_id)
             ->exists();
 
         if ($exists) {
-            return response()->json(['status' => 'error', 'message' => 'Karyawan sudah terdaftar di divisi ini'], 409);
+            return $this->error('Karyawan sudah terdaftar di divisi ini', 409);
         }
 
         $anggota = AnggotaDivisi::create([
@@ -59,11 +53,7 @@ class AnggotaDivisiController extends Controller
 
         $anggota->load(['divisi', 'karyawan.user']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Anggota berhasil ditambahkan ke divisi',
-            'data' => $anggota
-        ], 201);
+        return $this->success($anggota, 'Anggota berhasil ditambahkan ke divisi', 201);
     }
 
     /**
@@ -72,6 +62,6 @@ class AnggotaDivisiController extends Controller
     public function destroy(AnggotaDivisi $anggotaDivisi)
     {
         $anggotaDivisi->delete();
-        return response()->json(['status' => 'success', 'message' => 'Anggota berhasil dihapus dari divisi']);
+        return $this->success(null, 'Anggota berhasil dihapus dari divisi');
     }
 }

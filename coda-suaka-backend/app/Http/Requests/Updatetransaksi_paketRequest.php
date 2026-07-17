@@ -12,7 +12,7 @@ class Updatetransaksi_paketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,16 @@ class Updatetransaksi_paketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'status' => 'sometimes|required|in:pending,aktif,kedaluwarsa,dibatalkan',
+            'bukti_pembayaran' => 'nullable|string',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'status.required' => 'Status wajib diisi.',
+            'status.in' => 'Status tidak valid.',
         ];
     }
 }

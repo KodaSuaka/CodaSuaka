@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorepenugasanRequest;
+use App\Http\Requests\UpdatepenugasanRequest;
 use App\Models\penugasan;
-use App\Models\Divisi;
-use App\Models\karyawan;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class PenugasanController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(penugasan::class, 'penugasan');
@@ -44,47 +46,14 @@ class PenugasanController extends Controller
         }
 
         $penugasans = $query->orderBy('created_at', 'desc')->get();
-        return response()->json(['status' => 'success', 'data' => $penugasans]);
+        return $this->success($penugasans);
     }
 
     /**
      * POST /api/penugasans
      */
-    public function store(Request $request)
+    public function store(StorepenugasanRequest $request)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'judul' => 'required|string|max:200',
-            'deskripsi' => 'nullable|string',
-            'penanggung_jawab_id' => [
-                'required',
-                function ($attribute, $value, $fail) use ($user) {
-                    if (!karyawan::whereHas('user', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
-                        $fail('Karyawan tidak ditemukan di instansi Anda');
-                    }
-                },
-            ],
-            'divisi_id' => [
-                'nullable',
-                function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !Divisi::whereHas('outlet', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
-                        $fail('Divisi tidak ditemukan di instansi Anda');
-                    }
-                },
-            ],
-            'tenggat' => 'nullable|date',
-            'status' => 'sometimes|in:belum,proses,selesai,batal',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $penugasan = penugasan::create([
             'judul' => $request->judul,
             'deskripsi' => $request->deskripsi,
@@ -97,11 +66,7 @@ class PenugasanController extends Controller
 
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Tugas berhasil ditambahkan',
-            'data' => $penugasan
-        ], 201);
+        return $this->success($penugasan, 'Tugas berhasil ditambahkan', 201);
     }
 
     /**
@@ -110,56 +75,18 @@ class PenugasanController extends Controller
     public function show(penugasan $penugasan)
     {
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
-        return response()->json(['status' => 'success', 'data' => $penugasan]);
+        return $this->success($penugasan);
     }
 
     /**
      * PUT /api/penugasans/{penugasan}
      */
-    public function update(Request $request, penugasan $penugasan)
+    public function update(UpdatepenugasanRequest $request, penugasan $penugasan)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'judul' => 'sometimes|required|string|max:200',
-            'deskripsi' => 'nullable|string',
-            'penanggung_jawab_id' => [
-                'sometimes',
-                'required',
-                function ($attribute, $value, $fail) use ($user) {
-                    if (!karyawan::whereHas('user', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
-                        $fail('Karyawan tidak ditemukan di instansi Anda');
-                    }
-                },
-            ],
-            'divisi_id' => [
-                'nullable',
-                function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !Divisi::whereHas('outlet', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
-                        $fail('Divisi tidak ditemukan di instansi Anda');
-                    }
-                },
-            ],
-            'tenggat' => 'nullable|date',
-            'status' => 'sometimes|in:belum,proses,selesai,batal',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $penugasan->update($request->only(['judul', 'deskripsi', 'penanggung_jawab_id', 'divisi_id', 'tenggat', 'status']));
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Tugas berhasil diperbarui',
-            'data' => $penugasan
-        ]);
+        return $this->success($penugasan, 'Tugas berhasil diperbarui');
     }
 
     /**
@@ -168,6 +95,6 @@ class PenugasanController extends Controller
     public function destroy(penugasan $penugasan)
     {
         $penugasan->delete();
-        return response()->json(['status' => 'success', 'message' => 'Tugas berhasil dihapus']);
+        return $this->success(null, 'Tugas berhasil dihapus');
     }
 }

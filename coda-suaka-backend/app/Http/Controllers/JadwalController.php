@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorejadwalRequest;
+use App\Http\Requests\UpdatejadwalRequest;
 use App\Models\jadwal;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class JadwalController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(jadwal::class, 'jadwal');
@@ -35,31 +38,14 @@ class JadwalController extends Controller
         }
 
         $jadwals = $query->orderBy('tanggal', 'asc')->get();
-        return response()->json(['status' => 'success', 'data' => $jadwals]);
+        return $this->success($jadwals);
     }
 
     /**
      * POST /api/jadwals
      */
-    public function store(Request $request)
+    public function store(StorejadwalRequest $request)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_event' => 'required|string|max:200',
-            'deskripsi' => 'nullable|string',
-            'tanggal' => 'required|date',
-            'kategori' => 'required|in:meeting,training,event,libur,lainnya',
-            'outlet_id' => [
-                'nullable',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $jadwal = jadwal::create([
             'nama_event' => $request->nama_event,
             'deskripsi' => $request->deskripsi,
@@ -71,11 +57,7 @@ class JadwalController extends Controller
 
         $jadwal->load(['outlet', 'pembuat']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event berhasil ditambahkan',
-            'data' => $jadwal
-        ], 201);
+        return $this->success($jadwal, 'Event berhasil ditambahkan', 201);
     }
 
     /**
@@ -84,39 +66,18 @@ class JadwalController extends Controller
     public function show(jadwal $jadwal)
     {
         $jadwal->load(['outlet', 'pembuat']);
-        return response()->json(['status' => 'success', 'data' => $jadwal]);
+        return $this->success($jadwal);
     }
 
     /**
      * PUT /api/jadwals/{jadwal}
      */
-    public function update(Request $request, jadwal $jadwal)
+    public function update(UpdatejadwalRequest $request, jadwal $jadwal)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_event' => 'sometimes|required|string|max:200',
-            'deskripsi' => 'nullable|string',
-            'tanggal' => 'sometimes|required|date',
-            'kategori' => 'sometimes|required|in:meeting,training,event,libur,lainnya',
-            'outlet_id' => [
-                'nullable',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $jadwal->update($request->only(['nama_event', 'deskripsi', 'tanggal', 'kategori', 'outlet_id']));
         $jadwal->load(['outlet', 'pembuat']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event berhasil diperbarui',
-            'data' => $jadwal
-        ]);
+        return $this->success($jadwal, 'Event berhasil diperbarui');
     }
 
     /**
@@ -125,6 +86,6 @@ class JadwalController extends Controller
     public function destroy(jadwal $jadwal)
     {
         $jadwal->delete();
-        return response()->json(['status' => 'success', 'message' => 'Event berhasil dihapus']);
+        return $this->success(null, 'Event berhasil dihapus');
     }
 }

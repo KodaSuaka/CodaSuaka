@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\karyawan;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDivisiRequest extends FormRequest
 {
@@ -12,7 +14,7 @@ class StoreDivisiRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,8 +24,34 @@ class StoreDivisiRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+
         return [
-            //
+            'nama_divisi' => 'required|string|max:100',
+            'deskripsi' => 'nullable|string',
+            'ketua_karyawan_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !karyawan::whereHas('user', function ($q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        })->where('id', $value)->exists()) {
+                        $fail('Karyawan tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
+            'outlet_id' => [
+                'required',
+                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nama_divisi.required' => 'Nama divisi wajib diisi.',
+            'outlet_id.required' => 'Outlet wajib dipilih.',
+            'outlet_id.exists' => 'Outlet tidak valid.',
         ];
     }
 }

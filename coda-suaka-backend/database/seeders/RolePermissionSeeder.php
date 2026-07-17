@@ -10,48 +10,13 @@ class RolePermissionSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * Mengambil mapping role → permission dari config/roles.php
+     * sehingga bisa diubah tanpa mengubah seeder.
      */
     public function run(): void
     {
-        $permissionMap = [
-            'Owner' => [
-                'manage:outlets',
-                'manage:karyawan',
-                'manage:divisi',
-                'manage:jadwal',
-                'manage:penugasan',
-                'view:keuangan',
-                'manage:keuangan',
-                'export:keuangan',
-                'delete:keuangan',
-                'approve:keuangan',
-                'manage:pengajuan',
-                'view:presensi',
-                'manage:role_permissions',
-                'manage:paket',
-            ],
-            'Keuangan' => [
-                'view:keuangan',
-                'manage:keuangan',
-                'export:keuangan',
-                'delete:keuangan',
-                'view:presensi',
-            ],
-            'Manajemen' => [
-                'manage:outlets',
-                'manage:karyawan',
-                'manage:divisi',
-                'manage:jadwal',
-                'manage:penugasan',
-                'view:keuangan',
-                'approve:keuangan',
-                'manage:pengajuan',
-                'view:presensi',
-            ],
-            'Staff' => [
-                // No special permissions — task-based only
-            ],
-        ];
+        $permissionMap = config('roles.permissions', []);
 
         foreach ($permissionMap as $roleName => $permissions) {
             $role = role::where('nama_role', $roleName)->first();

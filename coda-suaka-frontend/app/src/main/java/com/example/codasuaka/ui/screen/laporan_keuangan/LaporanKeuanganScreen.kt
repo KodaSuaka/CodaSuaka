@@ -27,12 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-<<<<<<< Updated upstream
+import androidx.compose.ui.window.Dialog
 import com.example.codasuaka.data.remote.dto.ArusKasData
 import com.example.codasuaka.data.remote.dto.ArusKasDetail
-=======
-import androidx.compose.ui.window.Dialog
->>>>>>> Stashed changes
 import com.example.codasuaka.data.remote.dto.KategoriTransaksiDto
 import com.example.codasuaka.data.remote.dto.TransaksiKasDto
 import com.example.codasuaka.ui.theme.*
@@ -550,165 +547,89 @@ private fun TransaksiCard(
     val statusApproval = transaksi.statusApproval // "disetujui", "pending", "ditolak", or null
     val isPending = statusApproval == "pending"
     val isDitolak = statusApproval == "ditolak"
-    val isDisetujui = statusApproval == "disetujui" || statusApproval == null
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
-    ) {
-<<<<<<< Updated upstream
-        Column {
+    Column {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Indikator tipe
+                // Indikator tipe dengan icon yang lebih besar
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(if (transaksi.tipe == "masuk") MasukBg else KeluarBg),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (transaksi.tipe == "masuk")
-                            Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                            Icons.Default.TrendingUp else Icons.Default.TrendingDown,
                         contentDescription = null,
                         tint = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-                // Info
+                // Info Utama
                 Column(modifier = Modifier.weight(1f)) {
-                    // Nama kategori + nominal
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = transaksi.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
-                        )
-                    }
+                    Text(
+                        text = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
                     Spacer(modifier = Modifier.height(2.dp))
 
-                    // Tanggal + keterangan
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = Neutral
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Event, null, tint = OnSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = transaksi.tanggal,
                             fontSize = 11.sp,
-                            color = Neutral
-=======
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Indikator tipe dengan icon yang lebih besar
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (transaksi.tipe == "masuk") MasukBg else KeluarBg),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (transaksi.tipe == "masuk")
-                        Icons.Default.TrendingUp else Icons.Default.TrendingDown,
-                    contentDescription = null,
-                    tint = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Info Utama
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = Secondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Event, null, tint = OnSurfaceVariant, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = transaksi.tanggal,
-                        fontSize = 11.sp,
-                        color = OnSurfaceVariant
-                    )
-                    
-                    if (!transaksi.metodePembayaran.isNullOrBlank()) {
-                        Text(" • ", color = OnSurfaceVariant)
-                        Text(
-                            text = transaksi.metodePembayaran,
-                            fontSize = 11.sp,
                             color = OnSurfaceVariant
->>>>>>> Stashed changes
                         )
+
+                        if (!transaksi.metodePembayaran.isNullOrBlank()) {
+                            Text(" • ", color = OnSurfaceVariant)
+                            Text(
+                                text = transaksi.metodePembayaran,
+                                fontSize = 11.sp,
+                                color = OnSurfaceVariant
+                            )
+                        }
+
                         if (!transaksi.keterangan.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 Icons.Default.Description,
                                 contentDescription = null,
                                 modifier = Modifier.size(12.dp),
-                                tint = Neutral
+                                tint = OnSurfaceVariant
                             )
+                            Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = transaksi.keterangan,
                                 fontSize = 11.sp,
-                                color = Neutral,
+                                color = OnSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                    }
-
-                    // Metode pembayaran
-                    if (!transaksi.metodePembayaran.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = transaksi.metodePembayaran,
-                            fontSize = 10.sp,
-                            color = Neutral
-                        )
                     }
 
                     // Status approval badge
@@ -733,79 +654,71 @@ private fun TransaksiCard(
                         }
                     }
                 }
-<<<<<<< Updated upstream
 
-                // Tombol edit & delete (dinonaktifkan jika pending)
-                Column {
-                    IconButton(
-                        onClick = onEdit,
-                        enabled = !isPending,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            modifier = Modifier.size(16.dp),
-                            tint = if (isPending) Neutral else InfoColor
-                        )
-                    }
-                    if (!isPending) {
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Nominal & Actions
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = (if (transaksi.tipe == "masuk") "+" else "-") +
+                               LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row {
+                        IconButton(
+                            onClick = onEdit,
+                            enabled = !isPending,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                "Edit",
+                                tint = if (isPending) Neutral.copy(alpha = 0.3f) else Secondary.copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                         IconButton(
                             onClick = { showDeleteConfirm = true },
-                            modifier = Modifier.size(28.dp)
+                            enabled = !isPending,
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Hapus",
-                                modifier = Modifier.size(16.dp),
-                                tint = KeluarColor
+                                "Hapus",
+                                tint = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor.copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
             }
+        }
 
-            // Tombol Ajukan Approval (khusus ditolak — bisa diajukan ulang)
-            if (isDitolak) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.End
+        // Tombol Ajukan Approval (khusus ditolak — bisa diajukan ulang)
+        if (isDitolak) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = onAjukanApproval,
+                    colors = ButtonDefaults.buttonColors(containerColor = WarningColor),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
-                    Button(
-                        onClick = onAjukanApproval,
-                        colors = ButtonDefaults.buttonColors(containerColor = WarningColor),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Send,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Ajukan Approval", fontSize = 12.sp)
-=======
-            }
-
-            // Nominal & Actions
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = (if (transaksi.tipe == "masuk") "+" else "-") + 
-                           LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 15.sp,
-                    color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
-                )
-                
-                Row {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Edit, "Edit", tint = Secondary.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
-                    }
-                    IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Delete, "Hapus", tint = KeluarColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
->>>>>>> Stashed changes
-                    }
+                    Icon(
+                        Icons.Default.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Ajukan Approval", fontSize = 12.sp)
                 }
             }
         }
@@ -913,7 +826,7 @@ private fun FormTransaksiDialog(
                             color = if (formTipe == "masuk") MasukBg else Tertiary,
                             border = if (formTipe == "masuk") androidx.compose.foundation.BorderStroke(1.dp, MasukColor) else null
                         ) {
-                            Text("Masuk", modifier = Modifier.padding(12.dp), textAlign = TextAlign.Center, 
+                            Text("Masuk", modifier = Modifier.padding(12.dp), textAlign = TextAlign.Center,
                                  fontWeight = FontWeight.Bold, color = if (formTipe == "masuk") MasukColor else OnSurfaceVariant)
                         }
                         Surface(
@@ -948,7 +861,7 @@ private fun FormTransaksiDialog(
                 // Kategori Dropdown
                 var expanded by remember { mutableStateOf(false) }
                 val selectedKategori = filteredKategori.find { it.id == formKategoriId }
-                
+
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it }

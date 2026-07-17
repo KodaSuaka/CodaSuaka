@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreKategoriTransaksiRequest;
+use App\Http\Requests\UpdateKategoriTransaksiRequest;
 use App\Models\KategoriTransaksi;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class KategoriTransaksiController extends Controller
 {
@@ -49,27 +49,9 @@ class KategoriTransaksiController extends Controller
      * POST /api/kategori-transaksis
      * Membuat kategori custom untuk instansi user (bukan global).
      */
-    public function store(Request $request)
+    public function store(StoreKategoriTransaksiRequest $request)
     {
         $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_kategori' => [
-                'required',
-                'string',
-                'max:150',
-                Rule::unique('kategori_transaksis')
-                    ->where('instansi_id', $user->instansi_id)
-                    ->where('tipe', $request->tipe),
-            ],
-            'tipe' => 'required|in:masuk,keluar',
-            'sifat' => 'required|in:operasional,non_operasional',
-            'termasuk_hpp' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
-        }
 
         $kategori = KategoriTransaksi::create([
             'instansi_id' => $user->instansi_id,
@@ -95,34 +77,11 @@ class KategoriTransaksiController extends Controller
     /**
      * PUT /api/kategori-transaksis/{kategori_transaksi}
      */
-    public function update(Request $request, KategoriTransaksi $kategori_transaksi)
+    public function update(UpdateKategoriTransaksiRequest $request, KategoriTransaksi $kategori_transaksi)
     {
         // Cegah edit kategori global (hanya boleh oleh Super Admin nantinya)
         if ($kategori_transaksi->isGlobal()) {
             return $this->error('Kategori template global tidak dapat diedit', 422);
-        }
-
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_kategori' => [
-                'sometimes',
-                'required',
-                'string',
-                'max:150',
-                Rule::unique('kategori_transaksis')
-                    ->where('instansi_id', $user->instansi_id)
-                    ->where('tipe', $request->tipe ?? $kategori_transaksi->tipe)
-                    ->ignore($kategori_transaksi->id),
-            ],
-            'tipe' => 'sometimes|required|in:masuk,keluar',
-            'sifat' => 'sometimes|required|in:operasional,non_operasional',
-            'termasuk_hpp' => 'sometimes|boolean',
-            'is_active' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
         }
 
         $kategori_transaksi->update($request->only([

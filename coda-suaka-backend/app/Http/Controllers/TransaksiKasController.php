@@ -2,30 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreTransaksiKasRequest;
+use App\Http\Requests\UpdateTransaksiKasRequest;
 use App\Models\TransaksiKas;
 use App\Traits\ApiResponse;
 use App\Services\ApprovalService;
 use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class TransaksiKasController extends Controller
 {
     use ApiResponse;
-
-    /**
-     * Daftar metode pembayaran yang valid.
-     */
-    private const METODE_PEMBAYARAN_VALID = [
-        'Tunai', 'Transfer', 'QRIS', 'Kartu Kredit', 'Kartu Debit', 'Lainnya',
-    ];
-
-    /**
-     * Nominal maksimum yang diizinkan.
-     */
-    private const NOMINAL_MAX = 999999999999.99;
 
     protected ApprovalService $approvalService;
     protected AuditService $auditService;
@@ -88,44 +76,9 @@ class TransaksiKasController extends Controller
      * POST /api/transaksi-kas
      * Buat transaksi baru. Jika perlu approval, otomatis ajukan.
      */
-    public function store(Request $request)
+    public function store(StoreTransaksiKasRequest $request)
     {
         $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'tanggal' => 'required|date|before_or_equal:today',
-            'tipe' => 'required|in:masuk,keluar',
-            'nominal' => [
-                'required',
-                'numeric',
-                'min:0',
-                'max:' . self::NOMINAL_MAX,
-            ],
-            'kategori_transaksi_id' => [
-                'nullable',
-                Rule::exists('kategori_transaksis', 'id')
-                    ->where(function ($query) use ($user) {
-                        $query->whereNull('instansi_id')
-                            ->orWhere('instansi_id', $user->instansi_id);
-                    }),
-            ],
-            'outlet_id' => [
-                'nullable',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-            'metode_pembayaran' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::in(self::METODE_PEMBAYARAN_VALID),
-            ],
-            'keterangan' => 'nullable|string|max:1000',
-            'lampiran_url' => 'nullable|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
-        }
 
         // ─── Cegah duplikat transaksi ─────────────────────────────────
         $duplicate = TransaksiKas::where('instansi_id', $user->instansi_id)
@@ -196,7 +149,7 @@ class TransaksiKasController extends Controller
      * Hanya bisa update jika status_approval = disetujui (default) atau ditolak.
      * Jika transaksi dalam status pending, tidak bisa diedit.
      */
-    public function update(Request $request, TransaksiKas $transaksi_kas)
+    public function update(UpdateTransaksiKasRequest $request, TransaksiKas $transaksi_kas)
     {
         $user = $request->user();
 
@@ -207,42 +160,6 @@ class TransaksiKasController extends Controller
 
         // Simpan snapshot before untuk audit
         $original = $transaksi_kas->getOriginal();
-
-        $validator = Validator::make($request->all(), [
-            'tanggal' => 'sometimes|required|date|before_or_equal:today',
-            'tipe' => 'sometimes|required|in:masuk,keluar',
-            'nominal' => [
-                'sometimes',
-                'required',
-                'numeric',
-                'min:0',
-                'max:' . self::NOMINAL_MAX,
-            ],
-            'kategori_transaksi_id' => [
-                'nullable',
-                Rule::exists('kategori_transaksis', 'id')
-                    ->where(function ($query) use ($user) {
-                        $query->whereNull('instansi_id')
-                            ->orWhere('instansi_id', $user->instansi_id);
-                    }),
-            ],
-            'outlet_id' => [
-                'nullable',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-            'metode_pembayaran' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::in(self::METODE_PEMBAYARAN_VALID),
-            ],
-            'keterangan' => 'nullable|string|max:1000',
-            'lampiran_url' => 'nullable|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
-        }
 
         $transaksi_kas->update($request->only([
             'tanggal', 'tipe', 'nominal', 'kategori_transaksi_id',

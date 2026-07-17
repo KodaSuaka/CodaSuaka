@@ -17,7 +17,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "BASE_URL", "\"https://codasuaka.my.id/\"")
+        buildConfigField("String", "BASE_URL", "\"${project.findProperty("BASE_URL") ?: "https://codasuaka.my.id/"}\"")
     }
 
     buildTypes {

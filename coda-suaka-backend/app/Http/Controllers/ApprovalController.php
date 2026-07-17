@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SetujuiApprovalRequest;
+use App\Http\Requests\TolakApprovalRequest;
 use App\Models\User;
 use App\Models\TransaksiKas;
 use App\Models\ApprovalLog;
@@ -100,7 +102,7 @@ class ApprovalController extends Controller
      * POST /api/approval/{approval_log}/setujui
      * Setujui transaksi yang diajukan.
      */
-    public function setujui(ApprovalLog $approval_log, Request $request)
+    public function setujui(ApprovalLog $approval_log, SetujuiApprovalRequest $request)
     {
         $user = $request->user();
 
@@ -119,14 +121,6 @@ class ApprovalController extends Controller
             return $this->error('Approval ini sudah diproses sebelumnya', 422);
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'catatan' => 'nullable|string|max:500',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
-        }
-
         $this->approvalService->setujui($approval_log, $user, $request->catatan);
 
         // Audit log: approved
@@ -143,7 +137,7 @@ class ApprovalController extends Controller
      * POST /api/approval/{approval_log}/tolak
      * Tolak transaksi yang diajukan.
      */
-    public function tolak(ApprovalLog $approval_log, Request $request)
+    public function tolak(ApprovalLog $approval_log, TolakApprovalRequest $request)
     {
         $user = $request->user();
 
@@ -160,14 +154,6 @@ class ApprovalController extends Controller
         // Cek status
         if ($approval_log->status !== 'pending') {
             return $this->error('Approval ini sudah diproses sebelumnya', 422);
-        }
-
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'catatan' => 'required|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
         }
 
         $this->approvalService->tolak($approval_log, $user, $request->catatan);

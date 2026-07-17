@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreroleRequest extends FormRequest
+class SetujuiApprovalRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,16 +15,14 @@ class StoreroleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nama_role' => 'required|string|max:50|unique:roles,nama_role',
+            'catatan' => 'nullable|string|max:500',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'nama_role.required' => 'Nama role wajib diisi.',
-            'nama_role.max' => 'Nama role maksimal 50 karakter.',
-            'nama_role.unique' => 'Nama role sudah digunakan.',
+            'catatan.max' => 'Catatan maksimal 500 karakter.',
         ];
     }
 }

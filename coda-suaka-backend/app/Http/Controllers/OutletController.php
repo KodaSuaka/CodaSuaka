@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreoutletRequest;
+use App\Http\Requests\UpdateoutletRequest;
 use App\Models\outlet;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class OutletController extends Controller
 {
@@ -33,20 +34,10 @@ class OutletController extends Controller
     /**
      * POST /api/outlets
      */
-    public function store(Request $request)
+    public function store(StoreoutletRequest $request)
     {
         $user = $request->user();
         $instansiId = $user->instansi_id;
-
-        $validator = Validator::make($request->all(), [
-            'nama_outlet' => 'required|string|max:150',
-            'alamat_outlet' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
-        }
 
         $outlet = outlet::create([
             'nama_outlet' => $request->nama_outlet,
@@ -72,20 +63,10 @@ class OutletController extends Controller
     /**
      * PUT /api/outlets/{outlet}
      */
-    public function update(Request $request, outlet $outlet)
+    public function update(UpdateoutletRequest $request, outlet $outlet)
     {
         if ($outlet->instansi_id !== $request->user()->instansi_id) {
             return $this->error('Forbidden', 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'nama_outlet' => 'sometimes|required|string|max:150',
-            'alamat_outlet' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
         }
 
         $outlet->update($request->only(['nama_outlet', 'alamat_outlet', 'is_active']));

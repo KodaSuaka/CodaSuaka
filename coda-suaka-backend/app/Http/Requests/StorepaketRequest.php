@@ -12,7 +12,7 @@ class StorepaketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,27 @@ class StorepaketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nama_paket' => 'required|string|max:255',
+            'harga' => 'required|numeric|min:0',
+            'deskripsi' => 'nullable|string',
+            'fitur' => 'nullable|string',
+            'durasi_hari' => 'required|integer|min:1',
+            'max_outlet' => 'nullable|integer|min:1',
+            'max_karyawan_per_outlet' => 'nullable|integer|min:1',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nama_paket.required' => 'Nama paket wajib diisi.',
+            'harga.required' => 'Harga wajib diisi.',
+            'harga.numeric' => 'Harga harus berupa angka.',
+            'harga.min' => 'Harga tidak boleh negatif.',
+            'durasi_hari.required' => 'Durasi hari wajib diisi.',
+            'durasi_hari.integer' => 'Durasi hari harus berupa bilangan bulat.',
+            'durasi_hari.min' => 'Durasi hari minimal 1.',
         ];
     }
 }

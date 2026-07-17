@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorekaryawanRequest;
+use App\Http\Requests\UpdatekaryawanRequest;
 use App\Models\karyawan;
 use App\Models\User;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class KaryawanController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(karyawan::class, 'karyawan', ['except' => ['me']]);
@@ -33,7 +35,7 @@ class KaryawanController extends Controller
 
         $karyawans = $query->orderBy('nama_lengkap')->get();
 
-        return response()->json(['status' => 'success', 'data' => $karyawans]);
+        return $this->success($karyawans);
     }
 
     /**
@@ -47,42 +49,20 @@ class KaryawanController extends Controller
             ->first();
 
         if (!$karyawan) {
-            return response()->json(['status' => 'error', 'message' => 'Profil karyawan tidak ditemukan'], 404);
+            return $this->error('Profil karyawan tidak ditemukan', 404);
         }
 
-        return response()->json(['status' => 'success', 'data' => $karyawan]);
+        return $this->success($karyawan);
     }
 
     /**
      * POST /api/karyawans
      * Tambah karyawan baru (dengan user account)
      */
-    public function store(Request $request)
+    public function store(StorekaryawanRequest $request)
     {
         $user = $request->user();
         $instansiId = $user->instansi_id;
-
-        // Authorisasi sudah ditangani oleh Policy (authorizeResource di constructor)
-        // Policy::create() memeriksa permission 'manage:karyawan'
-        // Hapus hard check Owner-only karena kontradiksi dengan Policy
-
-        $validator = Validator::make($request->all(), [
-            'nama_lengkap' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'kontak' => 'nullable|string|max:20',
-            'alamat' => 'nullable|string',
-            'role_id' => 'required|exists:roles,id',
-            'outlet_id' => [
-                'nullable',
-                Rule::exists('outlets', 'id')->where('instansi_id', $instansiId),
-            ],
-            'sisa_cuti' => 'nullable|integer|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
 
         $result = DB::transaction(function () use ($request, $instansiId) {
             // Buat user account
@@ -111,11 +91,7 @@ class KaryawanController extends Controller
             return $karyawan;
         });
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Karyawan berhasil ditambahkan',
-            'data' => $result
-        ], 201);
+        return $this->success($result, 'Karyawan berhasil ditambahkan', 201);
     }
 
     /**
@@ -124,43 +100,21 @@ class KaryawanController extends Controller
     public function show(karyawan $karyawan)
     {
         $karyawan->load(['user.role', 'outlet', 'divisi', 'anggotaDivisis']);
-        return response()->json(['status' => 'success', 'data' => $karyawan]);
+        return $this->success($karyawan);
     }
 
     /**
      * PUT /api/karyawans/{karyawan}
      */
-    public function update(Request $request, karyawan $karyawan)
+    public function update(UpdatekaryawanRequest $request, karyawan $karyawan)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_lengkap' => 'sometimes|required|string|max:255',
-            'kontak' => 'nullable|string|max:20',
-            'alamat' => 'nullable|string',
-            'outlet_id' => [
-                'nullable',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-            'sisa_cuti' => 'nullable|integer|min:0',
-            'foto_profil' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $karyawan->update($request->only([
             'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil'
         ]));
 
         $karyawan->load(['user.role', 'outlet']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Karyawan berhasil diperbarui',
-            'data' => $karyawan
-        ]);
+        return $this->success($karyawan, 'Karyawan berhasil diperbarui');
     }
 
     /**
@@ -174,6 +128,6 @@ class KaryawanController extends Controller
             $karyawan->user()->delete();
         });
 
-        return response()->json(['status' => 'success', 'message' => 'Karyawan berhasil dihapus']);
+        return $this->success(null, 'Karyawan berhasil dihapus');
     }
 }

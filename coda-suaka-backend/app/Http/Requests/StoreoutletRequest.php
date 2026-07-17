@@ -9,10 +9,11 @@ class StoreoutletRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     * Otorisasi ditangani oleh Policy via authorizeResource di controller.
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +24,17 @@ class StoreoutletRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nama_outlet' => 'required|string|max:150',
+            'alamat_outlet' => 'nullable|string',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nama_outlet.required' => 'Nama outlet wajib diisi.',
+            'nama_outlet.max' => 'Nama outlet maksimal 150 karakter.',
         ];
     }
 }

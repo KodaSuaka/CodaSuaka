@@ -12,7 +12,7 @@ class Storetransaksi_paketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,23 @@ class Storetransaksi_paketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'paket_id' => 'required|exists:pakets,id',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_berakhir' => 'nullable|date|after:tanggal_mulai',
+            'total_harga' => 'required|numeric|min:0',
+            'status' => 'sometimes|in:pending,aktif,kedaluwarsa,dibatalkan',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'paket_id.required' => 'Paket wajib dipilih.',
+            'paket_id.exists' => 'Paket tidak valid.',
+            'tanggal_mulai.required' => 'Tanggal mulai wajib diisi.',
+            'total_harga.required' => 'Total harga wajib diisi.',
+            'tanggal_berakhir.after' => 'Tanggal berakhir harus setelah tanggal mulai.',
+            'status.in' => 'Status tidak valid.',
         ];
     }
 }

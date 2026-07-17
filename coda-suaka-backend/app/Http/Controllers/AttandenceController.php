@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreattandenceRequest;
 use App\Models\attandence;
 use App\Models\User;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class AttandenceController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(attandence::class, 'attandence');
@@ -41,14 +44,14 @@ class AttandenceController extends Controller
         }
 
         $presensis = $query->orderBy('tanggal', 'desc')->get();
-        return response()->json(['status' => 'success', 'data' => $presensis]);
+        return $this->success($presensis);
     }
 
     /**
      * POST /api/presensis/checkin
      * Absen masuk
      */
-    public function checkin(Request $request)
+    public function checkin(StoreattandenceRequest $request)
     {
         $user = $request->user();
         $today = now()->toDateString();
@@ -59,7 +62,7 @@ class AttandenceController extends Controller
             ->first();
 
         if ($existing && $existing->jam_checkin) {
-            return response()->json(['status' => 'error', 'message' => 'Anda sudah melakukan checkin hari ini'], 409);
+            return $this->error('Anda sudah melakukan checkin hari ini', 409);
         }
 
         if (!$existing) {
@@ -78,11 +81,7 @@ class AttandenceController extends Controller
             ]);
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Checkin berhasil',
-            'data' => $existing
-        ]);
+        return $this->success($existing, 'Checkin berhasil');
     }
 
     /**
@@ -99,20 +98,16 @@ class AttandenceController extends Controller
             ->first();
 
         if (!$presensi || !$presensi->jam_checkin) {
-            return response()->json(['status' => 'error', 'message' => 'Anda belum melakukan checkin hari ini'], 400);
+            return $this->error('Anda belum melakukan checkin hari ini', 400);
         }
 
         if ($presensi->jam_checkout) {
-            return response()->json(['status' => 'error', 'message' => 'Anda sudah melakukan checkout'], 409);
+            return $this->error('Anda sudah melakukan checkout', 409);
         }
 
         $presensi->update(['jam_checkout' => now()->toTimeString()]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Checkout berhasil',
-            'data' => $presensi
-        ]);
+        return $this->success($presensi, 'Checkout berhasil');
     }
 
     /**
@@ -128,13 +123,10 @@ class AttandenceController extends Controller
             ->where('tanggal', $today)
             ->first();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'sudah_checkin' => $presensi && $presensi->jam_checkin ? true : false,
-                'sudah_checkout' => $presensi && $presensi->jam_checkout ? true : false,
-                'presensi' => $presensi,
-            ]
+        return $this->success([
+            'sudah_checkin' => $presensi && $presensi->jam_checkin ? true : false,
+            'sudah_checkout' => $presensi && $presensi->jam_checkout ? true : false,
+            'presensi' => $presensi,
         ]);
     }
 
@@ -148,7 +140,7 @@ class AttandenceController extends Controller
 
         // Gunakan PermissionService — Manajemen punya 'view:presensi' yang mencakup akses rekap
         if (!app(\App\Services\PermissionService::class)->userHasPermission($user, 'view:presensi')) {
-            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki akses ke rekap kehadiran'], 403);
+            return $this->error('Anda tidak memiliki akses ke rekap kehadiran', 403);
         }
 
         $bulan = $request->get('bulan', now()->month);
@@ -181,9 +173,6 @@ class AttandenceController extends Controller
                 ];
             })->values();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $rekap
-        ]);
+        return $this->success($rekap);
     }
 }

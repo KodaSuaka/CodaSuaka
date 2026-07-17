@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePengajuanRequest;
+use App\Http\Requests\RejectPengajuanRequest;
 use App\Models\pengajuan;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class PengajuanController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(pengajuan::class, 'pengajuan');
@@ -31,32 +35,21 @@ class PengajuanController extends Controller
         }
 
         $pengajuans = $query->orderBy('created_at', 'desc')->get();
-        return response()->json(['status' => 'success', 'data' => $pengajuans]);
+        return $this->success($pengajuans);
     }
 
     /**
      * POST /api/pengajuans
      */
-    public function store(Request $request)
+    public function store(StorePengajuanRequest $request)
     {
         $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'jenis' => 'required|in:cuti_tahunan,izin_sakit,mendadak',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'keterangan' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
 
         // Jika cuti tahunan, cek sisa cuti
         if ($request->jenis === 'cuti_tahunan') {
             $karyawan = $user->profilKaryawan;
             if ($karyawan && $karyawan->sisa_cuti <= 0) {
-                return response()->json(['status' => 'error', 'message' => 'Sisa cuti Anda habis'], 400);
+                return $this->error('Sisa cuti Anda habis', 400);
             }
         }
 
@@ -71,11 +64,7 @@ class PengajuanController extends Controller
 
         $pengajuan->load(['user.profilKaryawan']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Pengajuan berhasil dikirim',
-            'data' => $pengajuan
-        ], 201);
+        return $this->success($pengajuan, 'Pengajuan berhasil dikirim', 201);
     }
 
     /**
@@ -84,7 +73,7 @@ class PengajuanController extends Controller
     public function show(pengajuan $pengajuan)
     {
         $pengajuan->load(['user.profilKaryawan', 'penyetuju.profilKaryawan']);
-        return response()->json(['status' => 'success', 'data' => $pengajuan]);
+        return $this->success($pengajuan);
     }
 
     /**
@@ -100,23 +89,23 @@ class PengajuanController extends Controller
 
         // Prevent self-approval
         if ($pengajuan->user_id === $user->id) {
-            return response()->json(['status' => 'error', 'message' => 'Anda tidak dapat menyetujui pengajuan sendiri'], 403);
+            return $this->error('Anda tidak dapat menyetujui pengajuan sendiri', 403);
         }
 
         // Tenant isolation: pengajuan must belong to same instansi
         if ($pengajuan->user->instansi_id !== $user->instansi_id) {
-            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
+            return $this->error('Forbidden', 403);
         }
 
         if ($pengajuan->status !== 'pending') {
-            return response()->json(['status' => 'error', 'message' => 'Pengajuan sudah diproses'], 400);
+            return $this->error('Pengajuan sudah diproses', 400);
         }
 
         // Check remaining leave balance before approving cuti
         if ($pengajuan->jenis === 'cuti_tahunan') {
             $karyawan = $pengajuan->user->profilKaryawan;
             if (!$karyawan || $karyawan->sisa_cuti <= 0) {
-                return response()->json(['status' => 'error', 'message' => 'Sisa cuti karyawan habis, tidak dapat menyetujui'], 400);
+                return $this->error('Sisa cuti karyawan habis, tidak dapat menyetujui', 400);
             }
         }
 
@@ -144,18 +133,14 @@ class PengajuanController extends Controller
             }
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Pengajuan disetujui',
-            'data' => $pengajuan
-        ]);
+        return $this->success($pengajuan, 'Pengajuan disetujui');
     }
 
     /**
      * PUT /api/pengajuans/{pengajuan}/reject
      * Tolak pengajuan (hanya Owner yang bisa)
      */
-    public function reject(Request $request, pengajuan $pengajuan)
+    public function reject(RejectPengajuanRequest $request, pengajuan $pengajuan)
     {
         $user = $request->user();
 
@@ -164,24 +149,16 @@ class PengajuanController extends Controller
 
         // Prevent self-rejection
         if ($pengajuan->user_id === $user->id) {
-            return response()->json(['status' => 'error', 'message' => 'Anda tidak dapat menolak pengajuan sendiri'], 403);
+            return $this->error('Anda tidak dapat menolak pengajuan sendiri', 403);
         }
 
         // Tenant isolation
         if ($pengajuan->user->instansi_id !== $user->instansi_id) {
-            return response()->json(['status' => 'error', 'message' => 'Forbidden'], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'alasan_penolakan' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Alasan penolakan wajib diisi'], 422);
+            return $this->error('Forbidden', 403);
         }
 
         if ($pengajuan->status !== 'pending') {
-            return response()->json(['status' => 'error', 'message' => 'Pengajuan sudah diproses'], 400);
+            return $this->error('Pengajuan sudah diproses', 400);
         }
 
         $pengajuan->update([
@@ -191,10 +168,6 @@ class PengajuanController extends Controller
             'alasan_penolakan' => $request->alasan_penolakan,
         ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Pengajuan ditolak',
-            'data' => $pengajuan
-        ]);
+        return $this->success($pengajuan, 'Pengajuan ditolak');
     }
 }

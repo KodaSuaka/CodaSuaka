@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateInstansiRequest;
 use App\Models\instansi;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class InstansiController extends Controller
 {
@@ -37,17 +37,9 @@ class InstansiController extends Controller
      * PUT /api/instansi
      * Update data instansi
      */
-    public function update(Request $request)
+    public function update(UpdateInstansiRequest $request)
     {
         $instansi = instansi::findOrFail($request->user()->instansi_id);
-
-        $validator = Validator::make($request->all(), [
-            'nama_instansi' => 'sometimes|required|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Validasi gagal', 422, $validator->errors());
-        }
 
         $instansi->update($request->only(['nama_instansi']));
         return $this->success($instansi, 'Instansi berhasil diperbarui');

@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreDivisiRequest;
+use App\Http\Requests\UpdateDivisiRequest;
 use App\Models\Divisi;
-use App\Models\karyawan;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class DivisiController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         $this->authorizeResource(Divisi::class, 'divisi');
@@ -27,47 +29,18 @@ class DivisiController extends Controller
         }
 
         $divisis = $query->orderBy('nama_divisi')->get();
-        return response()->json(['status' => 'success', 'data' => $divisis]);
+        return $this->success($divisis);
     }
 
     /**
      * POST /api/divisis
      */
-    public function store(Request $request)
+    public function store(StoreDivisiRequest $request)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_divisi' => 'required|string|max:100',
-            'deskripsi' => 'nullable|string',
-            'ketua_karyawan_id' => [
-                'nullable',
-                function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !karyawan::whereHas('user', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
-                        $fail('Karyawan tidak ditemukan di instansi Anda');
-                    }
-                },
-            ],
-            'outlet_id' => [
-                'required',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $divisi = Divisi::create($request->only(['nama_divisi', 'deskripsi', 'ketua_karyawan_id', 'outlet_id']));
         $divisi->load(['ketuaKaryawan', 'outlet']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Divisi berhasil ditambahkan',
-            'data' => $divisi
-        ], 201);
+        return $this->success($divisi, 'Divisi berhasil ditambahkan', 201);
     }
 
     /**
@@ -76,48 +49,18 @@ class DivisiController extends Controller
     public function show(Divisi $divisi)
     {
         $divisi->load(['ketuaKaryawan', 'outlet', 'anggota.karyawan.user']);
-        return response()->json(['status' => 'success', 'data' => $divisi]);
+        return $this->success($divisi);
     }
 
     /**
      * PUT /api/divisis/{divisi}
      */
-    public function update(Request $request, Divisi $divisi)
+    public function update(UpdateDivisiRequest $request, Divisi $divisi)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'nama_divisi' => 'sometimes|required|string|max:100',
-            'deskripsi' => 'nullable|string',
-            'ketua_karyawan_id' => [
-                'nullable',
-                function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !karyawan::whereHas('user', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
-                        $fail('Karyawan tidak ditemukan di instansi Anda');
-                    }
-                },
-            ],
-            'outlet_id' => [
-                'sometimes',
-                'required',
-                Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
-            ],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
         $divisi->update($request->only(['nama_divisi', 'deskripsi', 'ketua_karyawan_id', 'outlet_id']));
         $divisi->load(['ketuaKaryawan', 'outlet']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Divisi berhasil diperbarui',
-            'data' => $divisi
-        ]);
+        return $this->success($divisi, 'Divisi berhasil diperbarui');
     }
 
     /**
@@ -126,6 +69,6 @@ class DivisiController extends Controller
     public function destroy(Divisi $divisi)
     {
         $divisi->delete();
-        return response()->json(['status' => 'success', 'message' => 'Divisi berhasil dihapus']);
+        return $this->success(null, 'Divisi berhasil dihapus');
     }
 }
