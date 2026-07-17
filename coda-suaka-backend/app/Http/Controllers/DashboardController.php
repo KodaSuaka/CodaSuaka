@@ -13,6 +13,7 @@ use App\Services\PermissionService;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -39,8 +40,9 @@ class DashboardController extends Controller
         $user = $request->user();
         $instansiId = $user->instansi_id;
 
-        // Hanya Owner yang bisa akses dashboard utama
-        if ($user->role?->nama_role !== 'Owner') {
+        // Owner dashboard — role dengan akses penuh data bisnis
+        // Gunakan Gate 'owner' yang sudah terdefinisi di AppServiceProvider
+        if (!Gate::allows('owner')) {
             return $this->error('Forbidden: Hanya Owner yang dapat mengakses dashboard ini', 403);
         }
 

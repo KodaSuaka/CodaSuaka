@@ -23,8 +23,9 @@ class AttandenceController extends Controller
         $user = $request->user();
         $query = attandence::with('user.profilKaryawan');
 
-        // Owner/Admin bisa lihat semua, karyawan hanya lihat sendiri
-        if ($user->role?->nama_role !== 'Owner') {
+        // Owner/Manajemen (view:presensi) bisa lihat semua, karyawan hanya lihat sendiri
+        $canViewAll = app(\App\Services\PermissionService::class)->userHasPermission($user, 'view:presensi');
+        if (!$canViewAll) {
             $query->where('user_id', $user->id);
         } elseif ($request->has('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -145,8 +146,8 @@ class AttandenceController extends Controller
     {
         $user = $request->user();
 
-        // Hanya Owner yang bisa melihat rekap kehadiran
-        if ($user->role?->nama_role !== 'Owner') {
+        // Gunakan PermissionService — Manajemen punya 'view:presensi' yang mencakup akses rekap
+        if (!app(\App\Services\PermissionService::class)->userHasPermission($user, 'view:presensi')) {
             return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki akses ke rekap kehadiran'], 403);
         }
 

@@ -13,9 +13,10 @@ class RoleController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        Gate::authorize('manage-roles');
+        // Semua user authenticated boleh lihat daftar roles (data referensi)
+        // CRUD lainnya tetap dilindungi Gate 'manage-roles'
         $roles = role::orderBy('nama_role')->get();
         return response()->json(['status' => 'success', 'data' => $roles]);
     }

@@ -62,10 +62,9 @@ class KaryawanController extends Controller
         $user = $request->user();
         $instansiId = $user->instansi_id;
 
-        // Hanya Owner yang boleh menambahkan karyawan baru
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
-            return response()->json(['status' => 'error', 'message' => 'Hanya Owner yang dapat menambahkan karyawan'], 403);
-        }
+        // Authorisasi sudah ditangani oleh Policy (authorizeResource di constructor)
+        // Policy::create() memeriksa permission 'manage:karyawan'
+        // Hapus hard check Owner-only karena kontradiksi dengan Policy
 
         $validator = Validator::make($request->all(), [
             'nama_lengkap' => 'required|string|max:255',
