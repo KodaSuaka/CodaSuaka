@@ -77,9 +77,12 @@ class ApprovalController extends Controller
             return $this->error('Transaksi tidak ditemukan', 404);
         }
 
-        // Cek apakah transaksi sudah pernah diajukan
-        if ($transaksi_kas->status_approval !== 'disetujui') {
-            return $this->error('Transaksi ini sudah dalam proses approval', 422);
+        // Cek status approval transaksi
+        if ($transaksi_kas->status_approval === 'pending') {
+            return $this->error('Transaksi ini sudah dalam proses approval. Harap tunggu sampai diproses.', 422);
+        }
+        if ($transaksi_kas->status_approval === 'ditolak') {
+            return $this->error('Transaksi ini telah ditolak. Silakan edit terlebih dahulu sebelum mengajukan ulang.', 422);
         }
 
         // Cek apakah perlu approval

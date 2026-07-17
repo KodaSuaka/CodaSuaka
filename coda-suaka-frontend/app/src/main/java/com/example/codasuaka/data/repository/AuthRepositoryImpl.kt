@@ -68,27 +68,29 @@ class AuthRepositoryImpl(
             )
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
+                val userDto = body.data?.user
                 val token = body.data?.accessToken ?: ""
-                // Ekstrak userId dari response user (Gson parse sebagai LinkedTreeMap)
-                val userId = (body.data?.user as? Map<*, *>)?.get("id")?.toString() ?: ""
+                val permissions = body.data?.permissions ?: emptyList()
                 val user = User(
-                    id = userId.toIntOrNull() ?: 0,
-                    email = email,
-                    namaLengkap = namaPemilik,
-                    role = "Owner",
-                    instansiId = null,
-                    outletId = null,
-                    token = token
+                    id = userDto?.id ?: 0,
+                    email = userDto?.email ?: email,
+                    namaLengkap = userDto?.namaLengkap ?: namaPemilik,
+                    role = userDto?.role ?: "Owner",
+                    instansiId = userDto?.instansiId,
+                    outletId = userDto?.outletId,
+                    token = token,
+                    permissions = permissions
                 )
                 // Hapus data auth lama sebelum menyimpan yang baru
                 // (mencegah conflict token antar user di device yang sama)
                 tokenManager.clearAuthData()
                 tokenManager.saveAuthData(
                     token = token,
-                    email = email,
-                    name = namaPemilik,
-                    role = "Owner",
-                    userId = userId
+                    email = user.email,
+                    name = user.namaLengkap,
+                    role = user.role,
+                    userId = user.id.toString(),
+                    permissions = permissions
                 )
                 Result.success(user)
             } else {
@@ -116,7 +118,21 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout() {
-        tokenManager.clearAuthData()
+        try {
+            // Invalidasi token di server terlebih dahulu
+            val response = apiService.logout()
+            if (!response.isSuccessful) {
+                // Log jika server gagal — tetap lanjut hapus lokal
+                android.util.Log.w("AuthRepository", "Server logout gagal: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            // Network error — tetap hapus token lokal agar user bisa logout
+            // meskipun offline
+            android.util.Log.w("AuthRepository", "Server logout error (offline): ${e.message}")
+        } finally {
+            // Hapus data auth lokal bagaimanapun kondisinya
+            tokenManager.clearAuthData()
+        }
     }
 
     private fun parseErrorMessage(code: Int, errorBody: String?): String {

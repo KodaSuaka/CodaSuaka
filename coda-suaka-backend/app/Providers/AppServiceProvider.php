@@ -48,6 +48,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ─── Set locale Carbon ke Indonesia ─────────────────────────
+        // Agar now()->isoFormat('DD MMMM YYYY') menghasilkan "17 Juli 2026"
+        \Carbon\Carbon::setLocale('id');
+
         // ─── Register Policies ─────────────────────────────────────
         Gate::policy(outlet::class, OutletPolicy::class);
         Gate::policy(karyawan::class, KaryawanPolicy::class);

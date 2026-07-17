@@ -15,11 +15,14 @@ data class RegisterResponse(
 
 data class RegisterData(
     @SerializedName("user")
-    val user: Any?,
+    val user: UserData?,
 
     @SerializedName("access_token")
     val accessToken: String,
 
     @SerializedName("token_type")
-    val tokenType: String
+    val tokenType: String,
+
+    @SerializedName("permissions")
+    val permissions: List<String>?
 )

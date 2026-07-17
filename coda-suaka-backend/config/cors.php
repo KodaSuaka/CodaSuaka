@@ -19,7 +19,24 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Origins
+    |--------------------------------------------------------------------------
+    |
+    | Daftar origin yang diizinkan mengakses API dari browser.
+    | Android menggunakan OkHttp yang tidak terikat CORS, jadi hanya
+    | domain web yang perlu didaftarkan di sini.
+    |
+    | Format: comma-separated list di .env, contoh:
+    |   FRONTEND_URLS=https://codasuaka.my.id,https://admin.codasuaka.my.id
+    |
+    | Default: hanya mengizinkan https://codasuaka.my.id
+    */
+    'allowed_origins' => array_filter(array_map('trim', explode(',', env(
+        'FRONTEND_URLS',
+        'https://codasuaka.my.id'
+    )))),
 
     'allowed_origins_patterns' => [],
 
