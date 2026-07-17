@@ -4,20 +4,20 @@ import androidx.compose.ui.graphics.Color
 
 // ── Light Theme ──────────────────────────────────────────
 
-// Primary - Dark Navy Blue
-val Primary = Color(0xFF1A365D)
-val PrimaryLight = Color(0xFF2A4A7F)
-val PrimaryDark = Color(0xFF0F2440)
+// Primary - Sky Blue (Soft & Modern)
+val Primary = Color(0xFF63B3ED)
+val PrimaryLight = Color(0xFF90CDF4)
+val PrimaryDark = Color(0xFF4299E1)
 
-// Secondary - Light Blue
-val Secondary = Color(0xFF63B3ED)
-val SecondaryLight = Color(0xFF90CDF4)
-val SecondaryDark = Color(0xFF4299E1)
+// Secondary - Navy Blue (Professional Contrast)
+val Secondary = Color(0xFF1A365D)
+val SecondaryLight = Color(0xFF2A4A7F)
+val SecondaryDark = Color(0xFF0F2440)
 
 // Background & Surface
-val Tertiary = Color(0xFFF7FAFC)   // Page background
+val Tertiary = Color(0xFFFFFFFF)   // Clean White Background
 val Surface = Color(0xFFFFFFFF)     // Card / Input background
-val Neutral = Color(0xFFE2E8F0)     // Border / Divider
+val Neutral = Color(0xFFEDF2F7)     // Soft Border / Divider
 
 // Text
 val OnPrimary = Color(0xFFFFFFFF)   // Text on primary color

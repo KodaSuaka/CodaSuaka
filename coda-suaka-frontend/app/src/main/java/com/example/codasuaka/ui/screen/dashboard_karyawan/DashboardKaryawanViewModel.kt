@@ -16,8 +16,9 @@ import kotlinx.coroutines.launch
  * Status absensi (checkin / checkout).
  */
 enum class AbsensiStatus {
-    CHECKED_OUT,  // Belum checkin / sudah checkout
-    CHECKED_IN    // Sudah checkin
+    CHECKED_OUT,  // Belum checkin
+    CHECKED_IN,   // Sudah checkin
+    COMPLETED     // Sudah checkin & checkout
 }
 
 /**
@@ -141,12 +142,23 @@ class DashboardKaryawanViewModel(
                 }
 
                 presensiResult.onSuccess { today ->
-                    _uiState.value = _uiState.value.copy(
-                        absensiStatus = if (today.sudahCheckin && !today.sudahCheckout)
-                            AbsensiStatus.CHECKED_IN else AbsensiStatus.CHECKED_OUT,
-                        absensiTime = today.presensi?.jamCheckin?.let {
-                            if (today.sudahCheckout) "$it (checkout)" else "$it (checkin)"
+                    val status = when {
+                        today.sudahCheckin && today.sudahCheckout -> AbsensiStatus.COMPLETED
+                        today.sudahCheckin -> AbsensiStatus.CHECKED_IN
+                        else -> AbsensiStatus.CHECKED_OUT
+                    }
+                    val time = when (status) {
+                        AbsensiStatus.COMPLETED -> {
+                            val checkin = today.presensi?.jamCheckin ?: "-"
+                            val checkout = today.presensi?.jamCheckout ?: "-"
+                            "$checkin - $checkout"
                         }
+                        AbsensiStatus.CHECKED_IN -> today.presensi?.jamCheckin
+                        else -> null
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        absensiStatus = status,
+                        absensiTime = time
                     )
                 }
 
@@ -203,6 +215,8 @@ class DashboardKaryawanViewModel(
     fun toggleAbsensi() {
         viewModelScope.launch {
             val current = _uiState.value.absensiStatus
+            if (current == AbsensiStatus.COMPLETED) return@launch
+            
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             if (current == AbsensiStatus.CHECKED_OUT) {
@@ -221,13 +235,15 @@ class DashboardKaryawanViewModel(
                             errorMessage = error.message
                         )
                     }
-            } else {
+            } else if (current == AbsensiStatus.CHECKED_IN) {
                 // Checkout
                 presensiRepository.checkout()
                     .onSuccess { presensi ->
+                        val checkinTime = presensi.jamCheckin ?: "-"
+                        val checkoutTime = presensi.jamCheckout ?: "-"
                         _uiState.value = _uiState.value.copy(
-                            absensiStatus = AbsensiStatus.CHECKED_OUT,
-                            absensiTime = presensi.jamCheckout?.let { "$it WIB" },
+                            absensiStatus = AbsensiStatus.COMPLETED,
+                            absensiTime = "$checkinTime - $checkoutTime",
                             isLoading = false
                         )
                     }

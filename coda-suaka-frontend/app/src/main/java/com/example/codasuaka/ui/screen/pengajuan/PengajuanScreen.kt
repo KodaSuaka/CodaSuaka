@@ -47,14 +47,14 @@ fun PengajuanScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Pengajuan", fontWeight = FontWeight.SemiBold, color = OnPrimary)
+                    Text("Pengajuan", fontWeight = FontWeight.Bold, color = Secondary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = OnPrimary)
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
             )
         }
     ) { innerPadding ->
@@ -496,27 +496,60 @@ private fun DatePickerField(
                     initialSelectedDateMillis = System.currentTimeMillis()
                 )
 
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                datePickerState.selectedDateMillis?.let { millis ->
-                                    onClick(millis)
-                                }
-                                showDatePicker = false
-                            }
-                        ) {
-                            Text("Pilih", color = Primary, fontWeight = FontWeight.SemiBold)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text("Batal", color = OnSurfaceVariant)
-                        }
-                    }
+                MaterialTheme(
+                    colorScheme = lightColorScheme(
+                        primary = Primary,
+                        onPrimary = OnPrimary,
+                        surface = Surface,
+                        onSurface = Secondary, // Memaksa teks header/bulan-tahun menjadi Navy
+                        onSurfaceVariant = Secondary, // Memaksa teks "PILIH TANGGAL" menjadi Navy
+                        secondary = Secondary,
+                        onSecondary = OnPrimary,
+                        primaryContainer = Primary.copy(alpha = 0.1f),
+                        onPrimaryContainer = Secondary
+                    )
                 ) {
-                    DatePicker(state = datePickerState)
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        onClick(millis)
+                                    }
+                                    showDatePicker = false
+                                }
+                            ) {
+                                Text("Pilih", color = Primary, fontWeight = FontWeight.ExtraBold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) {
+                                Text("Batal", color = Secondary.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Surface,
+                                titleContentColor = Secondary,
+                                headlineContentColor = Secondary,
+                                navigationContentColor = Secondary,
+                                subheadContentColor = Secondary,
+                                weekdayContentColor = OnSurfaceVariant,
+                                yearContentColor = OnSurface,
+                                currentYearContentColor = Primary,
+                                selectedYearContentColor = OnPrimary,
+                                selectedYearContainerColor = Primary,
+                                dayContentColor = OnSurface,
+                                selectedDayContainerColor = Primary,
+                                selectedDayContentColor = OnPrimary,
+                                todayContentColor = Primary,
+                                todayDateBorderColor = Primary
+                            )
+                        )
+                    }
                 }
             }
         }

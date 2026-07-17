@@ -7,6 +7,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,7 +61,7 @@ fun LoginScreen(
                 text = "Selamat Datang",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Primary
+                color = Secondary
             )
 
             Text(
@@ -97,12 +100,12 @@ fun LoginScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Primary,
                     unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
+                    focusedContainerColor = Tertiary,
+                    unfocusedContainerColor = Tertiary,
                     cursorColor = Primary,
                     focusedLabelColor = Primary,
                     unfocusedLabelColor = OnSurfaceVariant
@@ -122,23 +125,24 @@ fun LoginScreen(
                     else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Primary,
                     unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
+                    focusedContainerColor = Tertiary,
+                    unfocusedContainerColor = Tertiary,
                     cursorColor = Primary,
                     focusedLabelColor = Primary,
                     unfocusedLabelColor = OnSurfaceVariant
                 ),
                 trailingIcon = {
-                    Text(
-                        text = if (passwordVisible) "Sembunyikan" else "Tampilkan",
-                        modifier = Modifier.clickable { passwordVisible = !passwordVisible },
-                        color = Primary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (passwordVisible) "Sembunyikan password" else "Tampilkan password",
+                            tint = OnSurfaceVariant
+                        )
+                    }
                 }
             )
 
@@ -149,9 +153,9 @@ fun LoginScreen(
                 onClick = { viewModel.login() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(56.dp),
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Primary,
                     contentColor = OnPrimary,

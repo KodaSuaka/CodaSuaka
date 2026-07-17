@@ -22,22 +22,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.codasuaka.ui.theme.*
 
-// ─── Color Palette Tambahan ─────
-private val Teal = Color(0xFF0D9488)
-private val TealLight = Color(0xFFCCFBF1)
-private val Amber = Color(0xFFF59E0B)
-private val AmberLight = Color(0xFFFEF3C7)
-private val SoftBlue = Color(0xFFE0F2FE)
-private val Coral = Color(0xFFF43F5E)
-private val CoralLight = Color(0xFFFFE4E6)
-private val Indigo = Color(0xFF6366F1)
-private val IndigoLight = Color(0xFFE0E7FF)
-private val Purple = Color(0xFF8B5CF6)
-private val PurpleLight = Color(0xFFEDE9FE)
+// ─── Color Palette Tambahan (Fresh & Soft) ─────
+private val Teal = Color(0xFF2DD4BF)      // Soft Teal
+private val OceanBlue = Color(0xFF60A5FA) // Ocean Blue (turunan Primary)
+private val Mint = Color(0xFF34D399)      // Mint Green
+private val Amber = Color(0xFFFBBF24)     // Soft Amber
+private val Coral = Color(0xFFF87171)     // Soft Coral
 private val ScoreGreen = Color(0xFF10B981)
-private val ScoreGreenLight = Color(0xFFD1FAE5)
 
 // ─── DashboardKaryawanScreen ──────────────────────────────────
 
@@ -57,8 +51,8 @@ fun DashboardKaryawanScreen(
                 title = {
                     Text(
                         text = "Dashboard Karyawan",
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnPrimary
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
                     )
                 },
                 actions = {
@@ -66,12 +60,12 @@ fun DashboardKaryawanScreen(
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifikasi",
-                            tint = OnPrimary
+                            tint = Secondary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Primary
+                    containerColor = Surface
                 )
             )
         },
@@ -113,7 +107,7 @@ fun DashboardKaryawanScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = CoralLight
+                        containerColor = Coral.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -174,54 +168,109 @@ fun DashboardKaryawanScreen(
 
             // ══════════════════════════════════════════════════
             // 6. Logout
-            // ══════════════════════════════════════════════════
+            // ══════════════════════════════════════════════════            // 6. Logout
             var showLogoutConfirm by remember { mutableStateOf(false) }
 
-            OutlinedButton(
+            Button(
                 onClick = { showLogoutConfirm = true },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Coral),
-                border = BorderStroke(1.dp, Coral.copy(alpha = 0.5f))
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Coral.copy(alpha = 0.1f),
+                    contentColor = Coral
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Logout,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = Coral
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Logout",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                    text = "Keluar dari Akun",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Coral
                 )
             }
 
-            // ── Konfirmasi Logout ──
+            // ── Konfirmasi Logout (Redesign) ──
             if (showLogoutConfirm) {
-                AlertDialog(
-                    onDismissRequest = { showLogoutConfirm = false },
-                    title = { Text("Logout") },
-                    text = { Text("Yakin ingin keluar dari akun ini?") },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                showLogoutConfirm = false
-                                onLogout()
-                            },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Coral)
+                Dialog(onDismissRequest = { showLogoutConfirm = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(containerColor = Surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text("Logout")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showLogoutConfirm = false }) {
-                            Text("Batal")
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(Coral.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Logout,
+                                    contentDescription = null,
+                                    tint = Coral,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            Text(
+                                text = "Keluar Akun",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Secondary
+                            )
+
+                            Text(
+                                text = "Apakah Anda yakin ingin keluar dari aplikasi Coda Suaka?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = OnSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { showLogoutConfirm = false },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, Neutral)
+                                ) {
+                                    Text("Batal", color = OnSurfaceVariant)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        showLogoutConfirm = false
+                                        onLogout()
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Coral)
+                                ) {
+                                    Text("Keluar", color = OnPrimary)
+                                }
+                            }
                         }
                     }
-                )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -343,6 +392,36 @@ private fun SectionPresensiToday(
     onJadwalShiftClick: () -> Unit
 ) {
     val isCheckedIn = absensiStatus == AbsensiStatus.CHECKED_IN
+    val isCompleted = absensiStatus == AbsensiStatus.COMPLETED
+
+    val statusText = when (absensiStatus) {
+        AbsensiStatus.CHECKED_IN -> "Sudah Check-in"
+        AbsensiStatus.COMPLETED -> "Sudah Selesai Absen"
+        else -> "Belum Check-in"
+    }
+
+    val detailText = when (absensiStatus) {
+        AbsensiStatus.CHECKED_IN -> "Masuk pukul ${absensiTime ?: "-"} WIB"
+        AbsensiStatus.COMPLETED -> "Jam Kerja: $absensiTime WIB"
+        else -> "Belum ada catatan"
+    }
+
+    val statusColor = when (absensiStatus) {
+        AbsensiStatus.CHECKED_IN -> ScoreGreen
+        AbsensiStatus.COMPLETED -> OceanBlue
+        else -> OnSurfaceVariant
+    }
+
+    val buttonText = when (absensiStatus) {
+        AbsensiStatus.CHECKED_IN -> "Check-out"
+        AbsensiStatus.COMPLETED -> "Selesai"
+        else -> "Check-in"
+    }
+
+    val buttonColor = when (absensiStatus) {
+        AbsensiStatus.CHECKED_IN -> Coral
+        else -> ScoreGreen
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Judul Section
@@ -391,7 +470,7 @@ private fun SectionPresensiToday(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(SoftBlue)
+                        .background(OceanBlue.copy(alpha = 0.1f))
                         .padding(12.dp, 12.dp, 16.dp, 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -400,13 +479,13 @@ private fun SectionPresensiToday(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(SoftBlue.copy(alpha = 0.6f)),
+                            .background(OceanBlue.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Schedule,
                             contentDescription = null,
-                            tint = Primary,
+                            tint = OceanBlue,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -427,10 +506,10 @@ private fun SectionPresensiToday(
                         text = "Lihat Jadwal",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = Primary,
+                        color = OceanBlue,
                         modifier = Modifier
                             .clip(RoundedCornerShape(99.dp))
-                            .background(SoftBlue.copy(alpha = 0.6f))
+                            .background(OceanBlue.copy(alpha = 0.1f))
                             .padding(horizontal = 10.dp, vertical = 2.dp)
                     )
                 }
@@ -451,17 +530,17 @@ private fun SectionPresensiToday(
                             modifier = Modifier
                                 .size(10.dp)
                                 .clip(CircleShape)
-                                .background(if (isCheckedIn) ScoreGreen else OnSurfaceVariant)
+                                .background(statusColor)
                         )
                         Column {
                             Text(
-                                text = if (isCheckedIn) "Sudah Check-in" else "Belum Check-in",
+                                text = statusText,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
                                 color = OnSurface
                             )
                             Text(
-                                text = if (isCheckedIn) "Masuk pukul ${absensiTime ?: "-"} WIB" else "Belum ada catatan",
+                                text = detailText,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = OnSurfaceVariant
                             )
@@ -469,14 +548,17 @@ private fun SectionPresensiToday(
                     }
                     Button(
                         onClick = onCheckClick,
+                        enabled = !isCompleted,
                         shape = RoundedCornerShape(99.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isCheckedIn) Coral else ScoreGreen
+                            containerColor = buttonColor,
+                            disabledContainerColor = Neutral,
+                            disabledContentColor = OnSurfaceVariant
                         ),
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = if (isCheckedIn) "Check-out" else "Check-in",
+                            text = buttonText,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
                         )
@@ -489,7 +571,7 @@ private fun SectionPresensiToday(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(AmberLight)
+                            .background(Amber.copy(alpha = 0.1f))
                             .padding(10.dp, 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -514,50 +596,55 @@ private fun SectionPresensiToday(
                 // ── Footer Buttons ──
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
                         onClick = onRiwayatPresensiClick,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Primary
+                            containerColor = Primary,
+                            contentColor = OnPrimary // Memastikan teks terlihat putih di atas biru
                         ),
-                        contentPadding = PaddingValues(vertical = 12.dp)
+                        contentPadding = PaddingValues(vertical = 14.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Description,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp),
+                            tint = OnPrimary
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Riwayat Presensi",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
+                            text = "Riwayat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = OnPrimary
                         )
                     }
 
                     OutlinedButton(
                         onClick = onJadwalShiftClick,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Primary
                         ),
-                        border = BorderStroke(1.dp, Primary),
-                        contentPadding = PaddingValues(vertical = 12.dp)
+                        border = BorderStroke(1.5.dp, Primary),
+                        contentPadding = PaddingValues(vertical = 14.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Schedule,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp),
+                            tint = Primary
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Jadwal Shift",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
+                            text = "Jadwal",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Primary
                         )
                     }
                 }
@@ -566,9 +653,7 @@ private fun SectionPresensiToday(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 3. Menu Jabatan
-// ═══════════════════════════════════════════════════════════════
+// ─── Section Menu Jabatan ──────────────────────────────────────
 
 @Composable
 private fun SectionRoleMenu(
@@ -577,25 +662,32 @@ private fun SectionRoleMenu(
 ) {
     if (items.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = "Menu Jabatan",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Secondary,
             modifier = Modifier.padding(start = 4.dp)
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items.forEach { item ->
-                RoleMenuCard(
-                    modifier = Modifier.weight(1f),
-                    item = item,
-                    onClick = { onItemClick(item.route) }
-                )
+        // Membagi items menjadi 2 kolom ke bawah (grid)
+        items.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                rowItems.forEach { item ->
+                    RoleMenuCard(
+                        modifier = Modifier.weight(1f),
+                        item = item,
+                        onClick = { onItemClick(item.route) }
+                    )
+                }
+                // Jika item ganjil, tambahkan spacer agar tetap seimbang
+                if (rowItems.size < 2) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -608,45 +700,54 @@ private fun RoleMenuCard(
     onClick: () -> Unit
 ) {
     val icon = mapIcon(item.iconResName)
+    
+    // Tentukan warna ikon berdasarkan label menu agar variatif tapi setema
+    val iconColor = when {
+        item.label.contains("Tugas", ignoreCase = true) -> OceanBlue
+        item.label.contains("Absensi", ignoreCase = true) -> Teal
+        item.label.contains("Pengajuan", ignoreCase = true) -> Mint
+        else -> Primary
+    }
 
     Card(
         onClick = onClick,
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.height(115.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Neutral)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(14.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(IndigoLight),
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(iconColor.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = item.label,
-                    tint = Indigo,
-                    modifier = Modifier.size(22.dp)
+                    tint = iconColor,
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
             Text(
                 text = item.label,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = OnSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 2
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 14.sp
+                ),
+                color = Secondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -753,13 +854,13 @@ private fun SectionLeave(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(SoftBlue),
+                        .background(OceanBlue.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.BeachAccess,
                         contentDescription = "Sisa Cuti",
-                        tint = Primary,
+                        tint = OceanBlue,
                         modifier = Modifier.size(24.dp)
                     )
                 }

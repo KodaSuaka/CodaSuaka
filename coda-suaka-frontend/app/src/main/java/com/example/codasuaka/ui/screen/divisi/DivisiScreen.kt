@@ -38,14 +38,14 @@ fun DivisiScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Divisi", fontWeight = FontWeight.SemiBold, color = OnPrimary)
+                    Text("Divisi", fontWeight = FontWeight.Bold, color = Secondary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = OnPrimary)
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
             )
         },
         floatingActionButton = {
@@ -55,7 +55,7 @@ fun DivisiScreen(
                 contentColor = OnPrimary,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, "Tambah Divisi", modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.Add, "Tambah Divisi", modifier = Modifier.size(32.dp))
             }
         }
     ) { innerPadding ->
@@ -133,22 +133,25 @@ fun DivisiScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp),
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         "Daftar Divisi",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnSurfaceVariant
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
                     )
-                    Surface(shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.1f)) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp), 
+                        color = Primary.copy(alpha = 0.1f)
+                    ) {
                         Text(
                             "${uiState.divisiList.size} divisi",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
                             color = Primary
                         )
                     }
@@ -341,9 +344,10 @@ private fun DivisiListItem(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
             modifier = Modifier
@@ -354,13 +358,13 @@ private fun DivisiListItem(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Avatar
+                // Avatar dengan ukuran yang disesuaikan
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(Secondary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -368,7 +372,7 @@ private fun DivisiListItem(
                         Icons.Default.Group,
                         null,
                         tint = Secondary,
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
 
@@ -376,9 +380,9 @@ private fun DivisiListItem(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         divisi.namaDivisi,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -387,12 +391,12 @@ private fun DivisiListItem(
                 Icon(
                     Icons.Default.ChevronRight,
                     null,
-                    tint = OnSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    tint = Neutral,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Deskripsi
             if (divisi.deskripsi.isNotBlank()) {
@@ -403,30 +407,32 @@ private fun DivisiListItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             // Baris info: Ketua + Anggota
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Ketua
                 Row(
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         Icons.Default.Person,
                         null,
-                        tint = Secondary,
+                        tint = Secondary.copy(alpha = 0.7f),
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        "Ketua: ${divisi.ketua?.namaLengkap ?: "-"}",
+                        text = "Ketua: ${divisi.ketua?.namaLengkap ?: "-"}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = OnSurfaceVariant,
+                        color = Secondary,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -435,24 +441,24 @@ private fun DivisiListItem(
                 // Badge Anggota
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Secondary.copy(alpha = 0.1f)
+                    color = Primary.copy(alpha = 0.1f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             Icons.Default.People,
                             null,
-                            tint = Secondary,
+                            tint = Primary,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             "${divisi.anggotaCount} Anggota",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Secondary,
-                            fontWeight = FontWeight.Medium
+                            color = Primary,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }

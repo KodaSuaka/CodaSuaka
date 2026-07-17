@@ -31,11 +31,11 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * Warna untuk kategori event.
+ * Warna untuk kategori event (Fresh & Soft Palette).
  */
-private val CategoryColorLibur = Error          // Merah
-private val CategoryColorTugas = Color(0xFFD69E2E) // Kuning
-private val CategoryColorEvent = Success        // Hijau
+private val CategoryColorLibur = Color(0xFFF87171)   // Soft Coral Red
+private val CategoryColorTugas = Color(0xFF60A5FA)   // Soft Ocean Blue
+private val CategoryColorEvent = Color(0xFF34D399)   // Mint Green
 
 /**
  * Screen Kalender / Jadwal.
@@ -58,14 +58,14 @@ fun KalenderScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Jadwal", fontWeight = FontWeight.SemiBold, color = OnPrimary)
+                    Text("Jadwal", fontWeight = FontWeight.Bold, color = Secondary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = OnPrimary)
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
             )
         },
         floatingActionButton = {
@@ -586,24 +586,60 @@ private fun DialogTambahEvent(
                 )
 
                 // Tanggal
+                var showDatePicker by remember { mutableStateOf(false) }
                 OutlinedTextField(
                     value = tanggal,
-                    onValueChange = onTanggalChange,
+                    onValueChange = {},
+                    readOnly = true,
                     label = { Text("Tanggal") },
-                    placeholder = { Text("yyyy-MM-dd (contoh: 2026-06-15)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Pilih tanggal event") },
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
                     shape = RoundedCornerShape(12.dp),
+                    trailingIcon = { Icon(Icons.Default.CalendarMonth, null, tint = Primary) },
+                    enabled = false, // menggunakan clickable di modifier
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface,
-                        cursorColor = Primary,
-                        focusedLabelColor = Primary,
-                        unfocusedLabelColor = OnSurfaceVariant
+                        disabledTextColor = OnSurface,
+                        disabledBorderColor = Neutral,
+                        disabledContainerColor = Surface,
+                        disabledLabelColor = OnSurfaceVariant
                     )
                 )
+
+                if (showDatePicker) {
+                    val datePickerState = rememberDatePickerState()
+                    MaterialTheme(
+                        colorScheme = lightColorScheme(
+                            primary = Primary,
+                            onPrimary = OnPrimary,
+                            surface = Surface,
+                            onSurface = Secondary,
+                            onSurfaceVariant = Secondary,
+                            secondary = Secondary
+                        )
+                    ) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    datePickerState.selectedDateMillis?.let {
+                                        val ld = java.time.Instant.ofEpochMilli(it)
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .toLocalDate()
+                                        onTanggalChange(ld.toString())
+                                    }
+                                    showDatePicker = false
+                                }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("Batal", color = Secondary.copy(alpha = 0.6f))
+                                }
+                            }
+                        ) {
+                            DatePicker(state = datePickerState)
+                        }
+                    }
+                }
 
                 // Kategori dropdown
                 val kategoriOptions = EventCategory.entries

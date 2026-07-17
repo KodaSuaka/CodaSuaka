@@ -40,14 +40,14 @@ fun RiwayatKehadiranScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Riwayat Kehadiran", fontWeight = FontWeight.SemiBold, color = OnPrimary)
+                    Text("Riwayat Kehadiran", fontWeight = FontWeight.Bold, color = Secondary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = OnPrimary)
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
             )
         }
     ) { innerPadding ->
@@ -327,30 +327,64 @@ private fun DatePickerField(
     )
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            val ld = java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneId.systemDefault())
-                                .toLocalDate()
-                            onDateSelected(ld.toString())
-                        }
-                        showDatePicker = false
-                    }
-                ) {
-                    Text("Pilih", color = Primary, fontWeight = FontWeight.SemiBold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Batal", color = OnSurfaceVariant)
-                }
-            }
+        // Memaksa DatePicker menggunakan skema warna Navy-Putih yang sangat kontras
+        MaterialTheme(
+            colorScheme = lightColorScheme(
+                primary = Primary,
+                onPrimary = OnPrimary,
+                surface = Surface,
+                onSurface = Secondary, // Memaksa teks header/bulan-tahun menjadi Navy
+                onSurfaceVariant = Secondary, // Memaksa teks "PILIH TANGGAL" menjadi Navy
+                secondary = Secondary,
+                onSecondary = OnPrimary,
+                primaryContainer = Primary.copy(alpha = 0.1f),
+                onPrimaryContainer = Secondary
+            )
         ) {
-            DatePicker(state = datePickerState)
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val ld = java.time.Instant.ofEpochMilli(millis)
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toLocalDate()
+                                onDateSelected(ld.toString())
+                            }
+                            showDatePicker = false
+                        }
+                    ) {
+                        Text("Pilih", color = Primary, fontWeight = FontWeight.ExtraBold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) {
+                        Text("Batal", color = Secondary.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                    }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    colors = DatePickerDefaults.colors(
+                        containerColor = Surface,
+                        titleContentColor = Secondary,
+                        headlineContentColor = Secondary,
+                        navigationContentColor = Secondary,
+                        subheadContentColor = Secondary,
+                        weekdayContentColor = OnSurfaceVariant,
+                        yearContentColor = OnSurface,
+                        currentYearContentColor = Primary,
+                        selectedYearContentColor = OnPrimary,
+                        selectedYearContainerColor = Primary,
+                        dayContentColor = OnSurface,
+                        selectedDayContainerColor = Primary,
+                        selectedDayContentColor = OnPrimary,
+                        todayContentColor = Primary,
+                        todayDateBorderColor = Primary
+                    )
+                )
+            }
         }
     }
 }
@@ -831,32 +865,32 @@ private fun RecapEmployeeTable(rekap: RekapBulanan) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Primary)
-                    .padding(vertical = 10.dp, horizontal = 8.dp)
+                    .background(Primary.copy(alpha = 0.1f))
+                    .padding(vertical = 12.dp, horizontal = 8.dp)
             ) {
                 Text(
                     "Karyawan",
                     modifier = Modifier.weight(2f),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = OnPrimary,
+                    color = Secondary,
                     fontSize = 11.sp
                 )
                 Text("Hadir", modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                    color = OnPrimary, fontSize = 11.sp)
+                    color = Secondary, fontSize = 11.sp)
                 Text("Telat", modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                    color = OnPrimary, fontSize = 11.sp)
+                    color = Secondary, fontSize = 11.sp)
                 Text("Izin", modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                    color = OnPrimary, fontSize = 11.sp)
+                    color = Secondary, fontSize = 11.sp)
                 Text("Sakit", modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                    color = OnPrimary, fontSize = 11.sp)
+                    color = Secondary, fontSize = 11.sp)
                 Text("Alpha", modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                    color = OnPrimary, fontSize = 11.sp)
+                    color = Secondary, fontSize = 11.sp)
             }
 
             // Employee Rows

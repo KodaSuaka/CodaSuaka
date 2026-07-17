@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
+
+// ─── Warna Bantu ──────────────────────────────────────────────
+private val InfoColor = Color(0xFF3B82F6)
+private val InfoBg = Color(0xFFDBEAFE)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,14 +41,14 @@ fun KelolaKaryawanScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Kelola Karyawan", fontWeight = FontWeight.SemiBold, color = OnPrimary)
+                    Text("Kelola Karyawan", fontWeight = FontWeight.Bold, color = Secondary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = OnPrimary)
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
             )
         },
         floatingActionButton = {
@@ -53,7 +58,7 @@ fun KelolaKaryawanScreen(
                 contentColor = OnPrimary,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.PersonAdd, "Tambah Karyawan", modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.PersonAdd, "Tambah Karyawan", modifier = Modifier.size(32.dp))
             }
         }
     ) { innerPadding ->
@@ -100,26 +105,39 @@ fun KelolaKaryawanScreen(
                 }
             }
 
-            // ── Error Message ──
+            // ── Error Message (Refined for Management) ──
             if (uiState.errorMessage != null &&
                 uiState.dialogMode !is KaryawanDialogMode.Tambah &&
                 uiState.dialogMode !is KaryawanDialogMode.Edit
             ) {
                 item {
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f)),
-                        shape = RoundedCornerShape(8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (uiState.errorMessage!!.contains("Catatan")) InfoBg else Error.copy(alpha = 0.1f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, 
+                            if (uiState.errorMessage!!.contains("Catatan")) InfoColor else Error
+                        )
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(20.dp))
+                            Icon(
+                                imageVector = if (uiState.errorMessage!!.contains("Catatan")) Icons.Default.Info else Icons.Default.Error,
+                                contentDescription = null,
+                                tint = if (uiState.errorMessage!!.contains("Catatan")) InfoColor else Error,
+                                modifier = Modifier.size(24.dp)
+                            )
                             Text(
-                                uiState.errorMessage ?: "",
-                                color = Error,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = uiState.errorMessage ?: "",
+                                color = if (uiState.errorMessage!!.contains("Catatan")) Secondary else Error,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -131,22 +149,25 @@ fun KelolaKaryawanScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp),
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         "Daftar Karyawan",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnSurfaceVariant
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
                     )
-                    Surface(shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.1f)) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp), 
+                        color = Primary.copy(alpha = 0.1f)
+                    ) {
                         Text(
-                            "${uiState.karyawanList.size}/5 karyawan",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
+                            "${uiState.karyawanList.size} karyawan",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
                             color = Primary
                         )
                     }
@@ -332,22 +353,23 @@ private fun KaryawanListItem(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Avatar
+            // Avatar dengan ukuran yang disesuaikan
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(Secondary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -355,7 +377,7 @@ private fun KaryawanListItem(
                     Icons.Default.Person,
                     null,
                     tint = Secondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
@@ -363,13 +385,13 @@ private fun KaryawanListItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     karyawan.namaLengkap,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = OnSurface,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Secondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -385,14 +407,14 @@ private fun KaryawanListItem(
                     if (karyawan.role != null) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Secondary.copy(alpha = 0.1f)
+                            color = Primary.copy(alpha = 0.1f)
                         ) {
                             Text(
                                 karyawan.role.namaRole,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Secondary,
-                                fontWeight = FontWeight.Medium
+                                color = Primary,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -402,8 +424,8 @@ private fun KaryawanListItem(
             Icon(
                 Icons.Default.ChevronRight,
                 null,
-                tint = OnSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+                tint = Neutral,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -819,17 +841,25 @@ private fun RoleDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedRole = roles.find { it.id == selectedRoleId }
+    val isRoleEmpty = roles.isEmpty()
 
     ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
+        expanded = expanded && !isRoleEmpty,
+        onExpandedChange = { if (!isRoleEmpty) expanded = it }
     ) {
         OutlinedTextField(
-            value = selectedRole?.namaRole ?: "Pilih Role",
+            value = when {
+                isRoleEmpty -> "Pilihan jabatan tidak tersedia"
+                selectedRole != null -> selectedRole.namaRole
+                else -> "Pilih Jabatan"
+            },
             onValueChange = {},
             readOnly = true,
-            label = { Text("Role") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            label = { Text("Jabatan / Role") },
+            trailingIcon = { 
+                if (!isRoleEmpty) ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                else Icon(Icons.Default.Warning, null, tint = Error, modifier = Modifier.size(20.dp))
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(),
@@ -840,24 +870,27 @@ private fun RoleDropdown(
                 unfocusedBorderColor = Neutral,
                 focusedContainerColor = Surface,
                 unfocusedContainerColor = Surface,
-                cursorColor = Primary,
-                focusedLabelColor = Primary,
-                unfocusedLabelColor = OnSurfaceVariant
-            )
+                disabledBorderColor = Neutral,
+                disabledContainerColor = Tertiary,
+                disabledTextColor = if (isRoleEmpty) Error else OnSurface
+            ),
+            enabled = !isRoleEmpty
         )
 
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            roles.forEach { role ->
-                DropdownMenuItem(
-                    text = { Text(role.namaRole) },
-                    onClick = {
-                        onRoleSelected(role.id)
-                        expanded = false
-                    }
-                )
+        if (!isRoleEmpty) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                roles.forEach { role ->
+                    DropdownMenuItem(
+                        text = { Text(role.namaRole) },
+                        onClick = {
+                            onRoleSelected(role.id)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }

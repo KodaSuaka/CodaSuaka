@@ -40,14 +40,14 @@ fun KelolaOutletScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Kelola Outlet", fontWeight = FontWeight.SemiBold, color = OnPrimary)
+                    Text("Kelola Outlet", fontWeight = FontWeight.Bold, color = Secondary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = OnPrimary)
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
             )
         },
         floatingActionButton = {
@@ -57,7 +57,7 @@ fun KelolaOutletScreen(
                 contentColor = OnPrimary,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, "Tambah Outlet", modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.Add, "Tambah Outlet", modifier = Modifier.size(32.dp))
             }
         }
     ) { innerPadding ->
@@ -133,22 +133,25 @@ fun KelolaOutletScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp),
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         "Daftar Outlet",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnSurfaceVariant
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
                     )
-                    Surface(shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.1f)) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp), 
+                        color = Primary.copy(alpha = 0.1f)
+                    ) {
                         Text(
                             "${uiState.outlets.size} outlet",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
                             color = Primary
                         )
                     }
@@ -237,22 +240,23 @@ private fun OutletListItem(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Icon
+            // Icon dengan ukuran lebih besar
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(Primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -260,7 +264,7 @@ private fun OutletListItem(
                     Icons.Default.Store,
                     null,
                     tint = Primary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
@@ -268,13 +272,13 @@ private fun OutletListItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     outlet.namaOutlet,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = OnSurface,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Secondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -293,10 +297,10 @@ private fun OutletListItem(
                     ) {
                         Text(
                             "${outlet.jumlahKaryawan} karyawan",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = Secondary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -306,8 +310,8 @@ private fun OutletListItem(
             Icon(
                 Icons.Default.ChevronRight,
                 null,
-                tint = OnSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+                tint = Neutral,
+                modifier = Modifier.size(24.dp)
             )
         }
     }

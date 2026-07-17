@@ -15,8 +15,15 @@ class RoleController extends Controller
 
     public function index(Request $request)
     {
+<<<<<<< Updated upstream
         // Semua user authenticated boleh lihat daftar roles (data referensi)
         // CRUD lainnya tetap dilindungi Gate 'manage-roles'
+=======
+        $user = $request->user();
+        if (!Gate::allows('manage-roles') && !app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:karyawan')) {
+            return response()->json(['status' => 'success', 'data' => []]);
+        }
+>>>>>>> Stashed changes
         $roles = role::orderBy('nama_role')->get();
         return response()->json(['status' => 'success', 'data' => $roles]);
     }

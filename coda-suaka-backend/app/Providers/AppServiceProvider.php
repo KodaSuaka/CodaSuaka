@@ -77,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Manage roles & permissions — uses granular permission check
         Gate::define('manage-roles', function (User $user) {
-            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:role_permissions');
+            return $user->role?->nama_role === 'Owner' || app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:role_permissions');
         });
 
         // Access a specific instansi's data (tenant-scoped)

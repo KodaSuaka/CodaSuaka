@@ -56,12 +56,28 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Handle all other exceptions for API routes
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
-            if (($request->is('api/*') || $request->expectsJson()) && ! $e instanceof \Illuminate\Validation\ValidationException && ! $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException && ! $e instanceof \Illuminate\Auth\AuthenticationException) {
-                $message = config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server';
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $message,
-                ], 500);
+            if ($request->is('api/*') || $request->expectsJson()) {
+                if ($e instanceof \Illuminate\Auth\Access\AuthorizationException || $e instanceof \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Anda tidak memiliki akses (Forbidden).',
+                    ], 403);
+                }
+
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $e->getMessage() ?: 'Terjadi kesalahan pada server',
+                    ], $e->getStatusCode());
+                }
+
+                if (! $e instanceof \Illuminate\Validation\ValidationException && ! $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException && ! $e instanceof \Illuminate\Auth\AuthenticationException) {
+                    $message = config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server';
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $message,
+                    ], 500);
+                }
             }
         });
     })->create();

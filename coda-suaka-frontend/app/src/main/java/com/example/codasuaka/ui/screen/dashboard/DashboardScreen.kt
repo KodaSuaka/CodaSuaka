@@ -70,8 +70,8 @@ fun DashboardScreen(
                     title = {
                         Text(
                             text = uiState.outletName.ifEmpty { "Dashboard" },
-                            fontWeight = FontWeight.SemiBold,
-                            color = OnPrimary
+                            fontWeight = FontWeight.Bold,
+                            color = Secondary
                         )
                     },
                     navigationIcon = {
@@ -79,7 +79,7 @@ fun DashboardScreen(
                             Icon(
                                 imageVector = Icons.Default.Menu,
                                 contentDescription = "Menu",
-                                tint = OnPrimary
+                                tint = Secondary
                             )
                         }
                     },
@@ -88,12 +88,12 @@ fun DashboardScreen(
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Notifikasi",
-                                tint = OnPrimary
+                                tint = Secondary
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Primary
+                        containerColor = Surface
                     )
                 )
             },
@@ -216,31 +216,60 @@ private fun SectionOmset(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ── Header ──
+            // ── Header & Trend ──
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.TrendingUp,
-                    contentDescription = null,
-                    tint = Success,
-                    modifier = Modifier.size(28.dp)
-                )
-                Text(
-                    text = "OMSET",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = OnSurface
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Success.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            tint = Success,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = "Total Omset",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = OnSurfaceVariant
+                    )
+                }
+                
+                // Indikator tren (Visual Only)
+                Surface(
+                    color = Success.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "+5.2%",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Success
+                    )
+                }
             }
 
             // ── Nilai Omset ──
@@ -248,85 +277,67 @@ private fun SectionOmset(
                 text = formatRupiah(omsetTotal),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                color = Secondary,
+                modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.height(4.dp))
             HorizontalDivider(color = Neutral, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // ── Filter Tanggal ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = startDate,
-                    onValueChange = { startDate = it },
-                    label = { Text("Tgl Mulai") },
-                    placeholder = { Text("yyyy-MM-dd") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface,
-                        cursorColor = Primary,
-                        focusedLabelColor = Primary,
-                        unfocusedLabelColor = OnSurfaceVariant
+            // ── Filter Tanggal (Disederhanakan) ──
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = startDate,
+                        onValueChange = { startDate = it },
+                        placeholder = { Text("Tgl Mulai (yyyy-mm-dd)", fontSize = 12.sp) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodySmall,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = Neutral,
+                            focusedContainerColor = Tertiary,
+                            unfocusedContainerColor = Tertiary
+                        )
                     )
-                )
-
-                OutlinedTextField(
-                    value = endDate,
-                    onValueChange = { endDate = it },
-                    label = { Text("Tgl Akhir") },
-                    placeholder = { Text("yyyy-MM-dd") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface,
-                        cursorColor = Primary,
-                        focusedLabelColor = Primary,
-                        unfocusedLabelColor = OnSurfaceVariant
+                    OutlinedTextField(
+                        value = endDate,
+                        onValueChange = { endDate = it },
+                        placeholder = { Text("Tgl Akhir (yyyy-mm-dd)", fontSize = 12.sp) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodySmall,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = Neutral,
+                            focusedContainerColor = Tertiary,
+                            unfocusedContainerColor = Tertiary
+                        )
                     )
-                )
-            }
+                }
 
-            // ── Tombol Cari ──
-            Button(
-                onClick = { onCariOmset(startDate, endDate) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Primary,
-                    contentColor = OnPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Cari",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
+                Button(
+                    onClick = { onCariOmset(startDate, endDate) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Secondary,
+                        contentColor = OnPrimary
+                    )
+                ) {
+                    Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Filter Data", fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -341,32 +352,37 @@ private fun SectionMenuGrid(
     userRole: String = "",
     onItemClick: (String) -> Unit
 ) {
-    // Filter items by role: show if allowedRoles is empty (all) or contains userRole
     val filteredItems = if (userRole.isBlank()) items
     else items.filter { it.allowedRoles.isEmpty() || userRole in it.allowedRoles }
 
     if (filteredItems.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = OnSurfaceVariant,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Secondary,
             modifier = Modifier.padding(start = 4.dp)
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            // Use Row with wrapping if more items than fit
-        ) {
-            filteredItems.forEach { item ->
-                MenuCard(
-                    modifier = Modifier.weight(1f),
-                    item = item,
-                    onClick = { onItemClick(item.label) }
-                )
+        // Menggunakan chunked untuk membuat baris yang konsisten (2 kolom)
+        filteredItems.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                rowItems.forEach { item ->
+                    MenuCard(
+                        modifier = Modifier.weight(1f),
+                        item = item,
+                        onClick = { onItemClick(item.label) }
+                    )
+                }
+                // Jika item dalam baris ganjil, tambahkan spacer agar ukuran tetap konsisten
+                if (rowItems.size < 2) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -382,43 +398,43 @@ private fun MenuCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(120.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.height(115.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(14.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Icon dengan circle background
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(item.color.copy(alpha = 0.12f)),
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(item.color.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = item.icon,
                     contentDescription = item.label,
                     tint = item.color,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = item.label,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = OnSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 2
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 14.sp
+                ),
+                color = Secondary,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
@@ -481,51 +497,60 @@ private fun DrawerContent(
     onLogout: () -> Unit
 ) {
     ModalDrawerSheet(
-        modifier = Modifier.width(280.dp),
-        drawerContainerColor = Surface
+        modifier = Modifier.width(300.dp),
+        drawerContainerColor = Surface,
+        drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
     ) {
-        // ── Header Drawer ──
+        // ── Header Drawer (Modern & Minimalist) ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Primary)
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 40.dp)
         ) {
-            Column {
-                // Avatar placeholder
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(PrimaryLight),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = OnPrimary,
-                        modifier = Modifier.size(36.dp)
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Profile Section
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(Primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    Column {
+                        Text(
+                            text = viewModel.uiState.value.userNamaLengkap,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Secondary
+                        )
+                        Surface(
+                            color = Primary.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = viewModel.uiState.value.userRole ?: "Member",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Primary
+                            )
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = viewModel.uiState.value.userNamaLengkap,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = OnPrimary
-                )
-
-                Text(
-                    text = viewModel.uiState.value.userEmail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OnPrimary.copy(alpha = 0.8f)
-                )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = Neutral)
+        Spacer(modifier = Modifier.height(16.dp))
 
         // ── Menu Drawer ──
         DrawerItem(
@@ -567,6 +592,8 @@ private fun DrawerContent(
             iconTint = Error,
             labelColor = Error,
             onClick = {
+                // Di sini biasanya muncul dialog konfirmasi atau langsung logout
+                // Untuk sementara langsung logout mengikuti kode sebelumnya
                 viewModel.closeDrawer()
                 onLogout()
             }
