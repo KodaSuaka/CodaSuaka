@@ -26,16 +26,16 @@ return [
     |
     | Daftar origin yang diizinkan mengakses API dari browser.
     | Android menggunakan OkHttp yang tidak terikat CORS, jadi hanya
-    | domain web yang perlu didaftarkan di sini.
+    | domain/alamat web yang perlu didaftarkan di sini.
     |
     | Format: comma-separated list di .env, contoh:
-    |   FRONTEND_URLS=https://codasuaka.my.id,https://admin.codasuaka.my.id
+    |   FRONTEND_URLS=https://codasuaka.my.id,http://localhost:5173
     |
-    | Default: hanya mengizinkan https://codasuaka.my.id
+    | Default: APP_URL (development) + https://codasuaka.my.id (production)
     */
     'allowed_origins' => array_filter(array_map('trim', explode(',', env(
         'FRONTEND_URLS',
-        'https://codasuaka.my.id'
+        env('APP_URL', 'http://localhost') . ',https://codasuaka.my.id'
     )))),
 
     'allowed_origins_patterns' => [],
