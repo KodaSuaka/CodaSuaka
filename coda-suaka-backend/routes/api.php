@@ -21,6 +21,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\KategoriTransaksiController;
 use App\Http\Controllers\TransaksiKasController;
+use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\LaporanExportController;
+use App\Http\Controllers\ApprovalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -124,6 +127,26 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{transaksi_kas}', [TransaksiKasController::class, 'show']);
         Route::put('/{transaksi_kas}', [TransaksiKasController::class, 'update']);
         Route::delete('/{transaksi_kas}', [TransaksiKasController::class, 'destroy']);
+    });
+
+    // ─── Keuangan: Laporan & Ekspor ───────────────────────────
+    Route::prefix('laporan')->group(function () {
+        Route::get('/arus-kas', [LaporanController::class, 'arusKas']);
+        Route::get('/ringkasan-keuangan', [LaporanController::class, 'ringkasanKeuangan']);
+        Route::get('/buku-kas/export/pdf', [LaporanExportController::class, 'exportBukuKasPdf']);
+        Route::get('/buku-kas/export/excel', [LaporanExportController::class, 'exportBukuKasExcel']);
+        Route::get('/laba-rugi/export/pdf', [LaporanExportController::class, 'exportLabaRugiPdf']);
+        Route::get('/arus-kas/export/pdf', [LaporanExportController::class, 'exportArusKasPdf']);
+        Route::get('/arus-kas/export/excel', [LaporanExportController::class, 'exportArusKasExcel']);
+    });
+
+    // ─── Keuangan: Approval Workflow ─────────────────────────
+    Route::prefix('approval')->group(function () {
+        Route::get('/pending', [ApprovalController::class, 'pending']);
+        Route::get('/riwayat', [ApprovalController::class, 'riwayat']);
+        Route::post('/{transaksi_kas}/ajukan', [ApprovalController::class, 'ajukan']);
+        Route::post('/{approval_log}/setujui', [ApprovalController::class, 'setujui']);
+        Route::post('/{approval_log}/tolak', [ApprovalController::class, 'tolak']);
     });
 
     // ─── Chat / Kontak ────────────────────────────────────────

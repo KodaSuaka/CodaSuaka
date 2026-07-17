@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.data.remote.dto.ArusKasData
+import com.example.codasuaka.data.remote.dto.ArusKasDetail
 import com.example.codasuaka.data.remote.dto.KategoriTransaksiDto
 import com.example.codasuaka.data.remote.dto.TransaksiKasDto
 import com.example.codasuaka.ui.theme.*
@@ -47,12 +49,26 @@ fun LaporanKeuanganScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // ── Dropdown menu state ──
+    var showExportMenu by remember { mutableStateOf(false) }
+
     // ── Snackbar ──
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.submitSuccess) {
         uiState.submitSuccess?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearSubmitSuccess()
+        }
+    }
+    LaunchedEffect(uiState.exportSuccessPath) {
+        uiState.exportSuccessPath?.let { path ->
+            snackbarHostState.showSnackbar("File tersimpan: $path")
+            viewModel.clearExportSuccess()
+        }
+    }
+    LaunchedEffect(uiState.exportError) {
+        uiState.exportError?.let {
+            snackbarHostState.showSnackbar("Gagal: $it")
         }
     }
 
@@ -70,6 +86,10 @@ fun LaporanKeuanganScreen(
                     }
                 },
                 actions = {
+                    // Tombol Arus Kas
+                    IconButton(onClick = { viewModel.toggleArusKasSheet() }) {
+                        Icon(Icons.Default.AccountTree, "Arus Kas", tint = OnPrimary)
+                    }
                     // Tombol Saldo
                     IconButton(onClick = { viewModel.toggleSaldoSheet() }) {
                         Icon(Icons.Default.AccountBalanceWallet, "Saldo", tint = OnPrimary)
@@ -77,6 +97,57 @@ fun LaporanKeuanganScreen(
                     // Tombol Laba Rugi
                     IconButton(onClick = { viewModel.toggleLabaRugiSheet() }) {
                         Icon(Icons.Default.BarChart, "Laba Rugi", tint = OnPrimary)
+                    }
+                    // Tombol Ekspor (Dropdown)
+                    Box {
+                        IconButton(onClick = { showExportMenu = true }) {
+                            Icon(Icons.Default.FileDownload, "Ekspor", tint = OnPrimary)
+                        }
+                        DropdownMenu(
+                            expanded = showExportMenu,
+                            onDismissRequest = { showExportMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Buku Kas (PDF)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportBukuKasPdf()
+                                },
+                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Buku Kas (Excel)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportBukuKasExcel()
+                                },
+                                leadingIcon = { Icon(Icons.Default.TableChart, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Laba Rugi (PDF)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportLabaRugiPdf()
+                                },
+                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Arus Kas (PDF)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportArusKasPdf()
+                                },
+                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Arus Kas (Excel)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportArusKasExcel()
+                                },
+                                leadingIcon = { Icon(Icons.Default.TableChart, null) }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Primary)
@@ -159,7 +230,8 @@ fun LaporanKeuanganScreen(
                         TransaksiCard(
                             transaksi = transaksi,
                             onEdit = { viewModel.showEditForm(transaksi) },
-                            onDelete = { viewModel.deleteTransaksi(transaksi.id) }
+                            onDelete = { viewModel.deleteTransaksi(transaksi.id) },
+                            onAjukanApproval = { viewModel.ajukanApproval(transaksi.id) }
                         )
                     }
 
@@ -221,6 +293,38 @@ fun LaporanKeuanganScreen(
             error = uiState.labaRugiError,
             onDismiss = { viewModel.toggleLabaRugiSheet() }
         )
+    }
+
+    // ── Bottom Sheet Arus Kas ──
+    if (uiState.showArusKasSheet) {
+        ArusKasBottomSheet(
+            arusKasData = uiState.arusKasData,
+            isLoading = uiState.isLoadingArusKas,
+            error = uiState.arusKasError,
+            onDismiss = { viewModel.toggleArusKasSheet() }
+        )
+    }
+
+    // ── Loading overlay saat ekspor ──
+    if (uiState.isExporting) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier.padding(24.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator(color = Primary)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Mengekspor...", fontWeight = FontWeight.Medium)
+                }
+            }
+        }
     }
 }
 
@@ -368,9 +472,15 @@ private fun SaldoRingkasanCard(
 private fun TransaksiCard(
     transaksi: TransaksiKasDto,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onAjukanApproval: () -> Unit = {}
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val statusApproval = transaksi.statusApproval // "disetujui", "pending", "ditolak", or null
+    val isPending = statusApproval == "pending"
+    val isDitolak = statusApproval == "ditolak"
+    val isDisetujui = statusApproval == "disetujui" || statusApproval == null
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -378,125 +488,176 @@ private fun TransaksiCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Indikator tipe
-            Box(
+        Column {
+            Row(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (transaksi.tipe == "masuk") MasukBg else KeluarBg),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (transaksi.tipe == "masuk")
-                        Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                    contentDescription = null,
-                    tint = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Info
-            Column(modifier = Modifier.weight(1f)) {
-                // Nama kategori + nominal
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Indikator tipe
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (transaksi.tipe == "masuk") MasukBg else KeluarBg),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = transaksi.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori",
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
+                    Icon(
+                        imageVector = if (transaksi.tipe == "masuk")
+                            Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                        contentDescription = null,
+                        tint = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                // Tanggal + keterangan
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = Neutral
-                    )
-                    Text(
-                        text = transaksi.tanggal,
-                        fontSize = 11.sp,
-                        color = Neutral
-                    )
-                    if (!transaksi.keterangan.isNullOrBlank()) {
+                // Info
+                Column(modifier = Modifier.weight(1f)) {
+                    // Nama kategori + nominal
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = transaksi.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Tanggal + keterangan
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Icon(
-                            Icons.Default.Description,
+                            Icons.Default.CalendarToday,
                             contentDescription = null,
                             modifier = Modifier.size(12.dp),
                             tint = Neutral
                         )
                         Text(
-                            text = transaksi.keterangan,
+                            text = transaksi.tanggal,
                             fontSize = 11.sp,
-                            color = Neutral,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            color = Neutral
                         )
+                        if (!transaksi.keterangan.isNullOrBlank()) {
+                            Icon(
+                                Icons.Default.Description,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = Neutral
+                            )
+                            Text(
+                                text = transaksi.keterangan,
+                                fontSize = 11.sp,
+                                color = Neutral,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    // Metode pembayaran
+                    if (!transaksi.metodePembayaran.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = transaksi.metodePembayaran,
+                            fontSize = 10.sp,
+                            color = Neutral
+                        )
+                    }
+
+                    // Status approval badge
+                    if (statusApproval != null && statusApproval != "disetujui") {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val (badgeColor, badgeBg, badgeText) = when (statusApproval) {
+                            "pending" -> Triple(WarningColor, WarningBg, "Menunggu Approval")
+                            "ditolak" -> Triple(KeluarColor, KeluarBg, "Ditolak")
+                            else -> Triple(MasukColor, MasukBg, "Disetujui")
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = badgeBg
+                        ) {
+                            Text(
+                                text = badgeText,
+                                color = badgeColor,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
 
-                // Metode pembayaran
-                if (!transaksi.metodePembayaran.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = transaksi.metodePembayaran,
-                        fontSize = 10.sp,
-                        color = Neutral
-                    )
+                // Tombol edit & delete (dinonaktifkan jika pending)
+                Column {
+                    IconButton(
+                        onClick = onEdit,
+                        enabled = !isPending,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isPending) Neutral else InfoColor
+                        )
+                    }
+                    if (!isPending) {
+                        IconButton(
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Hapus",
+                                modifier = Modifier.size(16.dp),
+                                tint = KeluarColor
+                            )
+                        }
+                    }
                 }
             }
 
-            // Tombol edit & delete
-            Column {
-                IconButton(
-                    onClick = onEdit,
-                    modifier = Modifier.size(28.dp)
+            // Tombol Ajukan Approval (khusus ditolak — bisa diajukan ulang)
+            if (isDitolak) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        modifier = Modifier.size(16.dp),
-                        tint = InfoColor
-                    )
-                }
-                IconButton(
-                    onClick = { showDeleteConfirm = true },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Hapus",
-                        modifier = Modifier.size(16.dp),
-                        tint = KeluarColor
-                    )
+                    Button(
+                        onClick = onAjukanApproval,
+                        colors = ButtonDefaults.buttonColors(containerColor = WarningColor),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Send,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Ajukan Approval", fontSize = 12.sp)
+                    }
                 }
             }
         }
@@ -929,6 +1090,156 @@ private fun LabaRugiBottomSheet(
                     )
                 }
             }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BOTTOM SHEET ARUS KAS
+// ═══════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ArusKasBottomSheet(
+    arusKasData: ArusKasData?,
+    isLoading: Boolean,
+    error: String?,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "Laporan Arus Kas",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Primary)
+                }
+            } else if (error != null) {
+                Text(error, color = KeluarColor)
+            } else if (arusKasData != null) {
+                // ── Arus Kas Operasi ──
+                Text("Arus Kas dari Aktivitas Operasi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                if (!arusKasData.detailOperasi.isNullOrEmpty()) {
+                    arusKasData.detailOperasi.forEach { detail ->
+                        ArusKasDetailRow(detail)
+                    }
+                }
+                SaldoRowItem(
+                    icon = Icons.Default.TrendingUp,
+                    label = "Total Arus Kas Operasi",
+                    amount = arusKasData.arusKasOperasi,
+                    color = if (arusKasData.arusKasOperasi >= 0) MasukColor else KeluarColor,
+                    bgColor = if (arusKasData.arusKasOperasi >= 0) MasukBg else KeluarBg
+                )
+
+                HorizontalDivider(color = Neutral.copy(alpha = 0.3f))
+
+                // ── Arus Kas Investasi ──
+                Text("Arus Kas dari Aktivitas Investasi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                SaldoRowItem(
+                    icon = Icons.Default.Build,
+                    label = "Total Arus Kas Investasi",
+                    amount = arusKasData.arusKasInvestasi,
+                    color = if (arusKasData.arusKasInvestasi >= 0) MasukColor else KeluarColor,
+                    bgColor = if (arusKasData.arusKasInvestasi >= 0) MasukBg else KeluarBg
+                )
+
+                HorizontalDivider(color = Neutral.copy(alpha = 0.3f))
+
+                // ── Arus Kas Pendanaan ──
+                Text("Arus Kas dari Aktivitas Pendanaan", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                if (!arusKasData.detailPendanaan.isNullOrEmpty()) {
+                    arusKasData.detailPendanaan.forEach { detail ->
+                        ArusKasDetailRow(detail)
+                    }
+                }
+                SaldoRowItem(
+                    icon = Icons.Default.AccountBalance,
+                    label = "Total Arus Kas Pendanaan",
+                    amount = arusKasData.arusKasPendanaan,
+                    color = if (arusKasData.arusKasPendanaan >= 0) MasukColor else KeluarColor,
+                    bgColor = if (arusKasData.arusKasPendanaan >= 0) MasukBg else KeluarBg
+                )
+
+                HorizontalDivider(color = Neutral.copy(alpha = 0.5f))
+
+                // ── Ringkasan ──
+                SaldoRowItem(
+                    icon = Icons.Default.TrendingUp,
+                    label = "Kenaikan Bersih Kas",
+                    amount = arusKasData.kenaikanBersihKas,
+                    color = if (arusKasData.kenaikanBersihKas >= 0) MasukColor else KeluarColor,
+                    bgColor = if (arusKasData.kenaikanBersihKas >= 0) MasukBg else KeluarBg
+                )
+                SaldoRowItem(
+                    icon = Icons.Default.AccountBalanceWallet,
+                    label = "Saldo Awal",
+                    amount = arusKasData.saldoAwal,
+                    color = InfoColor,
+                    bgColor = InfoBg
+                )
+                SaldoRowItem(
+                    icon = Icons.Default.AccountBalanceWallet,
+                    label = "Saldo Akhir",
+                    amount = arusKasData.saldoAkhir,
+                    color = InfoColor,
+                    bgColor = InfoBg
+                )
+
+                if (arusKasData.startDate != null && arusKasData.endDate != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Periode: ${arusKasData.startDate} s/d ${arusKasData.endDate}",
+                        fontSize = 12.sp,
+                        color = Neutral
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArusKasDetailRow(detail: ArusKasDetail) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            detail.kategori,
+            fontSize = 13.sp,
+            color = Neutral,
+            modifier = Modifier.weight(1f)
+        )
+        if (detail.masuk > 0) {
+            Text(
+                LaporanKeuanganViewModel.formatRupiah(detail.masuk),
+                fontSize = 13.sp,
+                color = MasukColor,
+                fontWeight = FontWeight.Medium
+            )
+        } else if (detail.keluar > 0) {
+            Text(
+                LaporanKeuanganViewModel.formatRupiah(detail.keluar),
+                fontSize = 13.sp,
+                color = KeluarColor,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

@@ -7,6 +7,9 @@ import com.example.codasuaka.domain.repository.KeuanganRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody
+import java.io.File
+import java.io.FileOutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -35,6 +38,21 @@ data class LaporanKeuanganUiState(
     val isLoadingLabaRugi: Boolean = false,
     val labaRugiError: String? = null,
 
+    // Arus Kas
+    val arusKasData: ArusKasData? = null,
+    val isLoadingArusKas: Boolean = false,
+    val arusKasError: String? = null,
+
+    // Ringkasan Keuangan
+    val ringkasanKeuanganData: RingkasanKeuanganData? = null,
+    val isLoadingRingkasan: Boolean = false,
+    val ringkasanKeuanganError: String? = null,
+
+    // Ekspor
+    val isExporting: Boolean = false,
+    val exportError: String? = null,
+    val exportSuccessPath: String? = null,
+
     // Kategori
     val kategoriList: List<KategoriTransaksiDto> = emptyList(),
     val isLoadingKategori: Boolean = false,
@@ -59,9 +77,10 @@ data class LaporanKeuanganUiState(
     val submitError: String? = null,
     val submitSuccess: String? = null,
 
-    // Bottom sheet saldo / laba rugi
+    // Bottom sheet saldo / laba rugi / arus kas
     val showSaldoSheet: Boolean = false,
     val showLabaRugiSheet: Boolean = false,
+    val showArusKasSheet: Boolean = false,
 
     // Pagination
     val currentPage: Int = 1,
@@ -393,6 +412,25 @@ class LaporanKeuanganViewModel(
         }
     }
 
+    // ─── Approval ────────────────────────────────────────────────
+
+    fun ajukanApproval(transaksiId: Int) {
+        viewModelScope.launch {
+            keuanganRepository.ajukanApproval(transaksiId)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        submitSuccess = "Approval berhasil diajukan"
+                    )
+                    refreshTransaksi()
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        transaksiError = e.message ?: "Gagal mengajukan approval"
+                    )
+                }
+        }
+    }
+
     // ─── Bottom Sheet Toggle ─────────────────────────────────────
 
     fun toggleSaldoSheet() {
@@ -411,6 +449,188 @@ class LaporanKeuanganViewModel(
         if (_uiState.value.showLabaRugiSheet) {
             loadLabaRugi()
         }
+    }
+
+    // ─── Arus Kas ─────────────────────────────────────────────────
+
+    fun loadArusKas() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingArusKas = true, arusKasError = null)
+            keuanganRepository.getArusKas(
+                startDate = _uiState.value.filterStartDate,
+                endDate = _uiState.value.filterEndDate
+            ).onSuccess { data ->
+                _uiState.value = _uiState.value.copy(
+                    arusKasData = data,
+                    isLoadingArusKas = false
+                )
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoadingArusKas = false,
+                    arusKasError = e.message ?: "Gagal memuat arus kas"
+                )
+            }
+        }
+    }
+
+    fun toggleArusKasSheet() {
+        _uiState.value = _uiState.value.copy(
+            showArusKasSheet = !_uiState.value.showArusKasSheet
+        )
+        if (_uiState.value.showArusKasSheet) {
+            loadArusKas()
+        }
+    }
+
+    // ─── Ringkasan Keuangan ───────────────────────────────────────
+
+    fun loadRingkasanKeuangan(tahun: Int? = null) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingRingkasan = true, ringkasanKeuanganError = null)
+            keuanganRepository.getRingkasanKeuangan(tahun)
+                .onSuccess { data ->
+                    _uiState.value = _uiState.value.copy(
+                        ringkasanKeuanganData = data,
+                        isLoadingRingkasan = false
+                    )
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingRingkasan = false,
+                        ringkasanKeuanganError = e.message ?: "Gagal memuat ringkasan keuangan"
+                    )
+                }
+        }
+    }
+
+    // ─── Ekspor ───────────────────────────────────────────────────
+
+    fun exportBukuKasPdf() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            keuanganRepository.exportBukuKasPdf(
+                startDate = _uiState.value.filterStartDate,
+                endDate = _uiState.value.filterEndDate
+            ).onSuccess { body ->
+                saveFile(body, "buku_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf")
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportError = e.message ?: "Gagal mengekspor PDF buku kas"
+                )
+            }
+        }
+    }
+
+    fun exportBukuKasExcel() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            keuanganRepository.exportBukuKasExcel(
+                startDate = _uiState.value.filterStartDate,
+                endDate = _uiState.value.filterEndDate
+            ).onSuccess { body ->
+                saveFile(body, "buku_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.xlsx")
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportError = e.message ?: "Gagal mengekspor Excel buku kas"
+                )
+            }
+        }
+    }
+
+    fun exportLabaRugiPdf() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            keuanganRepository.exportLabaRugiPdf(
+                startDate = _uiState.value.filterStartDate,
+                endDate = _uiState.value.filterEndDate
+            ).onSuccess { body ->
+                saveFile(body, "laba_rugi_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf")
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportError = e.message ?: "Gagal mengekspor PDF laba rugi"
+                )
+            }
+        }
+    }
+
+    fun exportArusKasPdf() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            keuanganRepository.exportArusKasPdf(
+                startDate = _uiState.value.filterStartDate,
+                endDate = _uiState.value.filterEndDate
+            ).onSuccess { body ->
+                saveFile(body, "arus_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf")
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportError = e.message ?: "Gagal mengekspor PDF arus kas"
+                )
+            }
+        }
+    }
+
+    fun exportArusKasExcel() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            keuanganRepository.exportArusKasExcel(
+                startDate = _uiState.value.filterStartDate,
+                endDate = _uiState.value.filterEndDate
+            ).onSuccess { body ->
+                saveFile(body, "arus_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.xlsx")
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportError = e.message ?: "Gagal mengekspor Excel arus kas"
+                )
+            }
+        }
+    }
+
+    private fun saveFile(body: ResponseBody, filename: String) {
+        try {
+            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            )
+            if (!downloadsDir.exists()) downloadsDir.mkdirs()
+            val file = File(downloadsDir, filename)
+            FileOutputStream(file).use { outputStream ->
+                outputStream.write(body.bytes())
+            }
+            _uiState.value = _uiState.value.copy(
+                isExporting = false,
+                exportSuccessPath = file.absolutePath
+            )
+        } catch (e: Exception) {
+            // Fallback: simpan di cache
+            try {
+                val cacheDir = java.io.File(
+                    android.os.Environment.getExternalStorageDirectory(),
+                    "Android/data/com.example.codasuaka/cache"
+                )
+                if (!cacheDir.exists()) cacheDir.mkdirs()
+                val file = File(cacheDir, filename)
+                FileOutputStream(file).use { outputStream ->
+                    outputStream.write(body.bytes())
+                }
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportSuccessPath = file.absolutePath
+                )
+            } catch (e2: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    exportError = "Gagal menyimpan file: ${e2.message}"
+                )
+            }
+        }
+    }
+
+    fun clearExportSuccess() {
+        _uiState.value = _uiState.value.copy(exportSuccessPath = null)
     }
 
     // ─── Utility ─────────────────────────────────────────────────

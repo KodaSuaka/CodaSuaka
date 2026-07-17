@@ -1,6 +1,7 @@
 package com.example.codasuaka.data.remote
 
 import com.example.codasuaka.data.remote.dto.*
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -316,4 +317,95 @@ interface ApiService {
     suspend fun deleteTransaksiKas(
         @Path("id") id: Int
     ): Response<ApiStatusResponse>
+
+    // ─── Laporan Keuangan ─────────────────────────────────────────
+
+    @GET("api/laporan/arus-kas")
+    suspend fun getArusKas(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("outlet_id") outletId: Int? = null
+    ): Response<ArusKasResponse>
+
+    @GET("api/laporan/ringkasan-keuangan")
+    suspend fun getRingkasanKeuangan(
+        @Query("tahun") tahun: Int? = null
+    ): Response<RingkasanKeuanganResponse>
+
+    // ─── Ekspor PDF/Excel ─────────────────────────────────────────
+
+    @GET("api/laporan/buku-kas/export/pdf")
+    @Streaming
+    suspend fun exportBukuKasPdf(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("outlet_id") outletId: Int? = null
+    ): Response<ResponseBody>
+
+    @GET("api/laporan/buku-kas/export/excel")
+    @Streaming
+    suspend fun exportBukuKasExcel(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("outlet_id") outletId: Int? = null
+    ): Response<ResponseBody>
+
+    @GET("api/laporan/laba-rugi/export/pdf")
+    @Streaming
+    suspend fun exportLabaRugiPdf(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("outlet_id") outletId: Int? = null
+    ): Response<ResponseBody>
+
+    @GET("api/laporan/arus-kas/export/pdf")
+    @Streaming
+    suspend fun exportArusKasPdf(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("outlet_id") outletId: Int? = null
+    ): Response<ResponseBody>
+
+    @GET("api/laporan/arus-kas/export/excel")
+    @Streaming
+    suspend fun exportArusKasExcel(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("outlet_id") outletId: Int? = null
+    ): Response<ResponseBody>
+
+    // ─── Approval Transaksi ─────────────────────────────────────
+    @GET("api/approval/pending")
+    suspend fun getApprovalPending(
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<ApprovalListResponse>
+
+    @GET("api/approval/riwayat")
+    suspend fun getApprovalRiwayat(
+        @Query("status") status: String? = null,
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<ApprovalListResponse>
+
+    @POST("api/approval/{transaksiKasId}/ajukan")
+    suspend fun ajukanApproval(
+        @Path("transaksiKasId") transaksiKasId: Int
+    ): Response<ApprovalSingleResponse>
+
+    @POST("api/approval/{approvalLogId}/setujui")
+    suspend fun setujuiApproval(
+        @Path("approvalLogId") approvalLogId: Int,
+        @Body catatan: Map<String, String>? = null
+    ): Response<ApprovalSingleResponse>
+
+    @POST("api/approval/{approvalLogId}/tolak")
+    suspend fun tolakApproval(
+        @Path("approvalLogId") approvalLogId: Int,
+        @Body catatan: Map<String, String>
+    ): Response<ApprovalSingleResponse>
 }

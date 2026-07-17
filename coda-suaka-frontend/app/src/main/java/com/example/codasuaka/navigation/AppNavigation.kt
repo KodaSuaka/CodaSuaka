@@ -31,6 +31,8 @@ import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanScree
 import com.example.codasuaka.ui.screen.dashboard_karyawan.DashboardKaryawanViewModel
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganScreen
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
+import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganScreen
+import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -56,6 +58,7 @@ object Routes {
     const val LOG_ABSENSI = "log_absensi"
     const val LAPORAN_KEUANGAN = "laporan_keuangan"
     const val STATUS_KARYAWAN = "status_karyawan"
+    const val APPROVAL_KEUANGAN = "approval_keuangan"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -283,6 +286,15 @@ fun AppNavigation(navController: NavHostController) {
             LaporanKeuanganScreen(
                 onBack = { navController.popBackStack() },
                 viewModel = laporanKeuanganViewModel
+            )
+        }
+
+        // ── Approval Keuangan ──
+        composable(Routes.APPROVAL_KEUANGAN) {
+            val approvalKeuanganViewModel: ApprovalKeuanganViewModel = koinViewModel()
+            ApprovalKeuanganScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = approvalKeuanganViewModel
             )
         }
 

@@ -31,6 +31,7 @@ class TransaksiKas extends Model
         return [
             'tanggal' => 'date',
             'nominal' => 'decimal:2',
+            'status_approval' => 'string',
         ];
     }
 
@@ -57,5 +58,37 @@ class TransaksiKas extends Model
     public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Log approval untuk transaksi ini.
+     */
+    public function approvalLogs()
+    {
+        return $this->hasMany(\App\Models\ApprovalLog::class, 'transaksi_kas_id');
+    }
+
+    /**
+     * Cek apakah transaksi perlu approval.
+     */
+    public function needsApproval(): bool
+    {
+        $config = config('keuangan.approval');
+        if (!$config['enabled']) {
+            return false;
+        }
+
+        // Cek tipe
+        $tipePerluApproval = $config['tipe_perlu_approval'];
+        if (!in_array($this->tipe, (array) $tipePerluApproval)) {
+            return false;
+        }
+
+        // Cek threshold nominal
+        if ((float) $this->nominal < (float) $config['threshold_nominal']) {
+            return false;
+        }
+
+        return true;
     }
 }

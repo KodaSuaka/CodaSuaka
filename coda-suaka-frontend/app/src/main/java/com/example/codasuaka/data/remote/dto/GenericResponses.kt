@@ -505,6 +505,7 @@ data class TransaksiKasDto(
     @SerializedName("created_by_user") val createdByUser: UserData?,
     @SerializedName("kategori_transaksi") val kategoriTransaksi: KategoriTransaksiDto?,
     @SerializedName("outlet") val outlet: OutletDto?,
+    @SerializedName("status_approval") val statusApproval: String?, // disetujui / pending / ditolak
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
 )
@@ -553,7 +554,51 @@ data class LabaRugiData(
     @SerializedName("beban_operasional") val bebanOperasional: Double,
     @SerializedName("laba_rugi") val labaRugi: Double,
     @SerializedName("start_date") val startDate: String?,
-    @SerializedName("end_date") val endDate: String?
+    @SerializedName("end_date") val endDate: String?,
+    @SerializedName("pendapatan_per_kategori") val pendapatanPerKategori: Map<String, Double>? = null,
+    @SerializedName("hpp_per_kategori") val hppPerKategori: Map<String, Double>? = null,
+    @SerializedName("beban_per_kategori") val bebanPerKategori: Map<String, Double>? = null
+)
+
+data class ArusKasResponse(
+    @SerializedName("status") val status: String?,
+    @SerializedName("data") val data: ArusKasData?
+)
+
+data class ArusKasData(
+    @SerializedName("arus_kas_operasi") val arusKasOperasi: Double,
+    @SerializedName("arus_kas_investasi") val arusKasInvestasi: Double,
+    @SerializedName("arus_kas_pendanaan") val arusKasPendanaan: Double,
+    @SerializedName("kenaikan_bersih_kas") val kenaikanBersihKas: Double,
+    @SerializedName("saldo_awal") val saldoAwal: Double,
+    @SerializedName("saldo_akhir") val saldoAkhir: Double,
+    @SerializedName("start_date") val startDate: String?,
+    @SerializedName("end_date") val endDate: String?,
+    @SerializedName("detail_operasi") val detailOperasi: List<ArusKasDetail>?,
+    @SerializedName("detail_pendanaan") val detailPendanaan: List<ArusKasDetail>?
+)
+
+data class ArusKasDetail(
+    @SerializedName("kategori") val kategori: String,
+    @SerializedName("masuk") val masuk: Double,
+    @SerializedName("keluar") val keluar: Double
+)
+
+data class RingkasanKeuanganResponse(
+    @SerializedName("status") val status: String?,
+    @SerializedName("data") val data: RingkasanKeuanganData?
+)
+
+data class RingkasanKeuanganData(
+    @SerializedName("tahun") val tahun: Int?,
+    @SerializedName("series") val series: List<RingkasanBulanan>?
+)
+
+data class RingkasanBulanan(
+    @SerializedName("bulan") val bulan: String,
+    @SerializedName("pendapatan") val pendapatan: Double,
+    @SerializedName("beban") val beban: Double,
+    @SerializedName("laba") val laba: Double
 )
 
 data class PaginationMeta(
@@ -561,4 +606,54 @@ data class PaginationMeta(
     @SerializedName("last_page") val lastPage: Int,
     @SerializedName("per_page") val perPage: Int,
     @SerializedName("total") val total: Int
+)
+
+// ─── Approval Transaksi ───────────────────────────────────────────
+
+data class ApprovalListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<ApprovalLogDto>?,
+    @SerializedName("meta") val meta: PaginationMeta?
+)
+
+data class ApprovalSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: ApprovalLogDto?
+)
+
+data class ApprovalLogDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("transaksi_kas_id") val transaksiKasId: Int,
+    @SerializedName("diajukan_oleh") val diajukanOleh: Int,
+    @SerializedName("disetujui_oleh") val disetujuiOleh: Int?,
+    @SerializedName("status") val status: String,
+    @SerializedName("catatan") val catatan: String?,
+    @SerializedName("tanggal_diajukan") val tanggalDiajukan: String,
+    @SerializedName("tanggal_diproses") val tanggalDiproses: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?,
+    @SerializedName("transaksi_kas") val transaksiKas: ApprovalTransaksiKasDto?,
+    @SerializedName("pengaju") val pengaju: ApprovalUserDto?,
+    @SerializedName("pemeriksa") val pemeriksa: ApprovalUserDto?
+)
+
+data class ApprovalTransaksiKasDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("tanggal") val tanggal: String,
+    @SerializedName("tipe") val tipe: String,
+    @SerializedName("nominal") val nominal: Double,
+    @SerializedName("metode_pembayaran") val metodePembayaran: String?,
+    @SerializedName("keterangan") val keterangan: String?,
+    @SerializedName("status_approval") val statusApproval: String?,
+    @SerializedName("kategori_transaksi") val kategoriTransaksi: KategoriTransaksiDto?,
+    @SerializedName("outlet") val outlet: OutletDto?,
+    @SerializedName("created_by_user") val createdByUser: ApprovalUserDto?
+)
+
+data class ApprovalUserDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("name") val name: String?,
+    @SerializedName("email") val email: String?,
+    @SerializedName("nama_role") val namaRole: String?,
+    @SerializedName("nama_outlet") val namaOutlet: String?
 )

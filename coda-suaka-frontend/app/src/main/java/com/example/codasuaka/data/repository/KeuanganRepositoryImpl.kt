@@ -155,4 +155,166 @@ class KeuanganRepositoryImpl(
             throw Exception("Gagal memuat laba rugi: ${response.code()}")
         }
     }
+
+    // ─── Arus Kas ─────────────────────────────────────────────
+
+    override suspend fun getArusKas(
+        startDate: String?,
+        endDate: String?,
+        outletId: Int?
+    ): Result<ArusKasData> = runCatching {
+        val response = apiService.getArusKas(startDate, endDate, outletId)
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Data arus kas kosong")
+        } else {
+            throw Exception("Gagal memuat arus kas: ${response.code()}")
+        }
+    }
+
+    // ─── Ringkasan Keuangan ───────────────────────────────────
+
+    override suspend fun getRingkasanKeuangan(
+        tahun: Int?
+    ): Result<RingkasanKeuanganData> = runCatching {
+        val response = apiService.getRingkasanKeuangan(tahun)
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Data ringkasan keuangan kosong")
+        } else {
+            throw Exception("Gagal memuat ringkasan keuangan: ${response.code()}")
+        }
+    }
+
+    // ─── Ekspor Buku Kas ──────────────────────────────────────
+
+    override suspend fun exportBukuKasPdf(
+        startDate: String?,
+        endDate: String?,
+        outletId: Int?
+    ): Result<okhttp3.ResponseBody> = runCatching {
+        val response = apiService.exportBukuKasPdf(startDate, endDate, outletId)
+        if (response.isSuccessful) {
+            response.body() ?: throw Exception("File PDF buku kas kosong")
+        } else {
+            throw Exception("Gagal mengekspor PDF buku kas: ${response.code()}")
+        }
+    }
+
+    override suspend fun exportBukuKasExcel(
+        startDate: String?,
+        endDate: String?,
+        outletId: Int?
+    ): Result<okhttp3.ResponseBody> = runCatching {
+        val response = apiService.exportBukuKasExcel(startDate, endDate, outletId)
+        if (response.isSuccessful) {
+            response.body() ?: throw Exception("File Excel buku kas kosong")
+        } else {
+            throw Exception("Gagal mengekspor Excel buku kas: ${response.code()}")
+        }
+    }
+
+    // ─── Ekspor Laba Rugi ─────────────────────────────────────
+
+    override suspend fun exportLabaRugiPdf(
+        startDate: String?,
+        endDate: String?,
+        outletId: Int?
+    ): Result<okhttp3.ResponseBody> = runCatching {
+        val response = apiService.exportLabaRugiPdf(startDate, endDate, outletId)
+        if (response.isSuccessful) {
+            response.body() ?: throw Exception("File PDF laba rugi kosong")
+        } else {
+            throw Exception("Gagal mengekspor PDF laba rugi: ${response.code()}")
+        }
+    }
+
+    // ─── Ekspor Arus Kas ──────────────────────────────────────
+
+    override suspend fun exportArusKasPdf(
+        startDate: String?,
+        endDate: String?,
+        outletId: Int?
+    ): Result<okhttp3.ResponseBody> = runCatching {
+        val response = apiService.exportArusKasPdf(startDate, endDate, outletId)
+        if (response.isSuccessful) {
+            response.body() ?: throw Exception("File PDF arus kas kosong")
+        } else {
+            throw Exception("Gagal mengekspor PDF arus kas: ${response.code()}")
+        }
+    }
+
+    override suspend fun exportArusKasExcel(
+        startDate: String?,
+        endDate: String?,
+        outletId: Int?
+    ): Result<okhttp3.ResponseBody> = runCatching {
+        val response = apiService.exportArusKasExcel(startDate, endDate, outletId)
+        if (response.isSuccessful) {
+            response.body() ?: throw Exception("File Excel arus kas kosong")
+        } else {
+            throw Exception("Gagal mengekspor Excel arus kas: ${response.code()}")
+        }
+    }
+
+    // ─── Approval Transaksi ──────────────────────────────────────
+
+    override suspend fun getApprovalPending(
+        outletId: Int?,
+        startDate: String?,
+        endDate: String?
+    ): Result<List<ApprovalLogDto>> = runCatching {
+        val response = apiService.getApprovalPending(outletId, startDate, endDate)
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Data approval pending kosong")
+        } else {
+            throw Exception("Gagal memuat approval: ${response.code()}")
+        }
+    }
+
+    override suspend fun getApprovalRiwayat(
+        status: String?,
+        outletId: Int?,
+        startDate: String?,
+        endDate: String?
+    ): Result<List<ApprovalLogDto>> = runCatching {
+        val response = apiService.getApprovalRiwayat(status, outletId, startDate, endDate)
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Data riwayat approval kosong")
+        } else {
+            throw Exception("Gagal memuat riwayat approval: ${response.code()}")
+        }
+    }
+
+    override suspend fun ajukanApproval(transaksiKasId: Int): Result<ApprovalLogDto> = runCatching {
+        val response = apiService.ajukanApproval(transaksiKasId)
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Gagal mengajukan approval")
+        } else {
+            throw Exception("Gagal mengajukan approval: ${response.code()}")
+        }
+    }
+
+    override suspend fun setujuiApproval(
+        approvalLogId: Int,
+        catatan: String?
+    ): Result<ApprovalLogDto> = runCatching {
+        val body = if (catatan != null) mapOf("catatan" to catatan) else null
+        val response = apiService.setujuiApproval(approvalLogId, body)
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Gagal menyetujui transaksi")
+        } else {
+            throw Exception("Gagal menyetujui transaksi: ${response.code()}")
+        }
+    }
+
+    override suspend fun tolakApproval(
+        approvalLogId: Int,
+        catatan: String
+    ): Result<ApprovalLogDto> = runCatching {
+        val response = apiService.tolakApproval(approvalLogId, mapOf("catatan" to catatan))
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Gagal menolak transaksi")
+        } else {
+            throw Exception("Gagal menolak transaksi: ${response.code()}")
+        }
+    }
 }

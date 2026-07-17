@@ -109,6 +109,13 @@ class PermissionService
                 'permission' => 'view:keuangan',
             ],
             [
+                'id' => 'approval_keuangan',
+                'label' => 'Approval Keuangan',
+                'icon' => 'HowToReg',
+                'route' => 'approval_keuangan',
+                'permission' => 'approve:keuangan',
+            ],
+            [
                 'id' => 'riwayat_absensi',
                 'label' => 'Riwayat Absensi',
                 'icon' => 'FactCheck',
