@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterSuperAdminRequest;
 use App\Services\PermissionService;
 
 class AuthController extends Controller
@@ -93,6 +94,36 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer'
         ], 'Login berhasil');
+    }
+
+    public function registerSuperAdmin(RegisterSuperAdminRequest $request){
+        $roleSuperAdmin = role::where('nama_role', 'Super Admin')->first();
+
+        if (!$roleSuperAdmin) {
+            return $this->error('Role Super Admin belum tersedia. Jalankan seeder terlebih dahulu.', 500);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role_id' => $roleSuperAdmin->id,
+            'instansi_id' => null,
+            'outlet_id' => null,
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return $this->success([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role?->nama_role ?? 'Unknown',
+            ],
+            'access_token' => $token,
+            'token_type' => 'Bearer'
+        ], 'Registrasi Super Admin berhasil', 201);
     }
 
     public function logout(Request $request){

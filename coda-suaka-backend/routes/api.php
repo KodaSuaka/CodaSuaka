@@ -33,6 +33,7 @@ use App\Http\Controllers\TransaksiKasController;
 
 // ─── Public Routes (tanpa auth) ─────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register-super-admin', [AuthController::class, 'registerSuperAdmin']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // ─── Protected Routes (memerlukan token Sanctum) ──────────────
