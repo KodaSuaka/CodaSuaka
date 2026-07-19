@@ -1,0 +1,31 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Gradle cache & build artifacts
+/gradle/caches/
+/gradle/daemon/
+/gradle/native/
+/gradle/.tmp/
+/gradle/kotlin-profile/
+/gradle/wrapper/dists/
+
+# Kotlin build artifacts
+.kotlin/
+
+# Gradle wrapper jar (keep wrapper properties)
+/gradle/wrapper/gradle-wrapper.jar
+gradle/android/FakeDependency.jar
+/.idea/

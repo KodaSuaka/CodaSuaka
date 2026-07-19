@@ -1,0 +1,11 @@
+# Ignore helper and issue folders
+/Helper/
+/issue/
+prototype view/
+plans/
+# Node modules (jika ada)
+node_modules/
+.idea
+# OS files
+.DS_Store
+Thumbs.db
