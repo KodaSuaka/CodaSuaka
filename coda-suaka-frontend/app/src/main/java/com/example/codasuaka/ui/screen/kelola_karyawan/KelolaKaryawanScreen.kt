@@ -66,7 +66,8 @@ fun KelolaKaryawanScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = Primary)

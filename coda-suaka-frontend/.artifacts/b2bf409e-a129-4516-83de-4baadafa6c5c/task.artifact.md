@@ -1,0 +1,5 @@
+- [ ] Tambahkan palette warna tambahan ke `DashboardScreen.kt`
+- [ ] Update `SectionOmset` (warna tren dan tombol filter)
+- [ ] Update `MenuItem` dan logic warna di `DashboardScreen`
+- [ ] Update `DrawerContent` (sinkronisasi header dan tombol Logout)
+- [ ] Verifikasi perubahan kode

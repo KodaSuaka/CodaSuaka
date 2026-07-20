@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.codasuaka.ui.screen.components.CodaSuakaLogo
+import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
 
 @Composable
@@ -92,49 +93,25 @@ fun LoginScreen(
             }
 
             // Email Input
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Email") },
-                placeholder = { Text("Masukkan email Anda") },
-                singleLine = true,
+                label = "Email",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Tertiary,
-                    unfocusedContainerColor = Tertiary,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                )
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Password Input
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
-                label = { Text("Password") },
-                placeholder = { Text("Masukkan password Anda") },
-                singleLine = true,
+                label = "Password",
                 visualTransformation = if (passwordVisible) VisualTransformation.None
                     else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Tertiary,
-                    unfocusedContainerColor = Tertiary,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                ),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
@@ -155,7 +132,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Primary,
                     contentColor = OnPrimary,

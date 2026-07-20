@@ -6,22 +6,33 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.FactCheck
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.theme.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.ui.draw.clipToBounds
 
 // ─── Data class menu items ───────────────────────────────────
 
@@ -56,9 +67,10 @@ fun DashboardScreen(
         drawerState = drawerState,
         drawerContent = {
             DrawerContent(
-                viewModel = viewModel,
+                uiState = uiState,
                 onNavigateTo = onNavigateTo,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onCloseDrawer = { viewModel.closeDrawer() }
             )
         },
         gesturesEnabled = uiState.isDrawerOpen
@@ -167,9 +179,9 @@ fun DashboardScreen(
                     title = "Menu Utama",
                     userRole = uiState.userRole,
                     items = listOf(
-                        MenuItem("Kelola Outlet", Icons.Default.Store, Primary, allowedRoles = listOf("Owner")),
-                        MenuItem("Jadwal", Icons.Default.CalendarMonth, Primary),
-                        MenuItem("Log Absensi", Icons.Default.FactCheck, Secondary)
+                        MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
+                        MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
+                        MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, PurpleLog)
                     ),
                     onItemClick = { label ->
                         when (label) {
@@ -187,8 +199,8 @@ fun DashboardScreen(
                     title = "Laporan & Status",
                     userRole = uiState.userRole,
                     items = listOf(
-                        MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, Primary, allowedRoles = listOf("Owner")),
-                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, Secondary)
+                        MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
+                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
                     ),
                     onItemClick = { label ->
                         when (label) {
@@ -206,6 +218,7 @@ fun DashboardScreen(
 
 // ─── Section Omset ──────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SectionOmset(
     omsetTotal: Double,
@@ -213,16 +226,146 @@ private fun SectionOmset(
 ) {
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    var pickingStartDate by remember { mutableStateOf(true) }
+    
+    var showYearPicker by remember { mutableStateOf(false) }
+    
+    val datePickerState = rememberDatePickerState()
+    
+    val locale = remember { Locale("id", "ID") }
+    val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+
+    if (showDatePicker) {
+        // Paksa tema terang agar teks terlihat jelas
+        MaterialTheme(colorScheme = lightColorScheme(
+            surface = Color.White,
+            onSurface = Color.Black,
+            primary = Primary,
+            onPrimary = Color.White,
+            secondary = Secondary,
+            onSecondary = Color.White
+        )) {
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let {
+                            val formattedDate = Instant.ofEpochMilli(it)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+                            if (pickingStartDate) startDate = formattedDate else endDate = formattedDate
+                        }
+                        showDatePicker = false
+                    }) { Text("OK", fontWeight = FontWeight.Bold, color = Secondary) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) { Text("Batal", color = OnSurfaceVariant) }
+                },
+                colors = DatePickerDefaults.colors(
+                    containerColor = Color.White
+                )
+            ) {
+                if (showYearPicker) {
+                    val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                        
+                    YearPickerDialog(
+                        selectedYear = displayMonth.year,
+                        onYearSelected = { year ->
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                            }
+                            cal.set(java.util.Calendar.YEAR, year)
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            showYearPicker = false
+                        },
+                        onDismiss = { showYearPicker = false }
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    // ── Header Kustom < Bulan Tahun > ──
+                    val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    
+                    val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+                    
+                    CustomCalendarNavigation(
+                        title = monthTitle.replaceFirstChar { it.uppercase() },
+                        onPrevClick = {
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                            }
+                            cal.add(java.util.Calendar.MONTH, -1)
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onNextClick = {
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                            }
+                            cal.add(java.util.Calendar.MONTH, 1)
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onTitleClick = { showYearPicker = true },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // ── DatePicker (Sembunyikan header asli) ──
+                    // Kita gunakan Box dengan clip untuk membuang baris pager asli
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp) // Sesuaikan tinggi agar pager asli terpotong
+                            .clipToBounds()
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            title = null,
+                            headline = null,
+                            showModeToggle = false,
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.White,
+                                titleContentColor = Secondary,
+                                headlineContentColor = Secondary,
+                                weekdayContentColor = Color.Gray,
+                                subheadContentColor = Color.Gray,
+                                yearContentColor = Color.DarkGray,
+                                currentYearContentColor = Primary,
+                                selectedYearContentColor = Color.White,
+                                selectedYearContainerColor = Primary,
+                                dayContentColor = Color.Black,
+                                selectedDayContentColor = Color.White,
+                                selectedDayContainerColor = Primary,
+                                todayContentColor = Primary,
+                                todayDateBorderColor = Primary
+                            ),
+                            modifier = Modifier.offset(y = (-48).dp) // Geser ke atas untuk sembunyikan pager asli
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ── Header & Trend ──
@@ -243,7 +386,7 @@ private fun SectionOmset(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.TrendingUp,
+                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                             contentDescription = null,
                             tint = Success,
                             modifier = Modifier.size(18.dp)
@@ -257,7 +400,6 @@ private fun SectionOmset(
                     )
                 }
                 
-                // Indikator tren (Visual Only)
                 Surface(
                     color = Success.copy(alpha = 0.1f),
                     shape = RoundedCornerShape(8.dp)
@@ -275,51 +417,37 @@ private fun SectionOmset(
             // ── Nilai Omset ──
             Text(
                 text = formatRupiah(omsetTotal),
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Secondary,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
             HorizontalDivider(color = Neutral, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(4.dp))
 
-            // ── Filter Tanggal (Disederhanakan) ──
+            // ── Filter Tanggal (Modern Date Picker Trigger) ──
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
+                    DatePickerField(
+                        label = "Tgl Mulai",
                         value = startDate,
-                        onValueChange = { startDate = it },
-                        placeholder = { Text("Tgl Mulai (yyyy-mm-dd)", fontSize = 12.sp) },
-                        singleLine = true,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        textStyle = MaterialTheme.typography.bodySmall,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary,
-                            unfocusedBorderColor = Neutral,
-                            focusedContainerColor = Tertiary,
-                            unfocusedContainerColor = Tertiary
-                        )
+                        onClick = {
+                            pickingStartDate = true
+                            showDatePicker = true
+                        }
                     )
-                    OutlinedTextField(
+                    DatePickerField(
+                        label = "Tgl Akhir",
                         value = endDate,
-                        onValueChange = { endDate = it },
-                        placeholder = { Text("Tgl Akhir (yyyy-mm-dd)", fontSize = 12.sp) },
-                        singleLine = true,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        textStyle = MaterialTheme.typography.bodySmall,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary,
-                            unfocusedBorderColor = Neutral,
-                            focusedContainerColor = Tertiary,
-                            unfocusedContainerColor = Tertiary
-                        )
+                        onClick = {
+                            pickingStartDate = false
+                            showDatePicker = true
+                        }
                     )
                 }
 
@@ -328,9 +456,9 @@ private fun SectionOmset(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Secondary,
+                        containerColor = Primary, // Menggunakan #63B3ED
                         contentColor = OnPrimary
                     )
                 ) {
@@ -341,6 +469,36 @@ private fun SectionOmset(
             }
         }
     }
+}
+
+@Composable
+private fun DatePickerField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        label = { Text(label, fontSize = 12.sp) },
+        placeholder = { Text("Pilih Tanggal", fontSize = 12.sp) },
+        readOnly = true,
+        enabled = false,
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        textStyle = MaterialTheme.typography.bodySmall,
+        trailingIcon = {
+            Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledBorderColor = NeutralBorder,
+            disabledLabelColor = OnSurfaceVariant,
+            disabledTextColor = OnSurface,
+            disabledContainerColor = InputBackground,
+            disabledTrailingIconColor = Primary
+        )
+    )
 }
 
 // ─── Section Menu Grid ──────────────────────────────────────
@@ -399,9 +557,9 @@ private fun MenuCard(
     Card(
         onClick = onClick,
         modifier = modifier.height(115.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
@@ -454,9 +612,9 @@ private fun BottomNavigationBar(
     ) {
         // Item definitions
         val items = listOf(
-            Triple(Icons.Default.Home, "Dashboard", 0),
-            Triple(Icons.Default.Assignment, "Tugas Tim", 1),
-            Triple(Icons.Default.Email, "Pesan", 2),
+            Triple(Icons.Default.Home, "Beranda", 0),
+            Triple(Icons.AutoMirrored.Filled.Assignment, "Kehadiran", 1),
+            Triple(Icons.Default.ChatBubble, "Pesan", 2),
             Triple(Icons.Default.Groups, "Divisi", 3)
         )
 
@@ -492,9 +650,10 @@ private fun BottomNavigationBar(
 
 @Composable
 private fun DrawerContent(
-    viewModel: DashboardViewModel,
+    uiState: DashboardUiState,
     onNavigateTo: (String) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onCloseDrawer: () -> Unit
 ) {
     ModalDrawerSheet(
         modifier = Modifier.width(300.dp),
@@ -527,7 +686,7 @@ private fun DrawerContent(
                     
                     Column {
                         Text(
-                            text = viewModel.uiState.value.userNamaLengkap,
+                            text = uiState.userNamaLengkap,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = Secondary
@@ -537,7 +696,7 @@ private fun DrawerContent(
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = viewModel.uiState.value.userRole ?: "Member",
+                                text = uiState.userRole.ifEmpty { "Member" },
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -557,7 +716,7 @@ private fun DrawerContent(
             icon = Icons.Default.Checklist,
             label = "Data Persetujuan",
             onClick = {
-                viewModel.closeDrawer()
+                onCloseDrawer()
                 onNavigateTo("riwayat_kehadiran")
             }
         )
@@ -566,7 +725,7 @@ private fun DrawerContent(
             icon = Icons.Default.PersonAddAlt,
             label = "Tambah Karyawan",
             onClick = {
-                viewModel.closeDrawer()
+                onCloseDrawer()
                 onNavigateTo("tambah_karyawan")
             }
         )
@@ -575,7 +734,7 @@ private fun DrawerContent(
             icon = Icons.Default.Schedule,
             label = "Kalender",
             onClick = {
-                viewModel.closeDrawer()
+                onCloseDrawer()
                 onNavigateTo("kalender")
             }
         )
@@ -587,14 +746,12 @@ private fun DrawerContent(
 
         // ── Logout ──
         DrawerItem(
-            icon = Icons.Default.Logout,
+            icon = Icons.AutoMirrored.Filled.Logout,
             label = "Logout",
             iconTint = Error,
             labelColor = Error,
             onClick = {
-                // Di sini biasanya muncul dialog konfirmasi atau langsung logout
-                // Untuk sementara langsung logout mengikuti kode sebelumnya
-                viewModel.closeDrawer()
+                onCloseDrawer()
                 onLogout()
             }
         )

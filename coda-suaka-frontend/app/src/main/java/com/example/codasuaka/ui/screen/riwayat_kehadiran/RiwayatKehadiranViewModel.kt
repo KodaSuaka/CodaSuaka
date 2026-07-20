@@ -196,6 +196,17 @@ class RiwayatKehadiranViewModel(
         loadRekapBulanan()
     }
 
+    fun onRecapMonthYearSelected(month: Int, year: Int) {
+        val now = java.time.LocalDate.now()
+        val target = java.time.YearMonth.of(year, month + 1).atDay(1)
+        val currentMonth = java.time.YearMonth.from(now).atDay(1)
+
+        val offset = java.time.temporal.ChronoUnit.MONTHS.between(currentMonth, target).toInt()
+
+        _uiState.value = _uiState.value.copy(recapMonthOffset = offset)
+        loadRekapBulanan()
+    }
+
     // ─── Load Presensi ───
 
     /**

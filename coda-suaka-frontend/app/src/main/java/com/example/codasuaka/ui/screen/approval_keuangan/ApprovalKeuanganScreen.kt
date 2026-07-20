@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.codasuaka.data.remote.dto.ApprovalLogDto
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
+import com.example.codasuaka.ui.theme.*
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -48,18 +50,28 @@ fun ApprovalKeuanganScreen(
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Tertiary,
         topBar = {
             TopAppBar(
-                title = { Text("Approval Transaksi") },
+                title = { 
+                    Text(
+                        text = "Approval Transaksi", 
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack, 
+                            contentDescription = "Kembali",
+                            tint = Secondary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Surface
                 )
             )
         },
@@ -72,25 +84,41 @@ fun ApprovalKeuanganScreen(
         ) {
             // Tab Row: Pending | Riwayat
             TabRow(
-                selectedTabIndex = uiState.selectedTab
+                selectedTabIndex = uiState.selectedTab,
+                containerColor = Surface,
+                contentColor = Primary,
+                indicator = { tabPositions ->
+                    if (uiState.selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[uiState.selectedTab]),
+                            color = Primary
+                        )
+                    }
+                }
             ) {
                 Tab(
                     selected = uiState.selectedTab == 0,
                     onClick = { viewModel.setSelectedTab(0) },
                     text = { Text("Menunggu") },
-                    icon = { Icon(Icons.Default.HourglassEmpty, contentDescription = null) }
+                    icon = { Icon(Icons.Default.HourglassEmpty, contentDescription = null) },
+                    selectedContentColor = Primary,
+                    unselectedContentColor = OnSurfaceVariant
                 )
                 Tab(
                     selected = uiState.selectedTab == 1,
                     onClick = { viewModel.setSelectedTab(1) },
                     text = { Text("Riwayat") },
-                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) }
+                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                    selectedContentColor = Primary,
+                    unselectedContentColor = OnSurfaceVariant
                 )
             }
 
             // Content
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Tertiary)
             ) {
                 when {
                     uiState.isLoading -> {
@@ -162,8 +190,8 @@ fun ApprovalCard(
     val transaksi = log.transaksiKas
     val statusColor = when (log.status) {
         "pending" -> Color(0xFFFFA000)      // Orange
-        "disetujui" -> Color(0xFF4CAF50)    // Green
-        "ditolak" -> Color(0xFFF44336)      // Red
+        "disetujui" -> Success              // Green
+        "ditolak" -> Error                // Red
         else -> Color.Gray
     }
     val statusLabel = when (log.status) {
@@ -172,13 +200,16 @@ fun ApprovalCard(
         "ditolak" -> "Ditolak"
         else -> log.status
     }
-    val tipeColor = if (transaksi?.tipe == "masuk") Color(0xFF4CAF50) else Color(0xFFF44336)
+    val tipeColor = if (transaksi?.tipe == "masuk") Success else Error
     val tipeLabel = if (transaksi?.tipe == "masuk") "MASUK" else "KELUAR"
 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -190,12 +221,12 @@ fun ApprovalCard(
             ) {
                 // Status badge
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = statusColor.copy(alpha = 0.15f)
+                    shape = RoundedCornerShape(8.dp),
+                    color = statusColor.copy(alpha = 0.1f)
                 ) {
                     Text(
                         text = statusLabel,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         color = statusColor,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
@@ -204,12 +235,12 @@ fun ApprovalCard(
 
                 // Tipe badge
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = tipeColor.copy(alpha = 0.1f)
+                    shape = RoundedCornerShape(8.dp),
+                    color = tipeColor.copy(alpha = 0.08f)
                 ) {
                     Text(
                         text = tipeLabel,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         color = tipeColor,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
@@ -217,7 +248,7 @@ fun ApprovalCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Kategori & nominal
             Row(
@@ -228,18 +259,20 @@ fun ApprovalCard(
                     Text(
                         text = transaksi?.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = transaksi?.tanggal ?: "",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = OnSurfaceVariant
                     )
                 }
 
                 Text(
                     text = formatRupiah(transaksi?.nominal ?: 0.0),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = tipeColor
                 )
@@ -247,31 +280,40 @@ fun ApprovalCard(
 
             // Keterangan
             if (!transaksi?.keterangan.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = transaksi?.keterangan ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Tertiary
+                ) {
+                    Text(
+                        text = transaksi?.keterangan ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariant,
+                        maxLines = 2,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
 
             // Pengaju
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Neutral, thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(8.dp))
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Diajukan oleh: ${log.pengaju?.name ?: "-"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Pengaju: ${log.pengaju?.name ?: "-"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OnSurfaceVariant
                 )
                 if (log.pemeriksa != null) {
                     Text(
-                        text = "Diproses oleh: ${log.pemeriksa.name ?: "-"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Proses: ${log.pemeriksa.name ?: "-"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant
                     )
                 }
             }
@@ -291,149 +333,161 @@ fun ApprovalDetailBottomSheet(
     val transaksi = log.transaksiKas
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
+    MaterialTheme(colorScheme = lightColorScheme(
+        surface = Color.White,
+        onSurface = Color.Black,
+        primary = Primary,
+        onPrimary = Color.White,
+        secondary = Secondary
+    )) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = sheetState,
+            containerColor = Color.White
         ) {
-            // Status badge
-            val statusColor = when (log.status) {
-                "pending" -> Color(0xFFFFA000)
-                "disetujui" -> Color(0xFF4CAF50)
-                "ditolak" -> Color(0xFFF44336)
-                else -> Color.Gray
-            }
-            val statusLabel = when (log.status) {
-                "pending" -> "MENUNGGU"
-                "disetujui" -> "DISETUJUI"
-                "ditolak" -> "DITOLAK"
-                else -> log.status
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
             ) {
-                Text(
-                    text = "Detail Approval",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = statusColor.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        text = statusLabel,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = statusColor,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                // Status badge
+                val statusColor = when (log.status) {
+                    "pending" -> Color(0xFFFFA000)
+                    "disetujui" -> Color(0xFF4CAF50)
+                    "ditolak" -> Color(0xFFF44336)
+                    else -> Color.Gray
                 }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Informasi Transaksi
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow("Tanggal", transaksi?.tanggal ?: "-")
-                    InfoRow("Tipe", if (transaksi?.tipe == "masuk") "Pemasukan" else "Pengeluaran")
-                    InfoRow("Kategori", transaksi?.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori")
-                    InfoRow("Nominal", formatRupiah(transaksi?.nominal ?: 0.0))
-                    InfoRow("Metode", transaksi?.metodePembayaran ?: "-")
-                    InfoRow("Outlet", transaksi?.outlet?.namaOutlet ?: "-")
-                    if (!transaksi?.keterangan.isNullOrBlank()) {
-                        InfoRow("Keterangan", transaksi?.keterangan ?: "")
-                    }
+                val statusLabel = when (log.status) {
+                    "pending" -> "MENUNGGU"
+                    "disetujui" -> "DISETUJUI"
+                    "ditolak" -> "DITOLAK"
+                    else -> log.status
                 }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Informasi Pengaju & Pemeriksa
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow("Diajukan oleh", log.pengaju?.name ?: "-")
-                    InfoRow("Tanggal diajukan", log.tanggalDiajukan)
-                    if (log.pemeriksa != null) {
-                        InfoRow("Diproses oleh", log.pemeriksa.name ?: "-")
-                        InfoRow("Tanggal diproses", log.tanggalDiproses ?: "-")
-                    }
-                    if (!log.catatan.isNullOrBlank()) {
-                        InfoRow("Catatan", log.catatan)
-                    }
-                }
-            }
-
-            // Tombol Aksi (hanya untuk pending)
-            if (log.status == "pending") {
-                Spacer(modifier = Modifier.height(24.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(
-                        onClick = onTolak,
-                        modifier = Modifier.weight(1f),
-                        enabled = !isProcessing,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFFF44336)
-                        )
+                    Text(
+                        text = "Detail Approval",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = statusColor.copy(alpha = 0.15f)
                     ) {
-                        if (isProcessing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(Icons.Default.Close, contentDescription = null)
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tolak")
-                    }
-
-                    Button(
-                        onClick = onSetujui,
-                        modifier = Modifier.weight(1f),
-                        enabled = !isProcessing,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4CAF50)
+                        Text(
+                            text = statusLabel,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = statusColor,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
                         )
-                    ) {
-                        if (isProcessing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                        } else {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Setujui")
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Informasi Transaksi
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = InputBackground
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralBorder.copy(alpha = 0.5f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        InfoRow("Tanggal", transaksi?.tanggal ?: "-")
+                        InfoRow("Tipe", if (transaksi?.tipe == "masuk") "Pemasukan" else "Pengeluaran")
+                        InfoRow("Kategori", transaksi?.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori")
+                        InfoRow("Nominal", formatRupiah(transaksi?.nominal ?: 0.0))
+                        InfoRow("Metode", transaksi?.metodePembayaran ?: "-")
+                        InfoRow("Outlet", transaksi?.outlet?.namaOutlet ?: "-")
+                        if (!transaksi?.keterangan.isNullOrBlank()) {
+                            InfoRow("Keterangan", transaksi?.keterangan ?: "")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Informasi Pengaju & Pemeriksa
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = InputBackground
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralBorder.copy(alpha = 0.5f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        InfoRow("Diajukan oleh", log.pengaju?.name ?: "-")
+                        InfoRow("Tanggal diajukan", log.tanggalDiajukan)
+                        if (log.pemeriksa != null) {
+                            InfoRow("Diproses oleh", log.pemeriksa.name ?: "-")
+                            InfoRow("Tanggal diproses", log.tanggalDiproses ?: "-")
+                        }
+                        if (!log.catatan.isNullOrBlank()) {
+                            InfoRow("Catatan", log.catatan)
+                        }
+                    }
+                }
+
+                // Tombol Aksi (hanya untuk pending)
+                if (log.status == "pending") {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onTolak,
+                            modifier = Modifier.weight(1f),
+                            enabled = !isProcessing,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFF44336)
+                            )
+                        ) {
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(Icons.Default.Close, contentDescription = null)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Tolak")
+                        }
+
+                        Button(
+                            onClick = onSetujui,
+                            modifier = Modifier.weight(1f),
+                            enabled = !isProcessing,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50)
+                            )
+                        ) {
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                            } else {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Setujui")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }

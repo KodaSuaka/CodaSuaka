@@ -12,8 +12,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +35,15 @@ import com.example.codasuaka.data.remote.dto.ArusKasData
 import com.example.codasuaka.data.remote.dto.ArusKasDetail
 import com.example.codasuaka.data.remote.dto.KategoriTransaksiDto
 import com.example.codasuaka.data.remote.dto.TransaksiKasDto
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.YearPickerDialog
+import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.ui.draw.clipToBounds
 
 // ─── Warna Bantu ──────────────────────────────────────────────
 private val MasukColor = Color(0xFF10B981)
@@ -54,6 +65,7 @@ fun LaporanKeuanganScreen(
 
     // ── Dropdown menu state ──
     var showExportMenu by remember { mutableStateOf(false) }
+    var showReportsMenu by remember { mutableStateOf(false) }
 
     // ── Snackbar ──
     val snackbarHostState = remember { SnackbarHostState() }
@@ -85,71 +97,115 @@ fun LaporanKeuanganScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
                 actions = {
-                    // Tombol Arus Kas
-                    IconButton(onClick = { viewModel.toggleArusKasSheet() }) {
-                        Icon(Icons.Default.AccountTree, "Arus Kas", tint = OnPrimary)
-                    }
-                    // Tombol Saldo
-                    IconButton(onClick = { viewModel.toggleSaldoSheet() }) {
-                        Icon(Icons.Default.AccountBalanceWallet, "Saldo", tint = Secondary)
-                    }
-                    // Tombol Laba Rugi
-                    IconButton(onClick = { viewModel.toggleLabaRugiSheet() }) {
-                        Icon(Icons.Default.BarChart, "Laba Rugi", tint = Secondary)
-                    }
-                    // Tombol Ekspor (Dropdown)
-                    Box {
-                        IconButton(onClick = { showExportMenu = true }) {
-                            Icon(Icons.Default.FileDownload, "Ekspor", tint = OnPrimary)
+                    Row(
+                        modifier = Modifier.padding(end = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Dropdown Menu Laporan (Menggantikan 3 icon terpisah)
+                        Box {
+                            IconButton(onClick = { showReportsMenu = true }) {
+                                Icon(Icons.Default.Analytics, "Laporan", tint = Primary)
+                            }
+                            MaterialTheme(colorScheme = lightColorScheme(
+                                surface = Color.White,
+                                onSurface = Secondary,
+                                onSurfaceVariant = Secondary.copy(alpha = 0.7f)
+                            )) {
+                                DropdownMenu(
+                                    expanded = showReportsMenu,
+                                    onDismissRequest = { showReportsMenu = false },
+                                    modifier = Modifier.background(Color.White)
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Ringkasan Saldo", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showReportsMenu = false
+                                            viewModel.toggleSaldoSheet()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Laporan Laba Rugi", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showReportsMenu = false
+                                            viewModel.toggleLabaRugiSheet()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.BarChart, null, tint = OrangeManage) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Aliran Arus Kas", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showReportsMenu = false
+                                            viewModel.toggleArusKasSheet()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.AccountTree, null, tint = PurpleLog) }
+                                    )
+                                }
+                            }
                         }
-                        DropdownMenu(
-                            expanded = showExportMenu,
-                            onDismissRequest = { showExportMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Buku Kas (PDF)") },
-                                onClick = {
-                                    showExportMenu = false
-                                    viewModel.exportBukuKasPdf()
-                                },
-                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Buku Kas (Excel)") },
-                                onClick = {
-                                    showExportMenu = false
-                                    viewModel.exportBukuKasExcel()
-                                },
-                                leadingIcon = { Icon(Icons.Default.TableChart, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Laba Rugi (PDF)") },
-                                onClick = {
-                                    showExportMenu = false
-                                    viewModel.exportLabaRugiPdf()
-                                },
-                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Arus Kas (PDF)") },
-                                onClick = {
-                                    showExportMenu = false
-                                    viewModel.exportArusKasPdf()
-                                },
-                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Arus Kas (Excel)") },
-                                onClick = {
-                                    showExportMenu = false
-                                    viewModel.exportArusKasExcel()
-                                },
-                                leadingIcon = { Icon(Icons.Default.TableChart, null) }
-                            )
+
+                        // Dropdown Menu Ekspor
+                        Box {
+                            IconButton(onClick = { showExportMenu = true }) {
+                                Icon(Icons.Default.FileDownload, "Ekspor", tint = Primary)
+                            }
+                            MaterialTheme(colorScheme = lightColorScheme(
+                                surface = Color.White,
+                                onSurface = Secondary,
+                                onSurfaceVariant = Secondary.copy(alpha = 0.7f)
+                            )) {
+                                DropdownMenu(
+                                    expanded = showExportMenu,
+                                    onDismissRequest = { showExportMenu = false },
+                                    modifier = Modifier.background(Color.White)
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Buku Kas (PDF)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportBukuKasPdf()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = KeluarColor) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Buku Kas (Excel)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportBukuKasExcel()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = MasukColor) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Laba Rugi (PDF)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportLabaRugiPdf()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = KeluarColor) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Arus Kas (PDF)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportArusKasPdf()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.PictureAsPdf, null, tint = KeluarColor) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Arus Kas (Excel)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportArusKasExcel()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = MasukColor) }
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -173,12 +229,134 @@ fun LaporanKeuanganScreen(
                 .padding(innerPadding)
                 .background(Tertiary)
         ) {
+            // ── Date Picker Filter State ──
+            var showRangePicker by remember { mutableStateOf(false) }
+            var showYearPicker by remember { mutableStateOf(false) }
+            
+            if (showRangePicker) {
+                val datePickerState = rememberDatePickerState()
+                val locale = remember { Locale("id", "ID") }
+                val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+                
+                MaterialTheme(colorScheme = lightColorScheme(
+                    surface = Color.White,
+                    onSurface = Color.Black,
+                    primary = Primary,
+                    onPrimary = Color.White,
+                    secondary = Secondary
+                )) {
+                    DatePickerDialog(
+                        onDismissRequest = { showRangePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                datePickerState.selectedDateMillis?.let {
+                                    val ld = Instant.ofEpochMilli(it)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                    // Update filter range: set start and end to the selected day
+                                    viewModel.setFilterDateRange(ld.toString(), ld.toString())
+                                }
+                                showRangePicker = false
+                            }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showRangePicker = false }) {
+                                Text("Batal", color = OnSurfaceVariant)
+                            }
+                        },
+                        colors = DatePickerDefaults.colors(containerColor = Color.White)
+                    ) {
+                        if (showYearPicker) {
+                            val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                                
+                            YearPickerDialog(
+                                selectedYear = displayMonth.year,
+                                onYearSelected = { year ->
+                                    val cal = java.util.Calendar.getInstance().apply {
+                                        timeInMillis = datePickerState.displayedMonthMillis
+                                    }
+                                    cal.set(java.util.Calendar.YEAR, year)
+                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    showYearPicker = false
+                                },
+                                onDismiss = { showYearPicker = false }
+                            )
+                        }
+
+                        Column(modifier = Modifier.padding(top = 16.dp)) {
+                            // Header Kustom < Bulan Tahun >
+                            val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            
+                            val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+                            
+                            CustomCalendarNavigation(
+                                title = monthTitle.replaceFirstChar { it.uppercase() },
+                                onPrevClick = {
+                                    val cal = java.util.Calendar.getInstance().apply {
+                                        timeInMillis = datePickerState.displayedMonthMillis
+                                    }
+                                    cal.add(java.util.Calendar.MONTH, -1)
+                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                },
+                                onNextClick = {
+                                    val cal = java.util.Calendar.getInstance().apply {
+                                        timeInMillis = datePickerState.displayedMonthMillis
+                                    }
+                                    cal.add(java.util.Calendar.MONTH, 1)
+                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                },
+                                onTitleClick = { showYearPicker = true },
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(340.dp)
+                                    .clipToBounds()
+                            ) {
+                                DatePicker(
+                                    state = datePickerState,
+                                    title = null,
+                                    headline = null,
+                                    showModeToggle = false,
+                                    colors = DatePickerDefaults.colors(
+                                        containerColor = Color.White,
+                                        titleContentColor = Secondary,
+                                        headlineContentColor = Secondary,
+                                        weekdayContentColor = Color.Gray,
+                                        subheadContentColor = Color.Gray,
+                                        yearContentColor = Color.DarkGray,
+                                        currentYearContentColor = Primary,
+                                        selectedYearContentColor = Color.White,
+                                        selectedYearContainerColor = Primary,
+                                        dayContentColor = Color.Black,
+                                        selectedDayContentColor = Color.White,
+                                        selectedDayContainerColor = Primary,
+                                        todayContentColor = Primary,
+                                        todayDateBorderColor = Primary
+                                    ),
+                                    modifier = Modifier.offset(y = (-48).dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── Filter Row ──
             FilterBar(
                 selectedTipe = uiState.filterTipe,
                 onSelectTipe = { viewModel.setFilterTipe(it) },
                 startDate = uiState.filterStartDate,
-                endDate = uiState.filterEndDate
+                endDate = uiState.filterEndDate,
+                onDateRangeClick = { showRangePicker = true }
             )
 
             // ── Saldo Card ──
@@ -194,7 +372,7 @@ fun LaporanKeuanganScreen(
             // ── Daftar Transaksi ──
             if (uiState.isLoadingTransaksi && uiState.transaksiList.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = Primary)
@@ -313,12 +491,14 @@ fun LaporanKeuanganScreen(
     // ── Loading overlay saat ekspor ──
     if (uiState.isExporting) {
         Box(
-            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
             Card(
                 modifier = Modifier.padding(24.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -326,7 +506,7 @@ fun LaporanKeuanganScreen(
                 ) {
                     CircularProgressIndicator(color = Primary)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Mengekspor...", fontWeight = FontWeight.Medium)
+                    Text("Mengekspor...", fontWeight = FontWeight.Medium, color = Secondary)
                 }
             }
         }
@@ -342,7 +522,8 @@ private fun FilterBar(
     selectedTipe: String?,
     onSelectTipe: (String?) -> Unit,
     startDate: String,
-    endDate: String
+    endDate: String,
+    onDateRangeClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -353,56 +534,98 @@ private fun FilterBar(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // -- SEMUA --
+            val isSemuaSelected = selectedTipe == null
             FilterChip(
-                selected = selectedTipe == null,
+                selected = isSemuaSelected,
                 onClick = { onSelectTipe(null) },
-                label = { Text("Semua", fontSize = 12.sp) },
+                label = { 
+                    Text(
+                        text = "Semua", 
+                        fontSize = 12.sp, 
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSemuaSelected) Primary else Secondary
+                    ) 
+                },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Secondary.copy(alpha = 0.1f),
-                    selectedLabelColor = Secondary,
-                    containerColor = Tertiary,
-                    labelColor = OnSurfaceVariant
+                    selectedContainerColor = Primary.copy(alpha = 0.08f),
+                    containerColor = Color.White
                 ),
-                border = null,
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSemuaSelected,
+                    borderColor = NeutralBorder,
+                    selectedBorderColor = Primary.copy(alpha = 0.2f),
+                    borderWidth = 1.dp
+                ),
                 shape = RoundedCornerShape(12.dp)
             )
+
+            // -- PEMASUKAN --
+            val isMasukSelected = selectedTipe == "masuk"
             FilterChip(
-                selected = selectedTipe == "masuk",
+                selected = isMasukSelected,
                 onClick = { onSelectTipe("masuk") },
-                label = { Text("Pemasukan", fontSize = 12.sp) },
+                label = { 
+                    Text(
+                        text = "Pemasukan", 
+                        fontSize = 12.sp, 
+                        fontWeight = FontWeight.Bold,
+                        color = if (isMasukSelected) MasukColor else Secondary
+                    ) 
+                },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MasukColor.copy(alpha = 0.1f),
-                    selectedLabelColor = MasukColor,
-                    containerColor = Tertiary,
-                    labelColor = OnSurfaceVariant
+                    selectedContainerColor = MasukColor.copy(alpha = 0.08f),
+                    containerColor = Color.White
                 ),
-                border = null,
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isMasukSelected,
+                    borderColor = NeutralBorder,
+                    selectedBorderColor = MasukColor.copy(alpha = 0.2f),
+                    borderWidth = 1.dp
+                ),
                 shape = RoundedCornerShape(12.dp)
             )
+
+            // -- PENGELUARAN --
+            val isKeluarSelected = selectedTipe == "keluar"
             FilterChip(
-                selected = selectedTipe == "keluar",
+                selected = isKeluarSelected,
                 onClick = { onSelectTipe("keluar") },
-                label = { Text("Pengeluaran", fontSize = 12.sp) },
+                label = { 
+                    Text(
+                        text = "Pengeluaran", 
+                        fontSize = 12.sp, 
+                        fontWeight = FontWeight.Bold,
+                        color = if (isKeluarSelected) KeluarColor else Secondary
+                    ) 
+                },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = KeluarColor.copy(alpha = 0.1f),
-                    selectedLabelColor = KeluarColor,
-                    containerColor = Tertiary,
-                    labelColor = OnSurfaceVariant
+                    selectedContainerColor = KeluarColor.copy(alpha = 0.08f),
+                    containerColor = Color.White
                 ),
-                border = null,
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isKeluarSelected,
+                    borderColor = NeutralBorder,
+                    selectedBorderColor = KeluarColor.copy(alpha = 0.2f),
+                    borderWidth = 1.dp
+                ),
                 shape = RoundedCornerShape(12.dp)
             )
 
             VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 4.dp), color = Neutral)
 
-            // Indikator periode
+            // Indikator periode (Pill shape)
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Tertiary,
-                modifier = Modifier.clickable { /* future: date range picker */ }
+                shape = RoundedCornerShape(100.dp),
+                color = Primary.copy(alpha = 0.08f),
+                modifier = Modifier.clickable { onDateRangeClick() },
+                border = androidx.compose.foundation.BorderStroke(1.dp, Primary.copy(alpha = 0.15f))
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -412,14 +635,14 @@ private fun FilterBar(
                         Icons.Default.DateRange,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = Secondary
+                        tint = Primary
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "${startDate.takeLast(5)} - ${endDate.takeLast(5)}",
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Secondary
+                        fontWeight = FontWeight.Bold,
+                        color = Primary
                     )
                 }
             }
@@ -572,7 +795,7 @@ private fun TransaksiCard(
                 ) {
                     Icon(
                         imageVector = if (transaksi.tipe == "masuk")
-                            Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                            Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                         contentDescription = null,
                         tint = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
                         modifier = Modifier.size(24.dp)
@@ -713,7 +936,7 @@ private fun TransaksiCard(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Icon(
-                        Icons.Default.Send,
+                        Icons.AutoMirrored.Filled.Send,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp)
                     )
@@ -778,6 +1001,8 @@ private fun FormTransaksiDialog(
     onSubmit: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    // Suppress unused warning if needed, or use it. Currently just removing warning
+    val _unused = formMetodePembayaran 
     val filteredKategori = kategoriList.filter { it.tipe == formTipe || it.tipe.isEmpty() }
 
     Dialog(onDismissRequest = { if (!isSubmitting) onDismiss() }) {
@@ -842,20 +1067,13 @@ private fun FormTransaksiDialog(
                 }
 
                 // Input Nominal
-                OutlinedTextField(
+                CustomTextField(
                     value = formNominal,
                     onValueChange = { if (it.all { char -> char.isDigit() }) onFieldChanged(null, it, null, null, null, null) },
-                    label = { Text("Nominal") },
+                    label = "Nominal",
                     prefix = { Text("Rp ", fontWeight = FontWeight.Bold) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Tertiary,
-                        unfocusedContainerColor = Tertiary
-                    )
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
                 // Kategori Dropdown
@@ -866,20 +1084,13 @@ private fun FormTransaksiDialog(
                     expanded = expanded,
                     onExpandedChange = { expanded = it }
                 ) {
-                    OutlinedTextField(
+                    CustomTextField(
                         value = selectedKategori?.namaKategori ?: "Pilih Kategori",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Kategori") },
+                        label = "Kategori",
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary,
-                            unfocusedBorderColor = Neutral,
-                            focusedContainerColor = Tertiary,
-                            unfocusedContainerColor = Tertiary
-                        )
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         filteredKategori.forEach { kategori ->
@@ -892,33 +1103,143 @@ private fun FormTransaksiDialog(
                 }
 
                 // Tanggal & Lainnya
-                OutlinedTextField(
+                var showDatePicker by remember { mutableStateOf(false) }
+                var showYearPicker by remember { mutableStateOf(false) }
+                
+                CustomTextField(
                     value = formTanggal,
-                    onValueChange = { onFieldChanged(null, null, null, it, null, null) },
-                    label = { Text("Tanggal (YYYY-MM-DD)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Tertiary,
-                        unfocusedContainerColor = Tertiary
-                    )
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
+                    label = "Tanggal",
+                    placeholder = "Pilih tanggal transaksi",
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                    trailingIcon = { Icon(Icons.Default.CalendarMonth, null, tint = Primary) }
                 )
 
-                OutlinedTextField(
+                if (showDatePicker) {
+                    val datePickerState = rememberDatePickerState()
+                    MaterialTheme(
+                        colorScheme = lightColorScheme(
+                            primary = Primary,
+                            onPrimary = OnPrimary,
+                            surface = Surface,
+                            onSurface = Color.Black,
+                            onSurfaceVariant = Color.Gray,
+                            secondary = Secondary
+                        )
+                    ) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    datePickerState.selectedDateMillis?.let {
+                                        val ld = Instant.ofEpochMilli(it)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+                                        onFieldChanged(null, null, null, ld.toString(), null, null)
+                                    }
+                                    showDatePicker = false
+                                }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("Batal", color = OnSurfaceVariant)
+                                }
+                            },
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.White
+                            )
+                        ) {
+                            if (showYearPicker) {
+                                val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                                    
+                                YearPickerDialog(
+                                    selectedYear = displayMonth.year,
+                                    onYearSelected = { year ->
+                                        val cal = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                        }
+                                        cal.set(java.util.Calendar.YEAR, year)
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        showYearPicker = false
+                                    },
+                                    onDismiss = { showYearPicker = false }
+                                )
+                            }
+
+                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                                val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                                
+                                val monthTitle = displayMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("id", "ID")))
+                                
+                                CustomCalendarNavigation(
+                                    title = monthTitle.replaceFirstChar { it.uppercase() },
+                                    onPrevClick = {
+                                        val cal = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                        }
+                                        cal.add(java.util.Calendar.MONTH, -1)
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    },
+                                    onNextClick = {
+                                        val cal = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                        }
+                                        cal.add(java.util.Calendar.MONTH, 1)
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    },
+                                    onTitleClick = { showYearPicker = true },
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(340.dp)
+                                        .clipToBounds()
+                                ) {
+                                    DatePicker(
+                                        state = datePickerState,
+                                        title = null,
+                                        headline = null,
+                                        showModeToggle = false,
+                                        colors = DatePickerDefaults.colors(
+                                            containerColor = Color.White,
+                                            titleContentColor = Secondary,
+                                            headlineContentColor = Secondary,
+                                            weekdayContentColor = Color.Gray,
+                                            subheadContentColor = Color.Gray,
+                                            yearContentColor = Color.DarkGray,
+                                            currentYearContentColor = Primary,
+                                            selectedYearContentColor = Color.White,
+                                            selectedYearContainerColor = Primary,
+                                            dayContentColor = Color.Black,
+                                            selectedDayContentColor = Color.White,
+                                            selectedDayContainerColor = Primary,
+                                            todayContentColor = Primary,
+                                            todayDateBorderColor = Primary
+                                        ),
+                                        modifier = Modifier.offset(y = (-48).dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                CustomTextField(
                     value = formKeterangan,
                     onValueChange = { onFieldChanged(null, null, null, null, null, it) },
-                    label = { Text("Catatan") },
+                    label = "Catatan",
                     modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Tertiary,
-                        unfocusedContainerColor = Tertiary
-                    )
+                    singleLine = false
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -958,64 +1279,76 @@ private fun SaldoBottomSheet(
     error: String?,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    MaterialTheme(colorScheme = lightColorScheme(
+        surface = Color.White,
+        onSurface = Color.Black,
+        primary = Primary,
+        onPrimary = Color.White,
+        secondary = Secondary
+    )) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            containerColor = Color.White
         ) {
-            Text(
-                "Ringkasan Saldo",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-            } else if (error != null) {
-                Text(error, color = KeluarColor)
-            } else if (saldoData != null) {
-                // Total Masuk
-                SaldoRowItem(
-                    icon = Icons.Default.ArrowDownward,
-                    label = "Total Pemasukan",
-                    amount = saldoData.totalMasuk,
-                    color = MasukColor,
-                    bgColor = MasukBg
-                )
-                // Total Keluar
-                SaldoRowItem(
-                    icon = Icons.Default.ArrowUpward,
-                    label = "Total Pengeluaran",
-                    amount = saldoData.totalKeluar,
-                    color = KeluarColor,
-                    bgColor = KeluarBg
-                )
-                // Divider
-                HorizontalDivider(color = Neutral.copy(alpha = 0.3f))
-                // Saldo Akhir
-                SaldoRowItem(
-                    icon = Icons.Default.AccountBalance,
-                    label = "Saldo Akhir",
-                    amount = saldoData.saldoAkhir,
-                    color = if (saldoData.saldoAkhir >= 0) MasukColor else KeluarColor,
-                    bgColor = if (saldoData.saldoAkhir >= 0) MasukBg else KeluarBg
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "Ringkasan Saldo",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Secondary
                 )
 
-                if (saldoData.startDate != null && saldoData.endDate != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Periode: ${saldoData.startDate} s/d ${saldoData.endDate}",
-                        fontSize = 12.sp,
-                        color = Neutral
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                } else if (error != null) {
+                    Text(error, color = KeluarColor)
+                } else if (saldoData != null) {
+                    // Total Masuk
+                    SaldoRowItem(
+                        icon = Icons.Default.ArrowDownward,
+                        label = "Total Pemasukan",
+                        amount = saldoData.totalMasuk,
+                        color = MasukColor,
+                        bgColor = MasukBg
                     )
+                    // Total Keluar
+                    SaldoRowItem(
+                        icon = Icons.Default.ArrowUpward,
+                        label = "Total Pengeluaran",
+                        amount = saldoData.totalKeluar,
+                        color = KeluarColor,
+                        bgColor = KeluarBg
+                    )
+                    // Divider
+                    HorizontalDivider(color = NeutralBorder.copy(alpha = 0.5f))
+                    // Saldo Akhir
+                    SaldoRowItem(
+                        icon = Icons.Default.AccountBalance,
+                        label = "Saldo Akhir",
+                        amount = saldoData.saldoAkhir,
+                        color = if (saldoData.saldoAkhir >= 0) MasukColor else KeluarColor,
+                        bgColor = if (saldoData.saldoAkhir >= 0) MasukBg else KeluarBg
+                    )
+
+                    if (saldoData.startDate != null && saldoData.endDate != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Periode: ${saldoData.startDate} s/d ${saldoData.endDate}",
+                            fontSize = 12.sp,
+                            color = OnSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -1037,19 +1370,24 @@ private fun SaldoRowItem(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(bgColor),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, fontSize = 13.sp, color = Neutral)
+            Text(
+                text = label, 
+                fontSize = 13.sp, 
+                color = OnSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
             Text(
                 LaporanKeuanganViewModel.formatRupiah(amount),
                 fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
+                fontSize = 17.sp,
                 color = color
             )
         }
@@ -1068,73 +1406,85 @@ private fun LabaRugiBottomSheet(
     error: String?,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    MaterialTheme(colorScheme = lightColorScheme(
+        surface = Color.White,
+        onSurface = Color.Black,
+        primary = Primary,
+        onPrimary = Color.White,
+        secondary = Secondary
+    )) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            containerColor = Color.White
         ) {
-            Text(
-                "Laporan Laba Rugi",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-            } else if (error != null) {
-                Text(error, color = KeluarColor)
-            } else if (labaRugiData != null) {
-                // Pendapatan
-                SaldoRowItem(
-                    icon = Icons.Default.TrendingUp,
-                    label = "Pendapatan",
-                    amount = labaRugiData.pendapatan,
-                    color = MasukColor,
-                    bgColor = MasukBg
-                )
-                // HPP
-                SaldoRowItem(
-                    icon = Icons.Default.ShoppingCart,
-                    label = "HPP (Harga Pokok Penjualan)",
-                    amount = labaRugiData.hpp,
-                    color = WarningColor,
-                    bgColor = WarningBg
-                )
-                // Beban Operasional
-                SaldoRowItem(
-                    icon = Icons.Default.Receipt,
-                    label = "Beban Operasional",
-                    amount = labaRugiData.bebanOperasional,
-                    color = KeluarColor,
-                    bgColor = KeluarBg
-                )
-                // Divider
-                HorizontalDivider(color = Neutral.copy(alpha = 0.3f))
-                // Laba Rugi
-                val isProfit = labaRugiData.labaRugi >= 0
-                SaldoRowItem(
-                    icon = if (isProfit) Icons.Default.ThumbUp else Icons.Default.ThumbDown,
-                    label = if (isProfit) "Laba Bersih" else "Rugi Bersih",
-                    amount = kotlin.math.abs(labaRugiData.labaRugi),
-                    color = if (isProfit) MasukColor else KeluarColor,
-                    bgColor = if (isProfit) MasukBg else KeluarBg
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "Laporan Laba Rugi",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Secondary
                 )
 
-                if (labaRugiData.startDate != null && labaRugiData.endDate != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Periode: ${labaRugiData.startDate} s/d ${labaRugiData.endDate}",
-                        fontSize = 12.sp,
-                        color = Neutral
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                } else if (error != null) {
+                    Text(error, color = KeluarColor)
+                } else if (labaRugiData != null) {
+                    // Pendapatan
+                    SaldoRowItem(
+                        icon = Icons.Default.TrendingUp,
+                        label = "Pendapatan",
+                        amount = labaRugiData.pendapatan,
+                        color = MasukColor,
+                        bgColor = MasukBg
                     )
+                    // HPP
+                    SaldoRowItem(
+                        icon = Icons.Default.ShoppingCart,
+                        label = "HPP (Harga Pokok Penjualan)",
+                        amount = labaRugiData.hpp,
+                        color = WarningColor,
+                        bgColor = WarningBg
+                    )
+                    // Beban Operasional
+                    SaldoRowItem(
+                        icon = Icons.Default.Receipt,
+                        label = "Beban Operasional",
+                        amount = labaRugiData.bebanOperasional,
+                        color = KeluarColor,
+                        bgColor = KeluarBg
+                    )
+                    // Divider
+                    HorizontalDivider(color = NeutralBorder.copy(alpha = 0.5f))
+                    // Laba Rugi
+                    val isProfit = labaRugiData.labaRugi >= 0
+                    SaldoRowItem(
+                        icon = if (isProfit) Icons.Default.ThumbUp else Icons.Default.ThumbDown,
+                        label = if (isProfit) "Laba Bersih" else "Rugi Bersih",
+                        amount = kotlin.math.abs(labaRugiData.labaRugi),
+                        color = if (isProfit) MasukColor else KeluarColor,
+                        bgColor = if (isProfit) MasukBg else KeluarBg
+                    )
+
+                    if (labaRugiData.startDate != null && labaRugiData.endDate != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Periode: ${labaRugiData.startDate} s/d ${labaRugiData.endDate}",
+                            fontSize = 12.sp,
+                            color = OnSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -1153,106 +1503,133 @@ private fun ArusKasBottomSheet(
     error: String?,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+    MaterialTheme(colorScheme = lightColorScheme(
+        surface = Color.White,
+        onSurface = Color.Black,
+        primary = Primary,
+        onPrimary = Color.White,
+        secondary = Secondary
+    )) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            containerColor = Color.White
         ) {
-            Text(
-                "Laporan Arus Kas",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Laporan Arus Kas",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Secondary
+                )
 
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(150.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-            } else if (error != null) {
-                Text(error, color = KeluarColor)
-            } else if (arusKasData != null) {
-                // ── Arus Kas Operasi ──
-                Text("Arus Kas dari Aktivitas Operasi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                if (!arusKasData.detailOperasi.isNullOrEmpty()) {
-                    arusKasData.detailOperasi.forEach { detail ->
-                        ArusKasDetailRow(detail)
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary)
                     }
-                }
-                SaldoRowItem(
-                    icon = Icons.Default.TrendingUp,
-                    label = "Total Arus Kas Operasi",
-                    amount = arusKasData.arusKasOperasi,
-                    color = if (arusKasData.arusKasOperasi >= 0) MasukColor else KeluarColor,
-                    bgColor = if (arusKasData.arusKasOperasi >= 0) MasukBg else KeluarBg
-                )
-
-                HorizontalDivider(color = Neutral.copy(alpha = 0.3f))
-
-                // ── Arus Kas Investasi ──
-                Text("Arus Kas dari Aktivitas Investasi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                SaldoRowItem(
-                    icon = Icons.Default.Build,
-                    label = "Total Arus Kas Investasi",
-                    amount = arusKasData.arusKasInvestasi,
-                    color = if (arusKasData.arusKasInvestasi >= 0) MasukColor else KeluarColor,
-                    bgColor = if (arusKasData.arusKasInvestasi >= 0) MasukBg else KeluarBg
-                )
-
-                HorizontalDivider(color = Neutral.copy(alpha = 0.3f))
-
-                // ── Arus Kas Pendanaan ──
-                Text("Arus Kas dari Aktivitas Pendanaan", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                if (!arusKasData.detailPendanaan.isNullOrEmpty()) {
-                    arusKasData.detailPendanaan.forEach { detail ->
-                        ArusKasDetailRow(detail)
-                    }
-                }
-                SaldoRowItem(
-                    icon = Icons.Default.AccountBalance,
-                    label = "Total Arus Kas Pendanaan",
-                    amount = arusKasData.arusKasPendanaan,
-                    color = if (arusKasData.arusKasPendanaan >= 0) MasukColor else KeluarColor,
-                    bgColor = if (arusKasData.arusKasPendanaan >= 0) MasukBg else KeluarBg
-                )
-
-                HorizontalDivider(color = Neutral.copy(alpha = 0.5f))
-
-                // ── Ringkasan ──
-                SaldoRowItem(
-                    icon = Icons.Default.TrendingUp,
-                    label = "Kenaikan Bersih Kas",
-                    amount = arusKasData.kenaikanBersihKas,
-                    color = if (arusKasData.kenaikanBersihKas >= 0) MasukColor else KeluarColor,
-                    bgColor = if (arusKasData.kenaikanBersihKas >= 0) MasukBg else KeluarBg
-                )
-                SaldoRowItem(
-                    icon = Icons.Default.AccountBalanceWallet,
-                    label = "Saldo Awal",
-                    amount = arusKasData.saldoAwal,
-                    color = InfoColor,
-                    bgColor = InfoBg
-                )
-                SaldoRowItem(
-                    icon = Icons.Default.AccountBalanceWallet,
-                    label = "Saldo Akhir",
-                    amount = arusKasData.saldoAkhir,
-                    color = InfoColor,
-                    bgColor = InfoBg
-                )
-
-                if (arusKasData.startDate != null && arusKasData.endDate != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                } else if (error != null) {
+                    Text(error, color = KeluarColor)
+                } else if (arusKasData != null) {
+                    // ── Arus Kas Operasi ──
                     Text(
-                        "Periode: ${arusKasData.startDate} s/d ${arusKasData.endDate}",
-                        fontSize = 12.sp,
-                        color = Neutral
+                        text = "Arus Kas dari Aktivitas Operasi", 
+                        fontWeight = FontWeight.SemiBold, 
+                        fontSize = 14.sp,
+                        color = Secondary
                     )
+                    if (!arusKasData.detailOperasi.isNullOrEmpty()) {
+                        arusKasData.detailOperasi.forEach { detail ->
+                            ArusKasDetailRow(detail)
+                        }
+                    }
+                    SaldoRowItem(
+                        icon = Icons.Default.TrendingUp,
+                        label = "Total Arus Kas Operasi",
+                        amount = arusKasData.arusKasOperasi,
+                        color = if (arusKasData.arusKasOperasi >= 0) MasukColor else KeluarColor,
+                        bgColor = if (arusKasData.arusKasOperasi >= 0) MasukBg else KeluarBg
+                    )
+
+                    HorizontalDivider(color = NeutralBorder.copy(alpha = 0.5f))
+
+                    // ── Arus Kas Investasi ──
+                    Text(
+                        text = "Arus Kas dari Aktivitas Investasi", 
+                        fontWeight = FontWeight.SemiBold, 
+                        fontSize = 14.sp,
+                        color = Secondary
+                    )
+                    SaldoRowItem(
+                        icon = Icons.Default.Build,
+                        label = "Total Arus Kas Investasi",
+                        amount = arusKasData.arusKasInvestasi,
+                        color = if (arusKasData.arusKasInvestasi >= 0) MasukColor else KeluarColor,
+                        bgColor = if (arusKasData.arusKasInvestasi >= 0) MasukBg else KeluarBg
+                    )
+
+                    HorizontalDivider(color = NeutralBorder.copy(alpha = 0.5f))
+
+                    // ── Arus Kas Pendanaan ──
+                    Text(
+                        text = "Arus Kas dari Aktivitas Pendanaan", 
+                        fontWeight = FontWeight.SemiBold, 
+                        fontSize = 14.sp,
+                        color = Secondary
+                    )
+                    if (!arusKasData.detailPendanaan.isNullOrEmpty()) {
+                        arusKasData.detailPendanaan.forEach { detail ->
+                            ArusKasDetailRow(detail)
+                        }
+                    }
+                    SaldoRowItem(
+                        icon = Icons.Default.AccountBalance,
+                        label = "Total Arus Kas Pendanaan",
+                        amount = arusKasData.arusKasPendanaan,
+                        color = if (arusKasData.arusKasPendanaan >= 0) MasukColor else KeluarColor,
+                        bgColor = if (arusKasData.arusKasPendanaan >= 0) MasukBg else KeluarBg
+                    )
+
+                    HorizontalDivider(color = NeutralBorder.copy(alpha = 0.8f))
+
+                    // ── Ringkasan ──
+                    SaldoRowItem(
+                        icon = Icons.Default.TrendingUp,
+                        label = "Kenaikan Bersih Kas",
+                        amount = arusKasData.kenaikanBersihKas,
+                        color = if (arusKasData.kenaikanBersihKas >= 0) MasukColor else KeluarColor,
+                        bgColor = if (arusKasData.kenaikanBersihKas >= 0) MasukBg else KeluarBg
+                    )
+                    SaldoRowItem(
+                        icon = Icons.Default.AccountBalanceWallet,
+                        label = "Saldo Awal",
+                        amount = arusKasData.saldoAwal,
+                        color = InfoColor,
+                        bgColor = InfoBg
+                    )
+                    SaldoRowItem(
+                        icon = Icons.Default.AccountBalanceWallet,
+                        label = "Saldo Akhir",
+                        amount = arusKasData.saldoAkhir,
+                        color = InfoColor,
+                        bgColor = InfoBg
+                    )
+
+                    if (arusKasData.startDate != null && arusKasData.endDate != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Periode: ${arusKasData.startDate} s/d ${arusKasData.endDate}",
+                            fontSize = 12.sp,
+                            color = OnSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -1270,7 +1647,7 @@ private fun ArusKasDetailRow(detail: ArusKasDetail) {
         Text(
             detail.kategori,
             fontSize = 13.sp,
-            color = Neutral,
+            color = OnSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
         if (detail.masuk > 0) {
