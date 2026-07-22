@@ -90,6 +90,16 @@ class KalenderViewModel(
     }
 
     /**
+     * Mengubah tahun secara langsung.
+     */
+    fun selectYear(year: Int) {
+        _uiState.value = _uiState.value.copy(
+            currentMonth = _uiState.value.currentMonth.withYear(year)
+        )
+        loadEvents()
+    }
+
+    /**
      * Memuat daftar event untuk bulan aktif dari API.
      */
     private fun loadEvents() {

@@ -9,12 +9,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.YearPickerDialog
+import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -62,7 +67,7 @@ fun KalenderScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -83,7 +88,8 @@ fun KalenderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = Primary)
@@ -119,7 +125,7 @@ fun KalenderScreen(
             }
 
             // ── Error message ──
-            if (uiState.errorMessage != null && uiState.dialogMode !is KalenderDialogMode.Tambah) {
+            if (uiState.errorMessage != null && (uiState.dialogMode !is KalenderDialogMode.Tambah)) {
                 item {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f)),
@@ -146,9 +152,10 @@ fun KalenderScreen(
                     events = uiState.events,
                     onPrevMonth = viewModel::prevMonth,
                     onNextMonth = viewModel::nextMonth,
-                    onDateClick = { date ->
-                        // Filter events for this date — open first one or show info
-                    }
+                    onDateClick = { _ ->
+                        // Filter events for this date
+                    },
+                    onYearSelect = viewModel::selectYear
                 )
             }
 
@@ -249,12 +256,27 @@ private fun CalendarSection(
     events: List<KalenderEvent>,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
-    onDateClick: (LocalDate) -> Unit
+    onDateClick: (LocalDate) -> Unit,
+    onYearSelect: (Int) -> Unit
 ) {
     val daysInMonth = currentMonth.lengthOfMonth()
     val firstDayOfMonth = currentMonth.atDay(1)
-    // DayOfWeek.MONDAY = 1 ... SUNDAY = 7
-    val startDayOfWeek = firstDayOfMonth.dayOfWeek.value // 1=Senin, 7=Minggu
+    val startDayOfWeek = firstDayOfMonth.dayOfWeek.value
+    
+    var showYearPicker by remember { mutableStateOf(value = false) }
+    
+    val locale = remember { Locale("id", "ID") }
+
+    if (showYearPicker) {
+        YearPickerDialog(
+            selectedYear = currentMonth.year,
+            onYearSelected = {
+                onYearSelect(it)
+                showYearPicker = false
+            },
+            onDismiss = { showYearPicker = false }
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -263,30 +285,16 @@ private fun CalendarSection(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // ── Header: Bulan + Navigasi ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onPrevMonth) {
-                    Icon(Icons.Default.ChevronLeft, "Bulan sebelumnya", tint = Primary)
-                }
+            // ── Header: Bulan + Navigasi Kustom ──
+            CustomCalendarNavigation(
+                title = currentMonth.month.getDisplayName(TextStyle.FULL, locale)
+                    .replaceFirstChar { it.uppercase() } + " ${currentMonth.year}",
+                onPrevClick = onPrevMonth,
+                onNextClick = onNextMonth,
+                onTitleClick = { showYearPicker = true }
+            )
 
-                Text(
-                    text = currentMonth.month.getDisplayName(TextStyle.FULL, Locale("id", "ID"))
-                        .replaceFirstChar { it.uppercase() } + " ${currentMonth.year}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = OnSurface
-                )
-
-                IconButton(onClick = onNextMonth) {
-                    Icon(Icons.Default.ChevronRight, "Bulan berikutnya", tint = Primary)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // ── Grid Header (Senin - Minggu) ──
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -394,7 +402,7 @@ private fun RowScope.DateCell(
                     modifier = Modifier
                         .size(6.dp)
                         .clip(CircleShape)
-                        .background(dotColor)
+                        .background(color = dotColor)
                 )
             }
         }
@@ -566,43 +574,30 @@ private fun DialogTambahEvent(
                 }
 
                 // Nama Event
-                OutlinedTextField(
+                CustomTextField(
                     value = namaEvent,
                     onValueChange = onNamaChange,
-                    label = { Text("Nama Event") },
-                    placeholder = { Text("Masukkan nama event") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface,
-                        cursorColor = Primary,
-                        focusedLabelColor = Primary,
-                        unfocusedLabelColor = OnSurfaceVariant
-                    )
+                    label = "Nama Event",
+                    placeholder = "Masukkan nama event",
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 // Tanggal
-                var showDatePicker by remember { mutableStateOf(false) }
-                OutlinedTextField(
+                var showDatePicker by remember { mutableStateOf(value = false) }
+                var showYearPicker by remember { mutableStateOf(value = false) }
+                
+                val locale = remember { Locale("id", "ID") }
+                val formatter = remember { java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+
+                CustomTextField(
                     value = tanggal,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Tanggal") },
-                    placeholder = { Text("Pilih tanggal event") },
+                    enabled = false,
+                    label = "Tanggal",
+                    placeholder = "Pilih tanggal event",
                     modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                    shape = RoundedCornerShape(12.dp),
-                    trailingIcon = { Icon(Icons.Default.CalendarMonth, null, tint = Primary) },
-                    enabled = false, // menggunakan clickable di modifier
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = OnSurface,
-                        disabledBorderColor = Neutral,
-                        disabledContainerColor = Surface,
-                        disabledLabelColor = OnSurfaceVariant
-                    )
+                    trailingIcon = { Icon(Icons.Default.CalendarMonth, null, tint = Primary) }
                 )
 
                 if (showDatePicker) {
@@ -612,8 +607,8 @@ private fun DialogTambahEvent(
                             primary = Primary,
                             onPrimary = OnPrimary,
                             surface = Surface,
-                            onSurface = Secondary,
-                            onSurfaceVariant = Secondary,
+                            onSurface = Color.Black,
+                            onSurfaceVariant = Color.Gray,
                             secondary = Secondary
                         )
                     ) {
@@ -632,11 +627,93 @@ private fun DialogTambahEvent(
                             },
                             dismissButton = {
                                 TextButton(onClick = { showDatePicker = false }) {
-                                    Text("Batal", color = Secondary.copy(alpha = 0.6f))
+                                    Text("Batal", color = OnSurfaceVariant)
+                                }
+                            },
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.White
+                            )
+                        ) {
+                            if (showYearPicker) {
+                                val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toLocalDate()
+                                    
+                                YearPickerDialog(
+                                    selectedYear = displayMonth.year,
+                                    onYearSelected = { year ->
+                                        val cal = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                            set(java.util.Calendar.YEAR, year)
+                                        }
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        showYearPicker = false
+                                    },
+                                    onDismiss = { showYearPicker = false }
+                                )
+                            }
+
+                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                                // Header Kustom
+                                val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toLocalDate()
+                                
+                                val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+                                
+                                CustomCalendarNavigation(
+                                    title = monthTitle.replaceFirstChar { it.uppercase() },
+                                    onPrevClick = {
+                                        val cal = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                        }
+                                        cal.add(java.util.Calendar.MONTH, -1)
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    },
+                                    onNextClick = {
+                                        val cal = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                        }
+                                        cal.add(java.util.Calendar.MONTH, 1)
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    },
+                                    onTitleClick = { showYearPicker = true },
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(340.dp)
+                                        .clipToBounds()
+                                ) {
+                                    DatePicker(
+                                        state = datePickerState,
+                                        title = null,
+                                        headline = null,
+                                        showModeToggle = false,
+                                        colors = DatePickerDefaults.colors(
+                                            containerColor = Color.White,
+                                            titleContentColor = Secondary,
+                                            headlineContentColor = Secondary,
+                                            weekdayContentColor = Color.Gray,
+                                            subheadContentColor = Color.Gray,
+                                            yearContentColor = Color.DarkGray,
+                                            currentYearContentColor = Primary,
+                                            selectedYearContentColor = Color.White,
+                                            selectedYearContainerColor = Primary,
+                                            dayContentColor = Color.Black,
+                                            selectedDayContentColor = Color.White,
+                                            selectedDayContainerColor = Primary,
+                                            todayContentColor = Primary,
+                                            todayDateBorderColor = Primary
+                                        ),
+                                        modifier = Modifier.offset(y = (-48).dp)
+                                    )
                                 }
                             }
-                        ) {
-                            DatePicker(state = datePickerState)
                         }
                     }
                 }

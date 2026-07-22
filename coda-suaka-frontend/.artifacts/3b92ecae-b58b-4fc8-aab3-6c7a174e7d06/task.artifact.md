@@ -1,0 +1,6 @@
+- [x] Update `Color.kt` (No changes needed, already updated)
+- [x] Refine `DashboardScreen.kt` (Fix text clashing, card height, forced light theme)
+- [x] Refine `ApprovalKeuanganScreen.kt` (Forced light theme, redesign header and cards)
+- [x] Refine `LaporanKeuanganScreen.kt` (Forced light theme, refine spacing and filters)
+- [x] Refine `DatePicker` in `RiwayatKehadiranScreen.kt` and `KalenderScreen.kt` (Clean up header and navigation)
+- [ ] Final UI Analysis & Optimization (Recomposition check, code cleanup)

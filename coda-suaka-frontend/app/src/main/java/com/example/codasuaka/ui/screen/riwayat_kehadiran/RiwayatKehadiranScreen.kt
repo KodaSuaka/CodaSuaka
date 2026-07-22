@@ -9,22 +9,29 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.MonthYearPickerDialog
+import com.example.codasuaka.ui.components.SectionHeaderNavigation
+import com.example.codasuaka.ui.components.YearPickerDialog
+import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
 import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.TextStyle
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +51,7 @@ fun RiwayatKehadiranScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Secondary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -55,7 +62,8 @@ fun RiwayatKehadiranScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = Primary)
@@ -176,7 +184,8 @@ fun RiwayatKehadiranScreen(
                     rekap = uiState.rekapBulanan,
                     recapMonthOffset = uiState.recapMonthOffset,
                     onPrevMonth = viewModel::onRecapPrevMonth,
-                    onNextMonth = viewModel::onRecapNextMonth
+                    onNextMonth = viewModel::onRecapNextMonth,
+                    onMonthYearSelected = viewModel::onRecapMonthYearSelected
                 )
             }
 
@@ -184,10 +193,6 @@ fun RiwayatKehadiranScreen(
         }
     }
 }
-
-// ═══════════════════════════════════════════════════════════
-// FILTER SECTION
-// ═══════════════════════════════════════════════════════════
 
 @Composable
 private fun FilterSection(
@@ -202,7 +207,6 @@ private fun FilterSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Outlet Dropdown
             OutletFilterDropdown(
                 outlets = outlets,
                 selectedOutletId = selectedOutletId,
@@ -210,7 +214,6 @@ private fun FilterSection(
                 modifier = Modifier.weight(1f)
             )
 
-            // Date Picker
             DatePickerField(
                 selectedDate = selectedDate,
                 onDateSelected = onDateSelected,
@@ -236,26 +239,15 @@ private fun OutletFilterDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        OutlinedTextField(
+        CustomTextField(
             value = selectedOutlet?.namaOutlet ?: "Semua Outlet",
             onValueChange = {},
             readOnly = true,
-            label = { Text("Pilih Outlet") },
+            label = "Pilih Outlet",
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
-            shape = RoundedCornerShape(12.dp),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary,
-                unfocusedBorderColor = Neutral,
-                focusedContainerColor = Surface,
-                unfocusedContainerColor = Surface,
-                cursorColor = Primary,
-                focusedLabelColor = Primary,
-                unfocusedLabelColor = OnSurfaceVariant
-            )
+                .menuAnchor()
         )
 
         ExposedDropdownMenu(
@@ -290,6 +282,8 @@ private fun DatePickerField(
     modifier: Modifier = Modifier
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
+    var showYearPicker by remember { mutableStateOf(false) }
+    
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = if (selectedDate.isNotEmpty()) {
             try {
@@ -302,43 +296,32 @@ private fun DatePickerField(
         } else null
     )
 
-    OutlinedTextField(
+    CustomTextField(
         value = selectedDate.ifEmpty { LocalDate.now().toString() },
         onValueChange = {},
         readOnly = true,
-        label = { Text("Pilih Tanggal") },
+        enabled = false,
+        label = "Pilih Tanggal",
         trailingIcon = {
-            IconButton(onClick = { showDatePicker = true }) {
-                Icon(Icons.Default.CalendarMonth, "Pilih tanggal", tint = Primary)
-            }
+            Icon(Icons.Default.CalendarMonth, "Pilih tanggal", tint = Primary)
         },
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Primary,
-            unfocusedBorderColor = Neutral,
-            focusedContainerColor = Surface,
-            unfocusedContainerColor = Surface,
-            cursorColor = Primary,
-            focusedLabelColor = Primary,
-            unfocusedLabelColor = OnSurfaceVariant
-        )
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { showDatePicker = true }
     )
 
     if (showDatePicker) {
-        // Memaksa DatePicker menggunakan skema warna Navy-Putih yang sangat kontras
+        val locale = remember { Locale("id", "ID") }
+        val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+        
         MaterialTheme(
             colorScheme = lightColorScheme(
                 primary = Primary,
                 onPrimary = OnPrimary,
-                surface = Surface,
-                onSurface = Secondary, // Memaksa teks header/bulan-tahun menjadi Navy
-                onSurfaceVariant = Secondary, // Memaksa teks "PILIH TANGGAL" menjadi Navy
-                secondary = Secondary,
-                onSecondary = OnPrimary,
-                primaryContainer = Primary.copy(alpha = 0.1f),
-                onPrimaryContainer = Secondary
+                surface = Color.White,
+                onSurface = Color.Black,
+                onSurfaceVariant = Color.Gray,
+                secondary = Secondary
             )
         ) {
             DatePickerDialog(
@@ -360,38 +343,96 @@ private fun DatePickerField(
                 },
                 dismissButton = {
                     TextButton(onClick = { showDatePicker = false }) {
-                        Text("Batal", color = Secondary.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                        Text("Batal", color = Color.Gray)
+                    }
+                },
+                colors = DatePickerDefaults.colors(
+                    containerColor = Color.White
+                )
+            ) {
+                if (showYearPicker) {
+                    val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toLocalDate()
+                        
+                    YearPickerDialog(
+                        selectedYear = displayMonth.year,
+                        onYearSelected = { year ->
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                set(java.util.Calendar.YEAR, year)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            showYearPicker = false
+                        },
+                        onDismiss = { showYearPicker = false }
+                    )
+                }
+
+                Column(modifier = Modifier.padding(top = 16.dp)) {
+                    val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toLocalDate()
+                    
+                    val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+                    
+                    CustomCalendarNavigation(
+                        title = monthTitle.replaceFirstChar { it.uppercase() },
+                        onPrevClick = {
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                            }
+                            cal.add(java.util.Calendar.MONTH, -1)
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onNextClick = {
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                            }
+                            cal.add(java.util.Calendar.MONTH, 1)
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onTitleClick = { showYearPicker = true },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp)
+                            .clipToBounds()
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            title = null,
+                            headline = null,
+                            showModeToggle = false,
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.White,
+                                titleContentColor = Secondary,
+                                headlineContentColor = Secondary,
+                                weekdayContentColor = Color.Gray,
+                                subheadContentColor = Color.Gray,
+                                yearContentColor = Color.DarkGray,
+                                currentYearContentColor = Primary,
+                                selectedYearContentColor = Color.White,
+                                selectedYearContainerColor = Primary,
+                                dayContentColor = Color.Black,
+                                selectedDayContentColor = Color.White,
+                                selectedDayContainerColor = Primary,
+                                todayContentColor = Primary,
+                                todayDateBorderColor = Primary
+                            ),
+                            modifier = Modifier.offset(y = (-48).dp)
+                        )
                     }
                 }
-            ) {
-                DatePicker(
-                    state = datePickerState,
-                    colors = DatePickerDefaults.colors(
-                        containerColor = Surface,
-                        titleContentColor = Secondary,
-                        headlineContentColor = Secondary,
-                        navigationContentColor = Secondary,
-                        subheadContentColor = Secondary,
-                        weekdayContentColor = OnSurfaceVariant,
-                        yearContentColor = OnSurface,
-                        currentYearContentColor = Primary,
-                        selectedYearContentColor = OnPrimary,
-                        selectedYearContainerColor = Primary,
-                        dayContentColor = OnSurface,
-                        selectedDayContainerColor = Primary,
-                        selectedDayContentColor = OnPrimary,
-                        todayContentColor = Primary,
-                        todayDateBorderColor = Primary
-                    )
-                )
             }
         }
     }
 }
-
-// ═══════════════════════════════════════════════════════════
-// TAB BAR
-// ═══════════════════════════════════════════════════════════
 
 @Composable
 private fun TabBarRiwayat(
@@ -427,10 +468,6 @@ private fun TabBarRiwayat(
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// SECTION LABEL
-// ═══════════════════════════════════════════════════════════
-
 @Composable
 private fun SectionLabel(text: String) {
     Text(
@@ -441,10 +478,6 @@ private fun SectionLabel(text: String) {
         modifier = Modifier.padding(start = 4.dp)
     )
 }
-
-// ═══════════════════════════════════════════════════════════
-// EMPTY STATE
-// ═══════════════════════════════════════════════════════════
 
 @Composable
 private fun EmptyState(
@@ -474,10 +507,6 @@ private fun EmptyState(
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// PRESENSI CARD
-// ═══════════════════════════════════════════════════════════
-
 @Composable
 private fun PresensiCard(presensi: Presensi) {
     Card(
@@ -493,7 +522,6 @@ private fun PresensiCard(presensi: Presensi) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -509,7 +537,6 @@ private fun PresensiCard(presensi: Presensi) {
                 )
             }
 
-            // Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     presensi.namaKaryawan,
@@ -524,7 +551,6 @@ private fun PresensiCard(presensi: Presensi) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Outlet
                     Text(
                         "🏪 ${presensi.outlet}",
                         style = MaterialTheme.typography.bodySmall,
@@ -533,7 +559,6 @@ private fun PresensiCard(presensi: Presensi) {
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    // Role badge
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = Secondary.copy(alpha = 0.1f)
@@ -548,7 +573,6 @@ private fun PresensiCard(presensi: Presensi) {
                     }
                 }
                 Spacer(modifier = Modifier.height(2.dp))
-                // Jam kehadiran & status
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -574,10 +598,6 @@ private fun PresensiCard(presensi: Presensi) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// PERSETUJUAN CARD
-// ═══════════════════════════════════════════════════════════
-
 @Composable
 private fun PersetujuanCard(
     pengajuan: PengajuanPersetujuan,
@@ -599,13 +619,11 @@ private fun PersetujuanCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Avatar
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -621,7 +639,6 @@ private fun PersetujuanCard(
                     )
                 }
 
-                // Info
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         pengajuan.namaKaryawan,
@@ -651,7 +668,6 @@ private fun PersetujuanCard(
                     }
                 }
 
-                // Status badge
                 StatusBadge(
                     status = when (pengajuan.statusPersetujuan) {
                         StatusPersetujuan.PENDING -> "Pending"
@@ -664,7 +680,6 @@ private fun PersetujuanCard(
                 )
             }
 
-            // Alasan
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = Tertiary
@@ -690,13 +705,11 @@ private fun PersetujuanCard(
                 }
             }
 
-            // Action buttons (hanya jika PENDING)
             if (isPending) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Tolak button
                     Button(
                         onClick = onTolak,
                         modifier = Modifier
@@ -715,7 +728,6 @@ private fun PersetujuanCard(
                         Text("Tolak", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     }
 
-                    // Setujui button
                     Button(
                         onClick = onSetujui,
                         modifier = Modifier
@@ -747,10 +759,6 @@ private fun PersetujuanCard(
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// STATUS BADGE
-// ═══════════════════════════════════════════════════════════
-
 @Composable
 private fun StatusBadge(
     status: String,
@@ -762,7 +770,7 @@ private fun StatusBadge(
         isSuccess -> Success.copy(alpha = 0.15f)
         isWarning -> CustomWarning.copy(alpha = 0.15f)
         isError -> Error.copy(alpha = 0.15f)
-        else -> Success.copy(alpha = 0.15f)  // default = hadir
+        else -> Success.copy(alpha = 0.15f)
     }
     val textColor = when {
         isSuccess -> Success
@@ -785,70 +793,46 @@ private fun StatusBadge(
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// Custom Warning color (since it's not in Color.kt directly)
-// ═══════════════════════════════════════════════════════════
-
-private val CustomWarning = androidx.compose.ui.graphics.Color(0xFFD69E2E)
-
-// ═══════════════════════════════════════════════════════════
-// RECAP SECTION — Total Kehadiran PER KARYAWAN
-// ═══════════════════════════════════════════════════════════
+private val CustomWarning = Color(0xFFD69E2E)
 
 @Composable
 private fun RecapSection(
     rekap: RekapBulanan,
     recapMonthOffset: Int,
     onPrevMonth: () -> Unit,
-    onNextMonth: () -> Unit
+    onNextMonth: () -> Unit,
+    onMonthYearSelected: (Int, Int) -> Unit
 ) {
+    var showMonthYearPicker by remember { mutableStateOf(false) }
+
+    if (showMonthYearPicker) {
+        MonthYearPickerDialog(
+            initialMonth = rekap.bulan,
+            initialYear = rekap.tahun,
+            onMonthYearSelected = { m, y ->
+                onMonthYearSelected(m, y)
+                showMonthYearPicker = false
+            },
+            onDismiss = { showMonthYearPicker = false }
+        )
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "📊 Rekap Bulanan",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = OnSurface
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(
-                    onClick = onPrevMonth,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(Icons.Default.ChevronLeft, "Bulan sebelumnya", tint = OnSurface)
-                }
-
-                val monthName = try {
-                    val month = java.time.Month.of(rekap.bulan + 1)
-                    "${month.getDisplayName(TextStyle.FULL, Locale("id", "ID"))} ${rekap.tahun}"
-                } catch (_: Exception) {
-                    "Bulan $rekap.tahun"
-                }
-
-                Text(
-                    text = monthName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = OnSurface,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-
-                IconButton(
-                    onClick = onNextMonth,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(Icons.Default.ChevronRight, "Bulan berikutnya", tint = OnSurface)
-                }
-            }
+        val monthName = try {
+            val month = java.time.Month.of(rekap.bulan + 1)
+            "${month.getDisplayName(java.time.format.TextStyle.FULL, Locale("id", "ID"))} ${rekap.tahun}"
+        } catch (_: Exception) {
+            "Bulan ${rekap.tahun}"
         }
 
-        // ── Employee Recap Table ──
+        SectionHeaderNavigation(
+            title = "📊 Rekap Bulanan",
+            monthYearText = monthName,
+            onPrevClick = onPrevMonth,
+            onNextClick = onNextMonth,
+            onMonthYearClick = { showMonthYearPicker = true }
+        )
+
         RecapEmployeeTable(rekap = rekap)
     }
 }
@@ -861,7 +845,6 @@ private fun RecapEmployeeTable(rekap: RekapBulanan) {
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column {
-            // Table Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -893,13 +876,11 @@ private fun RecapEmployeeTable(rekap: RekapBulanan) {
                     color = Secondary, fontSize = 11.sp)
             }
 
-            // Employee Rows
             rekap.rekapKaryawan.forEach { karyawan ->
                 RecapEmployeeRow(karyawan = karyawan)
                 HorizontalDivider(color = Neutral, thickness = 0.5.dp)
             }
 
-            // Total Row
             RecapTotalRow(rekap = rekap)
         }
     }

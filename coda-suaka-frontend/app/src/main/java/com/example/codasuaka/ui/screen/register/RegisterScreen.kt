@@ -7,6 +7,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +21,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.codasuaka.ui.screen.components.CodaSuakaLogo
+import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
 
 @Composable
@@ -90,135 +94,80 @@ fun RegisterScreen(
             }
 
             // Nama Instansi
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.namaInstansi,
                 onValueChange = { viewModel.onNamaInstansiChange(it) },
-                label = { Text("Nama Instansi") },
-                placeholder = { Text("Masukkan nama instansi / toko") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                )
+                label = "Nama Instansi",
+                placeholder = "Masukkan nama instansi / toko",
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Nama Pemilik
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.namaPemilik,
                 onValueChange = { viewModel.onNamaPemilikChange(it) },
-                label = { Text("Nama Pemilik") },
-                placeholder = { Text("Masukkan nama pemilik") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                )
+                label = "Nama Pemilik",
+                placeholder = "Masukkan nama pemilik",
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Email
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Email") },
-                placeholder = { Text("Masukkan email Anda") },
-                singleLine = true,
+                label = "Email",
+                placeholder = "Masukkan email Anda",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                )
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Password
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
-                label = { Text("Password") },
-                placeholder = { Text("Minimal 8 karakter") },
-                singleLine = true,
+                label = "Password",
+                placeholder = "Minimal 8 karakter",
                 visualTransformation = if (passwordVisible) VisualTransformation.None
                     else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                ),
                 trailingIcon = {
-                    Text(
-                        text = if (passwordVisible) "Sembunyikan" else "Tampilkan",
-                        modifier = Modifier.clickable { passwordVisible = !passwordVisible },
-                        color = Primary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (passwordVisible) "Sembunyikan password" else "Tampilkan password",
+                            tint = OnSurfaceVariant
+                        )
+                    }
                 }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Konfirmasi Password
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.passwordConfirmation,
                 onValueChange = { viewModel.onPasswordConfirmationChange(it) },
-                label = { Text("Konfirmasi Password") },
-                placeholder = { Text("Ulangi password Anda") },
-                singleLine = true,
+                label = "Konfirmasi Password",
+                placeholder = "Ulangi password Anda",
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None
                     else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                ),
                 trailingIcon = {
-                    Text(
-                        text = if (confirmPasswordVisible) "Sembunyikan" else "Tampilkan",
-                        modifier = Modifier.clickable {
-                            confirmPasswordVisible = !confirmPasswordVisible
-                        },
-                        color = Primary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Icon(
+                            imageVector = if (confirmPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (confirmPasswordVisible) "Sembunyikan password" else "Tampilkan password",
+                            tint = OnSurfaceVariant
+                        )
+                    }
                 }
             )
 

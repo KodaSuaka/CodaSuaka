@@ -20,8 +20,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.YearPickerDialog
+import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Locale
+import androidx.compose.ui.draw.clipToBounds
 
 // ─── Color Palette Tambahan ─────
 private val Teal = Color(0xFF0D9488)
@@ -62,7 +70,8 @@ fun PengajuanScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = Primary)
@@ -174,35 +183,18 @@ fun PengajuanScreen(
             }
 
             // ── Keterangan/Alasan ──
-            OutlinedTextField(
+            CustomTextField(
                 value = uiState.keterangan,
                 onValueChange = viewModel::onKeteranganChange,
-                label = { Text("Keterangan/Alasan") },
-                placeholder = { Text("Jelaskan alasan pengajuan cuti/izin Anda...") },
+                label = "Keterangan/Alasan",
+                placeholder = "Jelaskan alasan pengajuan cuti/izin Anda...",
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 120.dp),
-                minLines = 3,
-                maxLines = 5,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant
-                ),
-                supportingText = {
-                    if (uiState.keterangan.isNotEmpty()) {
-                        Text(
-                            "${uiState.keterangan.length}/10 minimal karakter",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (uiState.keterangan.length < 10) Error else ScoreGreen
-                        )
-                    }
-                }
+                singleLine = false,
+                errorMessage = if (uiState.keterangan.isNotEmpty() && uiState.keterangan.length < 10) 
+                    "${uiState.keterangan.length}/10 minimal karakter" else null,
+                isError = uiState.keterangan.isNotEmpty() && uiState.keterangan.length < 10
             )
 
             // ── Tombol Ajukan ──
@@ -345,82 +337,64 @@ private fun JenisPengajuanDropdown(
                 expanded = expanded,
                 onExpandedChange = { expanded = it }
             ) {
-                OutlinedTextField(
+                CustomTextField(
                     value = selectedJenis?.displayName ?: "Pilih Jenis Pengajuan",
                     onValueChange = {},
                     readOnly = true,
+                    label = "Jenis Pengajuan",
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
-                    leadingIcon = {
-                        if (selectedJenis != null) {
-                            Icon(
-                                imageVector = getJenisIcon(selectedJenis),
-                                contentDescription = null,
-                                tint = getJenisColor(selectedJenis),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        } else {
-                            Icon(
-                                Icons.Outlined.Description,
-                                null,
-                                tint = OnSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    },
+                    leadingIcon = if (selectedJenis != null) getJenisIcon(selectedJenis) else Icons.Outlined.Description,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral,
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface,
-                        cursorColor = Primary,
-                        focusedLabelColor = Primary,
-                        unfocusedLabelColor = OnSurfaceVariant
-                    )
+                        .menuAnchor()
                 )
 
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    JenisPengajuan.entries.forEach { jenis ->
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(getJenisColor(jenis).copy(alpha = 0.12f)),
-                                        contentAlignment = Alignment.Center
+                MaterialTheme(colorScheme = lightColorScheme(
+                    surface = Color.White,
+                    onSurface = Secondary,
+                    onSurfaceVariant = Secondary.copy(alpha = 0.7f)
+                )) {
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(Color.White)
+                    ) {
+                        JenisPengajuan.entries.forEach { jenis ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = getJenisIcon(jenis),
-                                            contentDescription = null,
-                                            tint = getJenisColor(jenis),
-                                            modifier = Modifier.size(18.dp)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(getJenisColor(jenis).copy(alpha = 0.12f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = getJenisIcon(jenis),
+                                                contentDescription = null,
+                                                tint = getJenisColor(jenis),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = jenis.displayName,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Secondary
                                         )
                                     }
-                                    Text(
-                                        jenis.displayName,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                },
+                                onClick = {
+                                    onJenisSelected(jenis)
+                                    expanded = false
                                 }
-                            },
-                            onClick = {
-                                onJenisSelected(jenis)
-                                expanded = false
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -440,6 +414,7 @@ private fun DatePickerField(
     onClick: (Long) -> Unit
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
+    var showYearPicker by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -458,10 +433,12 @@ private fun DatePickerField(
                 color = OnSurfaceVariant
             )
 
-            OutlinedTextField(
+            CustomTextField(
                 value = value.ifEmpty { "Pilih tanggal $label" },
                 onValueChange = {},
                 readOnly = true,
+                enabled = false,
+                label = "",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showDatePicker = true },
@@ -472,22 +449,7 @@ private fun DatePickerField(
                         tint = Primary,
                         modifier = Modifier.size(20.dp)
                     )
-                },
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral,
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    cursorColor = Primary,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = OnSurfaceVariant,
-                    disabledTextColor = if (value.isEmpty()) OnSurfaceVariant else OnSurface,
-                    disabledBorderColor = Neutral,
-                    disabledContainerColor = Surface
-                ),
-                enabled = false // menggunakan clickable di modifier
+                }
             )
 
             // DatePicker Dialog
@@ -501,12 +463,9 @@ private fun DatePickerField(
                         primary = Primary,
                         onPrimary = OnPrimary,
                         surface = Surface,
-                        onSurface = Secondary, // Memaksa teks header/bulan-tahun menjadi Navy
-                        onSurfaceVariant = Secondary, // Memaksa teks "PILIH TANGGAL" menjadi Navy
-                        secondary = Secondary,
-                        onSecondary = OnPrimary,
-                        primaryContainer = Primary.copy(alpha = 0.1f),
-                        onPrimaryContainer = Secondary
+                        onSurface = Color.Black,
+                        onSurfaceVariant = Color.Gray,
+                        secondary = Secondary
                     )
                 ) {
                     DatePickerDialog(
@@ -525,30 +484,93 @@ private fun DatePickerField(
                         },
                         dismissButton = {
                             TextButton(onClick = { showDatePicker = false }) {
-                                Text("Batal", color = Secondary.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                                Text("Batal", color = OnSurfaceVariant)
+                            }
+                        },
+                        colors = DatePickerDefaults.colors(
+                            containerColor = Color.White
+                        )
+                    ) {
+                        if (showYearPicker) {
+                            val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                                
+                            YearPickerDialog(
+                                selectedYear = displayMonth.year,
+                                onYearSelected = { year ->
+                                    val cal = Calendar.getInstance().apply {
+                                        timeInMillis = datePickerState.displayedMonthMillis
+                                    }
+                                    cal.set(Calendar.YEAR, year)
+                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    showYearPicker = false
+                                },
+                                onDismiss = { showYearPicker = false }
+                            )
+                        }
+
+                        Column(modifier = Modifier.padding(top = 16.dp)) {
+                            // Header Kustom
+                            val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            
+                            val monthTitle = displayMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("id", "ID")))
+                            
+                            CustomCalendarNavigation(
+                                title = monthTitle.replaceFirstChar { it.uppercase() },
+                                onPrevClick = {
+                                    val cal = Calendar.getInstance().apply {
+                                        timeInMillis = datePickerState.displayedMonthMillis
+                                    }
+                                    cal.add(Calendar.MONTH, -1)
+                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                },
+                                onNextClick = {
+                                    val cal = Calendar.getInstance().apply {
+                                        timeInMillis = datePickerState.displayedMonthMillis
+                                    }
+                                    cal.add(Calendar.MONTH, 1)
+                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                },
+                                onTitleClick = { showYearPicker = true },
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(340.dp)
+                                    .clipToBounds()
+                            ) {
+                                DatePicker(
+                                    state = datePickerState,
+                                    title = null,
+                                    headline = null,
+                                    showModeToggle = false,
+                                    colors = DatePickerDefaults.colors(
+                                        containerColor = Color.White,
+                                        titleContentColor = Secondary,
+                                        headlineContentColor = Secondary,
+                                        weekdayContentColor = Color.Gray,
+                                        subheadContentColor = Color.Gray,
+                                        yearContentColor = Color.DarkGray,
+                                        currentYearContentColor = Primary,
+                                        selectedYearContentColor = Color.White,
+                                        selectedYearContainerColor = Primary,
+                                        dayContentColor = Color.Black,
+                                        selectedDayContentColor = Color.White,
+                                        selectedDayContainerColor = Primary,
+                                        todayContentColor = Primary,
+                                        todayDateBorderColor = Primary
+                                    ),
+                                    modifier = Modifier.offset(y = (-48).dp)
+                                )
                             }
                         }
-                    ) {
-                        DatePicker(
-                            state = datePickerState,
-                            colors = DatePickerDefaults.colors(
-                                containerColor = Surface,
-                                titleContentColor = Secondary,
-                                headlineContentColor = Secondary,
-                                navigationContentColor = Secondary,
-                                subheadContentColor = Secondary,
-                                weekdayContentColor = OnSurfaceVariant,
-                                yearContentColor = OnSurface,
-                                currentYearContentColor = Primary,
-                                selectedYearContentColor = OnPrimary,
-                                selectedYearContainerColor = Primary,
-                                dayContentColor = OnSurface,
-                                selectedDayContainerColor = Primary,
-                                selectedDayContentColor = OnPrimary,
-                                todayContentColor = Primary,
-                                todayDateBorderColor = Primary
-                            )
-                        )
                     }
                 }
             }
@@ -652,9 +674,9 @@ private fun RiwayatPengajuanItem(
 
 private fun getJenisIcon(jenis: JenisPengajuan): ImageVector {
     return when (jenis) {
-        JenisPengajuan.CUTI_TAHUNAN -> Icons.Default.BeachAccess
-        JenisPengajuan.IZIN_SAKIT -> Icons.Default.LocalHospital
-        JenisPengajuan.MENDADAK -> Icons.Default.Warning
+        JenisPengajuan.CUTI_TAHUNAN -> Icons.Default.CalendarMonth
+        JenisPengajuan.IZIN_SAKIT -> Icons.Default.MedicalServices
+        JenisPengajuan.MENDADAK -> Icons.Default.NotificationImportant
     }
 }
 
