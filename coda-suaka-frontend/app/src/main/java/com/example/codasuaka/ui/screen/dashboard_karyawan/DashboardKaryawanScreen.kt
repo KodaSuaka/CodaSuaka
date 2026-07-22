@@ -72,6 +72,7 @@ fun DashboardKaryawanScreen(
         bottomBar = {
             BottomNavigationBar(
                 selectedIndex = uiState.selectedBottomNav,
+                hasUnreadMessages = uiState.hasUnreadMessages,
                 onItemSelected = { index ->
                     viewModel.onBottomNavSelected(index)
                     when (index) {
@@ -910,6 +911,7 @@ private fun SectionLeave(
 @Composable
 private fun BottomNavigationBar(
     selectedIndex: Int,
+    hasUnreadMessages: Boolean,
     onItemSelected: (Int) -> Unit
 ) {
     NavigationBar(
@@ -928,10 +930,21 @@ private fun BottomNavigationBar(
                 selected = selectedIndex == index,
                 onClick = { onItemSelected(index) },
                 icon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = label
-                    )
+                    BadgedBox(
+                        badge = {
+                            if (index == 2 && hasUnreadMessages) {
+                                Badge(
+                                    containerColor = Primary,
+                                    modifier = Modifier.size(8.dp)
+                                )
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = label
+                        )
+                    }
                 },
                 label = {
                     Text(

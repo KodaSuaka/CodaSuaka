@@ -2,6 +2,7 @@ package com.example.codasuaka.ui.screen.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.data.remote.dto.MessageDto
 import com.example.codasuaka.domain.repository.ChatRepository
 import kotlinx.coroutines.Job
@@ -23,10 +24,12 @@ data class ChatDetailUiState(
 class ChatDetailViewModel(
     private val userId: Int,
     private val userName: String,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     val contactUserId: Int get() = userId
+    private var currentUserId: Int = 0
 
     private val _uiState = MutableStateFlow(
         ChatDetailUiState(contactName = userName, contactId = userId)
@@ -36,8 +39,22 @@ class ChatDetailViewModel(
     private var pollingJob: Job? = null
 
     init {
+        loadCurrentUserId()
         loadMessages()
+        markAsRead()
         startPolling()
+    }
+
+    private fun loadCurrentUserId() {
+        viewModelScope.launch {
+            currentUserId = tokenManager.getUserId()?.toIntOrNull() ?: 0
+        }
+    }
+
+    private fun markAsRead() {
+        viewModelScope.launch {
+            chatRepository.markAsRead(userId)
+        }
     }
 
     fun loadMessages() {
@@ -66,10 +83,18 @@ class ChatDetailViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSending = true)
 
+            // Gunakan userId sebagai penerimaId
             chatRepository.sendMessage(userId, pesan)
                 .onSuccess { newMessage ->
+                    // Memastikan ID pengirim benar (Me)
+                    val finalizedMessage = if (newMessage.pengirimId == 0) {
+                        newMessage.copy(pengirimId = currentUserId, penerimaId = userId)
+                    } else {
+                        newMessage
+                    }
+
                     // Tambahkan pesan baru ke daftar
-                    val updatedMessages = _uiState.value.messages + newMessage
+                    val updatedMessages = _uiState.value.messages + finalizedMessage
                     _uiState.value = _uiState.value.copy(
                         messages = updatedMessages,
                         isSending = false

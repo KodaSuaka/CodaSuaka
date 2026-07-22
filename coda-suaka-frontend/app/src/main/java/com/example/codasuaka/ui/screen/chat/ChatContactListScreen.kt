@@ -214,19 +214,14 @@ private fun ContactListItem(
                 )
                 
                 if (contact.unreadCount > 0) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Primary, // Menggunakan Primary biru kita agar lebih modern
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Text(
-                            text = if (contact.unreadCount > 99) "99+" else contact.unreadCount.toString(),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = OnPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    // Dot notif minimalis (Titik Biru)
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 12.dp, end = 4.dp)
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(Primary)
+                    )
                 }
             }
         }

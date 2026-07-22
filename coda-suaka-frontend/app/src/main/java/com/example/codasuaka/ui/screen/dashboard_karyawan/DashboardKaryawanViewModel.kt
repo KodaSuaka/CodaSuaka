@@ -8,6 +8,8 @@ import com.example.codasuaka.domain.repository.KaryawanRepository
 import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
 import com.example.codasuaka.domain.repository.PresensiRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -70,7 +72,8 @@ data class DashboardKaryawanUiState(
     val additionalContent: List<AdditionalMenuItem> = emptyList(),
 
     // ── Bottom Nav ──
-    val selectedBottomNav: Int = 0 // 0 = Dashboard, 1 = Pengajuan, 2 = Pesan
+    val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Pengajuan, 2 = Pesan
+    val hasUnreadMessages: Boolean = false
 )
 
 /**
@@ -103,14 +106,18 @@ class DashboardKaryawanViewModel(
     private val penugasanRepository: PenugasanRepository,
     private val karyawanRepository: KaryawanRepository,
     private val pengajuanRepository: PengajuanRepository,
-    private val dashboardRepository: DashboardRepository
+    private val dashboardRepository: DashboardRepository,
+    private val chatRepository: com.example.codasuaka.domain.repository.ChatRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardKaryawanUiState())
     val uiState: StateFlow<DashboardKaryawanUiState> = _uiState
 
+    private var unreadCheckJob: Job? = null
+
     init {
         loadDashboardData()
+        startUnreadMessagesPolling()
     }
 
     /**
@@ -261,6 +268,19 @@ class DashboardKaryawanViewModel(
 
     fun onBottomNavSelected(index: Int) {
         _uiState.value = _uiState.value.copy(selectedBottomNav = index)
+    }
+
+    private fun startUnreadMessagesPolling() {
+        unreadCheckJob?.cancel()
+        unreadCheckJob = viewModelScope.launch {
+            while (true) {
+                chatRepository.getContacts().onSuccess { groups ->
+                    val totalUnread = groups.sumOf { it.contacts.sumOf { c -> c.unreadCount } }
+                    _uiState.value = _uiState.value.copy(hasUnreadMessages = totalUnread > 0)
+                }
+                delay(15_000L)
+            }
+        }
     }
 
     // ─── Error Handling ────────────────────────────────────────

@@ -90,6 +90,17 @@ class TokenManager(private val context: Context) {
     suspend fun getToken(): String? = prefs.getString(KEY_TOKEN, null)
 
     /**
+     * Mengembalikan user ID dari penyimpanan terenkripsi (synchronous).
+     */
+    fun getUserIdSync(): String? = prefs.getString(KEY_USER_ID, null)
+
+    /**
+     * Mengembalikan user ID dari penyimpanan terenkripsi (synchronous).
+     * Digunakan oleh Flow / coroutine yang memanggil .first().
+     */
+    suspend fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
+
+    /**
      * Mengembalikan email user dari penyimpanan terenkripsi (synchronous).
      */
     suspend fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)

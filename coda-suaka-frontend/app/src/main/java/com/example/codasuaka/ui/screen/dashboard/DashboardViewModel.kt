@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.domain.repository.DashboardRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -27,7 +29,8 @@ data class DashboardUiState(
     val userNamaLengkap: String = "Nama Pengguna",
     val userEmail: String = "",
     val userRole: String = "",
-    val userPermissions: List<String> = emptyList()
+    val userPermissions: List<String> = emptyList(),
+    val hasUnreadMessages: Boolean = false
 )
 
 
@@ -37,15 +40,19 @@ data class DashboardUiState(
  */
 class DashboardViewModel(
     private val dashboardRepository: DashboardRepository,
+    private val chatRepository: com.example.codasuaka.domain.repository.ChatRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState
 
+    private var unreadCheckJob: Job? = null
+
     init {
         loadUserData()
         loadDashboardData()
+        startUnreadMessagesPolling()
     }
 
     /**
@@ -138,6 +145,19 @@ class DashboardViewModel(
 
     fun onBottomNavSelected(index: Int) {
         _uiState.value = _uiState.value.copy(selectedBottomNav = index)
+    }
+
+    private fun startUnreadMessagesPolling() {
+        unreadCheckJob?.cancel()
+        unreadCheckJob = viewModelScope.launch {
+            while (true) {
+                chatRepository.getContacts().onSuccess { groups ->
+                    val totalUnread = groups.sumOf { it.contacts.sumOf { c -> c.unreadCount } }
+                    _uiState.value = _uiState.value.copy(hasUnreadMessages = totalUnread > 0)
+                }
+                delay(15_000L) // Polling untuk navbar setiap 15 detik
+            }
+        }
     }
 
     fun clearError() {

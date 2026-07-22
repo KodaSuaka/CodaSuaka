@@ -32,6 +32,7 @@ val viewModelModule = module {
     // Dashboard
     viewModel { DashboardViewModel(
         dashboardRepository = get(),
+        chatRepository = get(),
         tokenManager = get()
     ) }
 
@@ -41,7 +42,8 @@ val viewModelModule = module {
         penugasanRepository = get(),
         karyawanRepository = get(),
         pengajuanRepository = get(),
-        dashboardRepository = get()
+        dashboardRepository = get(),
+        chatRepository = get()
     ) }
 
     // Kelola Outlet
@@ -79,7 +81,8 @@ val viewModelModule = module {
         ChatDetailViewModel(
             userId = params.get(),
             userName = params.get(),
-            chatRepository = get<ChatRepository>()
+            chatRepository = get<ChatRepository>(),
+            tokenManager = get()
         )
     }
 
