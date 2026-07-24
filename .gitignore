@@ -11,3 +11,12 @@ node_modules/
 Thumbs.db
 pull-dev.sh
 push-dev.sh
+
+# Release APK & AAB (Android App Build)
+*.apk
+*.aab
+**/release/*.apk
+**/release/*.aab
+coda-suaka-frontend/app/release/
+coda-suaka-frontend/app/build/outputs/apk/release/
+coda-suaka-frontend/app/build/outputs/bundle/release/

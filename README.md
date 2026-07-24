@@ -402,8 +402,8 @@ Accept: application/json
 
 | Query Param   | Tipe    | Required | Default           | Deskripsi |
 |--------------|---------|----------|-------------------|-----------|
-| `start_date` | date    | ❌       | Awal bulan berjalan | Tanggal mulai |
-| `end_date`   | date    | ❌       | Hari ini          | Tanggal akhir |
+| `start_date` | date    | ⬜       | Awal bulan berjalan | Tanggal mulai |
+| `end_date`   | date    | ⬜       | Hari ini          | Tanggal akhir |
 
 **Response:**
 ```json
@@ -431,8 +431,8 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_outlet` | string | ✅ | Nama outlet/cabang |
-| `alamat` | string | ❌ | Alamat |
-| `kontak` | string | ❌ | Nomor kontak |
+| `alamat` | string | ⬜ | Alamat |
+| `kontak` | string | ⬜ | Nomor kontak |
 
 ---
 
@@ -443,7 +443,7 @@ Accept: application/json
 
 | Query Param  | Tipe  | Required | Deskripsi |
 |-------------|-------|----------|-----------|
-| `outlet_id`  | int   | ❌       | Filter berdasarkan outlet |
+| `outlet_id`  | int   | ⬜       | Filter berdasarkan outlet |
 
 **Response:**
 ```json
@@ -484,10 +484,10 @@ Accept: application/json
 | `email` | string | ✅ | Email (untuk login) |
 | `password` | string | ✅ | Password minimal 6 karakter |
 | `role_id` | int | ✅ | ID role |
-| `outlet_id` | int | ❌ | Penempatan outlet |
-| `kontak` | string | ❌ | Nomor telepon |
-| `alamat` | string | ❌ | Alamat |
-| `sisa_cuti` | int | ❌ | Jatah cuti (default: 0) |
+| `outlet_id` | int | ⬜ | Penempatan outlet |
+| `kontak` | string | ⬜ | Nomor telepon |
+| `alamat` | string | ⬜ | Alamat |
+| `sisa_cuti` | int | ⬜ | Jatah cuti (default: 0) |
 
 ---
 
@@ -542,7 +542,7 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_divisi` | string | ✅ | Nama divisi |
-| `outlet_id` | int | ❌ | Outlet terkait (jika spesifik) |
+| `outlet_id` | int | ⬜ | Outlet terkait (jika spesifik) |
 
 ---
 
@@ -566,10 +566,10 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `user_id`    | int  | ❌       | Filter user (Owner/Manajemen) |
-| `tanggal`    | date | ❌       | Filter tanggal spesifik |
-| `bulan`      | int  | ❌       | Filter bulan (1-12) — perlu `tahun` |
-| `tahun`      | int  | ❌       | Filter tahun |
+| `user_id`    | int  | ⬜       | Filter user (Owner/Manajemen) |
+| `tanggal`    | date | ⬜       | Filter tanggal spesifik |
+| `bulan`      | int  | ⬜       | Filter bulan (1-12) — perlu `tahun` |
+| `tahun`      | int  | ⬜       | Filter tahun |
 
 ---
 
@@ -580,7 +580,7 @@ Accept: application/json
 
 | Field   | Tipe   | Required | Deskripsi |
 |---------|--------|----------|-----------|
-| `lokasi` | string | ❌       | Lokasi checkin (maks 255 karakter) |
+| `lokasi` | string | ⬜       | Lokasi checkin (maks 255 karakter) |
 
 ---
 
@@ -618,8 +618,8 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `bulan` | int | ❌ | Bulan (default: bulan berjalan) |
-| `tahun` | int | ❌ | Tahun (default: tahun berjalan) |
+| `bulan` | int | ⬜ | Bulan (default: bulan berjalan) |
+| `tahun` | int | ⬜ | Tahun (default: tahun berjalan) |
 
 ---
 
@@ -630,7 +630,7 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `status` | string | ❌ | Filter: `pending`, `disetujui`, `ditolak` |
+| `status` | string | ⬜ | Filter: `pending`, `disetujui`, `ditolak` |
 
 ---
 
@@ -644,7 +644,7 @@ Accept: application/json
 | `jenis` | string | ✅ | `cuti_tahunan`, `izin_sakit`, atau `mendadak` |
 | `tanggal_mulai` | date | ✅ | Tanggal mulai |
 | `tanggal_selesai` | date | ✅ | Tanggal selesai (≥ tanggal_mulai) |
-| `keterangan` | string | ❌ | Keterangan / alasan |
+| `keterangan` | string | ⬜ | Keterangan / alasan |
 
 > ⚠️ Untuk `cuti_tahunan`, otomatis dicek sisa cuti. Jika habis (≤ 0), pengajuan ditolak.
 
@@ -707,7 +707,7 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_kategori` | string | ✅ | Nama kategori (contoh: `Penjualan`, `Gaji`) |
-| `tipe` | string | ❌ | `masuk` / `keluar` (membatasi tipe transaksi) |
+| `tipe` | string | ⬜ | `masuk` / `keluar` (membatasi tipe transaksi) |
 
 ---
 
@@ -718,13 +718,13 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `outlet_id` | int | ❌ | Filter outlet |
-| `tipe` | string | ❌ | `masuk` / `keluar` |
-| `kategori_transaksi_id` | int | ❌ | Filter kategori |
-| `start_date` | date | ❌ | Tanggal mulai |
-| `end_date` | date | ❌ | Tanggal akhir |
-| `status_approval` | string | ❌ | `pending` / `disetujui` / `ditolak` / `tidak_perlu` |
-| `per_page` | int | ❌ | Jumlah per halaman (default: 50) |
+| `outlet_id` | int | ⬜ | Filter outlet |
+| `tipe` | string | ⬜ | `masuk` / `keluar` |
+| `kategori_transaksi_id` | int | ⬜ | Filter kategori |
+| `start_date` | date | ⬜ | Tanggal mulai |
+| `end_date` | date | ⬜ | Tanggal akhir |
+| `status_approval` | string | ⬜ | `pending` / `disetujui` / `ditolak` / `tidak_perlu` |
+| `per_page` | int | ⬜ | Jumlah per halaman (default: 50) |
 
 ---
 
@@ -738,11 +738,11 @@ Accept: application/json
 | `tanggal` | date | ✅ | Tanggal transaksi (≤ hari ini) |
 | `tipe` | string | ✅ | `masuk` atau `keluar` |
 | `nominal` | numeric | ✅ | Jumlah nominal |
-| `kategori_transaksi_id` | int | ❌ | ID kategori transaksi |
-| `outlet_id` | int | ❌ | Outlet terkait |
-| `metode_pembayaran` | string | ❌ | `tunai`, `transfer_bank`, `kartu_kredit`, `kartu_debit`, `e_wallet`, `cek_giro`, atau `lainnya` |
-| `keterangan` | string | ❌ | Deskripsi transaksi (maks 1000 karakter) |
-| `lampiran_url` | string | ❌ | URL bukti/Lampiran (maks 255 karakter) |
+| `kategori_transaksi_id` | int | ⬜ | ID kategori transaksi |
+| `outlet_id` | int | ⬜ | Outlet terkait |
+| `metode_pembayaran` | string | ⬜ | `tunai`, `transfer_bank`, `kartu_kredit`, `kartu_debit`, `e_wallet`, `cek_giro`, atau `lainnya` |
+| `keterangan` | string | ⬜ | Deskripsi transaksi (maks 1000 karakter) |
+| `lampiran_url` | string | ⬜ | URL bukti/Lampiran (maks 255 karakter) |
 
 ---
 
@@ -768,9 +768,9 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Default | Deskripsi |
 |------------|------|----------|---------|-----------|
-| `start_date` | date | ❌ | Awal bulan | Tanggal mulai |
-| `end_date` | date | ❌ | Hari ini | Tanggal akhir |
-| `outlet_id` | int | ❌ | Semua | Filter outlet |
+| `start_date` | date | ⬜ | Awal bulan | Tanggal mulai |
+| `end_date` | date | ⬜ | Hari ini | Tanggal akhir |
+| `outlet_id` | int | ⬜ | Semua | Filter outlet |
 
 ---
 
@@ -787,9 +787,9 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Default | Deskripsi |
 |------------|------|----------|---------|-----------|
-| `start_date` | date | ❌ | Awal bulan | Tanggal mulai |
-| `end_date` | date | ❌ | Hari ini | Tanggal akhir |
-| `outlet_id` | int | ❌ | Semua | Filter outlet |
+| `start_date` | date | ⬜ | Awal bulan | Tanggal mulai |
+| `end_date` | date | ⬜ | Hari ini | Tanggal akhir |
+| `outlet_id` | int | ⬜ | Semua | Filter outlet |
 
 ---
 
@@ -798,7 +798,7 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Default | Deskripsi |
 |------------|------|----------|---------|-----------|
-| `tahun` | int | ❌ | Tahun berjalan | Tahun laporan |
+| `tahun` | int | ⬜ | Tahun berjalan | Tahun laporan |
 
 **Response:**
 ```json
@@ -850,10 +850,10 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `outlet_id` | int | ❌ | Filter outlet |
-| `start_date` | date | ❌ | Filter tanggal mulai |
-| `end_date` | date | ❌ | Filter tanggal akhir |
-| `per_page` | int | ❌ | Pagination |
+| `outlet_id` | int | ⬜ | Filter outlet |
+| `start_date` | date | ⬜ | Filter tanggal mulai |
+| `end_date` | date | ⬜ | Filter tanggal akhir |
+| `per_page` | int | ⬜ | Pagination |
 
 ---
 
@@ -862,11 +862,11 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `status` | string | ❌ | Filter status approval |
-| `outlet_id` | int | ❌ | Filter outlet |
-| `start_date` | date | ❌ | Filter tanggal mulai |
-| `end_date` | date | ❌ | Filter tanggal akhir |
-| `per_page` | int | ❌ | Pagination |
+| `status` | string | ⬜ | Filter status approval |
+| `outlet_id` | int | ⬜ | Filter outlet |
+| `start_date` | date | ⬜ | Filter tanggal mulai |
+| `end_date` | date | ⬜ | Filter tanggal akhir |
+| `per_page` | int | ⬜ | Pagination |
 
 ---
 
@@ -884,7 +884,7 @@ Accept: application/json
 
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
-| `catatan` | string | ❌ | Catatan persetujuan |
+| `catatan` | string | ⬜ | Catatan persetujuan |
 
 ---
 
@@ -950,7 +950,7 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_instansi` | string | ✅ | Nama perusahaan |
-| `paket_id` | int | ❌ | ID paket |
+| `paket_id` | int | ⬜ | ID paket |
 | `owner_name` | string | ✅* | Nama owner (hanya POST) |
 | `owner_email` | string | ✅* | Email owner (hanya POST) |
 | `owner_password` | string | ✅* | Password owner (hanya POST) |
@@ -989,10 +989,10 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_paket` | string | ✅ | Nama paket |
-| `deskripsi` | string | ❌ | Deskripsi paket |
+| `deskripsi` | string | ⬜ | Deskripsi paket |
 | `harga` | numeric | ✅ | Harga paket |
 | `durasi_hari` | int | ✅ | Masa berlaku paket (hari) |
-| `fitur` | json | ❌ | Daftar fitur yang termasuk |
+| `fitur` | json | ⬜ | Daftar fitur yang termasuk |
 
 ---
 

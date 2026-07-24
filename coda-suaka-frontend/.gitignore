@@ -29,3 +29,10 @@ local.properties
 /gradle/wrapper/gradle-wrapper.jar
 gradle/android/FakeDependency.jar
 /.idea/
+
+# Release APK & AAB
+*.apk
+*.aab
+/app/release/
+/app/build/outputs/apk/release/
+/app/build/outputs/bundle/release/
