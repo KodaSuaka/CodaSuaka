@@ -23,16 +23,14 @@ class TransaksiPaketController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = transaksi_paket::with(['instansi', 'paket']);
 
-        // Filter by instansi
-        if ($request->has('instansi_id')) {
-            $query->where('instansi_id', $request->instansi_id);
-        } else {
-            $query->where('instansi_id', $user->instansi_id);
-        }
+        // Selalu gunakan instansi_id dari user yang sedang login
+        // untuk mencegah cross-tenant data leak
+        $transaksis = transaksi_paket::with(['instansi', 'paket'])
+            ->where('instansi_id', $user->instansi_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        $transaksis = $query->orderBy('created_at', 'desc')->get();
         return $this->success($transaksis);
     }
 

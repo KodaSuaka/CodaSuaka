@@ -101,6 +101,14 @@ class KategoriTransaksiController extends Controller
             return $this->error('Kategori template global tidak dapat dihapus', 422);
         }
 
+        // Cek apakah kategori masih digunakan oleh transaksi kas
+        if ($kategori_transaksi->transaksiKas()->exists()) {
+            return $this->error(
+                'Kategori transaksi tidak dapat dihapus karena masih digunakan oleh transaksi kas',
+                422
+            );
+        }
+
         $kategori_transaksi->delete();
         return $this->success(null, 'Kategori transaksi berhasil dihapus');
     }
