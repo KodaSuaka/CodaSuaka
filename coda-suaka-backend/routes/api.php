@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RolePermissionController;
@@ -162,6 +163,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/messages/{user}', [ChatController::class, 'messages']);
         Route::post('/send', [ChatController::class, 'send']);
         Route::put('/read/{user}', [ChatController::class, 'markAsRead']);
+    });
+
+    // ─── Notifikasi ──────────────────────────────────────────
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::put('/read/{id}', [NotificationController::class, 'markAsRead']);
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);
     });
 
     // ═══════════════════════════════════════════════════════════

@@ -15,7 +15,10 @@ class RoleSeeder extends Seeder
 
         // Functional roles (replaces flat "Karyawan")
         role::firstOrCreate(['nama_role' => 'Keuangan']);
-        role::firstOrCreate(['nama_role' => 'Manajemen']);
+        role::firstOrCreate(['nama_role' => 'Manager']);
         role::firstOrCreate(['nama_role' => 'Staff']);
+
+        // Cleanup: hapus role 'Manajemen' lama jika masih ada
+        role::where('nama_role', 'Manajemen')->delete();
     }
 }

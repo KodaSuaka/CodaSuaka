@@ -184,11 +184,7 @@ class DashboardController extends Controller
                 'total_poin' => 0,
                 'total_tugas_selesai' => 0,
                 'rata_rata_poin' => 0.0,
-                'detail_urgency' => [
-                    'urgent' => ['jumlah' => 0, 'poin' => 0],
-                    'sedang' => ['jumlah' => 0, 'poin' => 0],
-                    'rendah' => ['jumlah' => 0, 'poin' => 0],
-                ],
+                'detail_urgency' => [],
             ]);
         }
 
@@ -203,23 +199,25 @@ class DashboardController extends Controller
         $totalSelesai = $tugasSelesai->count();
         $rataRata = $totalSelesai > 0 ? round($totalPoin / $totalSelesai, 1) : 0.0;
 
-        // Detail per urgency — gunakan groupBy untuk efisiensi
+        // Detail per urgency — kembalikan sebagai array of objects
+        // sesuai format yang diharapkan frontend: List<DetailUrgency>
+        // field: urgency, jumlah, total_poin
         $detailByUrgency = $tugasSelesai->groupBy('urgency');
 
-        $detailUrgency = [
-            'urgent' => [
-                'jumlah' => isset($detailByUrgency['urgent']) ? $detailByUrgency['urgent']->count() : 0,
-                'poin' => isset($detailByUrgency['urgent']) ? $detailByUrgency['urgent']->sum('poin') : 0,
-            ],
-            'sedang' => [
-                'jumlah' => isset($detailByUrgency['sedang']) ? $detailByUrgency['sedang']->count() : 0,
-                'poin' => isset($detailByUrgency['sedang']) ? $detailByUrgency['sedang']->sum('poin') : 0,
-            ],
-            'rendah' => [
-                'jumlah' => isset($detailByUrgency['rendah']) ? $detailByUrgency['rendah']->count() : 0,
-                'poin' => isset($detailByUrgency['rendah']) ? $detailByUrgency['rendah']->sum('poin') : 0,
-            ],
-        ];
+        $detailUrgency = collect([
+            'urgent' => 'urgent',
+            'sedang' => 'sedang',
+            'rendah' => 'rendah',
+        ])->map(function ($label) use ($detailByUrgency) {
+            $items = $detailByUrgency[$label] ?? collect();
+            return [
+                'urgency' => $label,
+                'jumlah' => $items->count(),
+                'total_poin' => (int) $items->sum('poin'),
+            ];
+        })->filter(fn ($item) => $item['jumlah'] > 0)
+          ->values()
+          ->all();
 
         return $this->success([
             'total_poin' => (int) $totalPoin,

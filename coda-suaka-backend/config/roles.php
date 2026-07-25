@@ -29,8 +29,11 @@ return [
             'manage:karyawan',
             'view:keuangan',
             'manage:keuangan',
+            'approve:keuangan',
             'view:laporan',
             'manage:laporan',
+            'view:audit',
+            'manage:audit',
         ],
 
         'Keuangan' => [
@@ -38,21 +41,6 @@ return [
             'manage:keuangan',
             'view:laporan',
             'view:presensi',
-        ],
-
-        'Manajemen' => [
-            'view:presensi',
-            'manage:presensi',
-            'view:pengajuan',
-            'view:divisi',
-            'view:penugasan',
-            'manage:penugasan',
-            'view:jadwal',
-            'manage:jadwal',
-            'view:karyawan',
-            'manage:karyawan',
-            'view:keuangan',
-            'view:laporan',
         ],
 
         'Manager' => [
@@ -68,8 +56,10 @@ return [
             'manage:jadwal',
             'view:karyawan',
             'manage:karyawan',
+            'view:audit',
+            'manage:audit',
             // NOTE: Manager TIDAK punya akses keuangan (view:keuangan, manage:keuangan)
-            // Khusus untuk mengelola karyawan saja
+            // Fokus: kelola karyawan, persetujuan izin, dan audit
         ],
 
         'Staff' => [

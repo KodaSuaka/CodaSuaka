@@ -431,4 +431,28 @@ interface ApiService {
         @Path("approvalLogId") approvalLogId: Int,
         @Body catatan: Map<String, String>
     ): Response<ApprovalSingleResponse>
+
+    // ─── Notifikasi ──────────────────────────────────────────────
+
+    @GET("api/notifications")
+    suspend fun getNotifications(
+        @Query("page") page: Int? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<NotificationListResponse>
+
+    @GET("api/notifications/unread-count")
+    suspend fun getUnreadCount(): Response<UnreadCountResponse>
+
+    @PUT("api/notifications/read/{id}")
+    suspend fun markNotificationRead(
+        @Path("id") id: Int
+    ): Response<ApiStatusResponse>
+
+    @PUT("api/notifications/read-all")
+    suspend fun markAllNotificationsRead(): Response<ApiStatusResponse>
+
+    @DELETE("api/notifications/{id}")
+    suspend fun deleteNotification(
+        @Path("id") id: Int
+    ): Response<ApiStatusResponse>
 }

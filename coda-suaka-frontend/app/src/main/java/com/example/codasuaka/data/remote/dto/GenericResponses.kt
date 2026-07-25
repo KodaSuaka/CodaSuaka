@@ -717,3 +717,37 @@ data class UpdateTemplatePenugasanRequest(
     @SerializedName("deskripsi_template") val deskripsiTemplate: String?,
     @SerializedName("urgency_default") val urgencyDefault: String?
 )
+
+// ─── Notifikasi ──────────────────────────────────────────────────────────────
+
+data class NotificationListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String,
+    @SerializedName("data") val data: List<NotificationDto>,
+    @SerializedName("meta") val meta: PaginationMeta?
+)
+
+data class UnreadCountResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String,
+    @SerializedName("data") val data: UnreadCountData
+)
+
+data class UnreadCountData(
+    @SerializedName("unread_count") val unreadCount: Int
+)
+
+data class NotificationDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("user_id") val userId: Int,
+    @SerializedName("type") val type: String,
+    @SerializedName("title") val title: String,
+    @SerializedName("body") val body: String,
+    @SerializedName("icon") val icon: String?,
+    @SerializedName("color") val color: String?,
+    @SerializedName("is_read") val isRead: Boolean,
+    @SerializedName("related_id") val relatedId: Int?,
+    @SerializedName("related_type") val relatedType: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)

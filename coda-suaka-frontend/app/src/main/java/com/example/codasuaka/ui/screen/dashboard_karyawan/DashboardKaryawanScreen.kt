@@ -58,7 +58,7 @@ fun DashboardKaryawanScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { onNavigateTo("chat_list") }) {
+                    IconButton(onClick = { onNavigateTo("notifikasi") }) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifikasi",

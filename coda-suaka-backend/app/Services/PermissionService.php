@@ -113,7 +113,7 @@ class PermissionService
                 'label' => 'Approval Keuangan',
                 'icon' => 'HowToReg',
                 'route' => 'approval_keuangan',
-                'permission' => 'approve:keuangan',
+                'permission' => 'manage:keuangan',
             ],
             [
                 'id' => 'riwayat_absensi',
@@ -135,6 +135,13 @@ class PermissionService
                 'icon' => 'Description',
                 'route' => 'pengajuan',
                 'permission' => 'manage:pengajuan',
+            ],
+            [
+                'id' => 'audit_log',
+                'label' => 'Audit Log',
+                'icon' => 'History',
+                'route' => 'audit_log',
+                'permission' => 'view:audit',
             ],
         ];
 

@@ -33,6 +33,8 @@ import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganScreen
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganScreen
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
+import com.example.codasuaka.ui.screen.notifikasi.NotificationScreen
+import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaScreen
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
@@ -62,6 +64,7 @@ object Routes {
     const val STATUS_KARYAWAN = "status_karyawan"
     const val APPROVAL_KEUANGAN = "approval_keuangan"
     const val POIN_KINERJA = "poin_kinerja"
+    const val NOTIFIKASI = "notifikasi"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -100,10 +103,10 @@ fun AppNavigation(navController: NavHostController) {
             val loginViewModel: LoginViewModel = koinViewModel()
             LoginScreen(
                 onLoginSuccess = { role, permissions ->
-                    // Functional roles (Keuangan, Manajemen, Staff) dan Karyawan
+                    // Functional roles (Keuangan, Manager, Staff) dan Karyawan
                     // semua masuk ke DASHBOARD_KARYAWAN
                     // Owner masuk ke DASHBOARD
-                    val functionalRoles = listOf("Keuangan", "Manajemen", "Staff", "Karyawan", "Manager")
+                    val functionalRoles = listOf("Keuangan", "Manager", "Staff", "Karyawan")
                     val destination = if (role in functionalRoles) {
                         Routes.DASHBOARD_KARYAWAN
                     } else {
@@ -307,6 +310,15 @@ fun AppNavigation(navController: NavHostController) {
             PoinKinerjaScreen(
                 onBack = { navController.popBackStack() },
                 viewModel = poinKinerjaViewModel
+            )
+        }
+
+        // ── Notifikasi ──
+        composable(Routes.NOTIFIKASI) {
+            val notificationViewModel: NotificationViewModel = koinViewModel()
+            NotificationScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = notificationViewModel
             )
         }
 

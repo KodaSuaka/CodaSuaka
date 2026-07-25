@@ -28,7 +28,7 @@ return [
         /*
         | Role yang bisa menjadi pemeriksa (approver).
         */
-        'role_pemeriksa' => ['Owner', 'Manajemen', 'Manager'],
+        'role_pemeriksa' => ['Owner', 'Manager'],
     ],
 
     /*

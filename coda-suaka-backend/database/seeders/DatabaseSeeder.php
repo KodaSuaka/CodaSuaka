@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             RolePermissionSeeder::class,
             KategoriTransaksiSeeder::class,
+            TemplatePenugasanSeeder::class,
         ]);
     }
 }
