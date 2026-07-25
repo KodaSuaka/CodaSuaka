@@ -43,6 +43,7 @@ CodaSuaka adalah aplikasi **manajemen bisnis terpadu** yang dirancang untuk memb
   - [22. Super Admin — Paket](#22-super-admin--paket)
 - [Contoh Alur Penggunaan API](#-contoh-alur-penggunaan-api)
 - [Environment Variables](#-environment-variables)
+- [CI/CD — GitHub Actions](#-cicd--github-actions)
 
 ---
 
@@ -1154,6 +1155,68 @@ Struktur utama:
 - **Data Layer:** `data/local/TokenManager.kt` — Manajemen token lokal
 - **UI Layer:** `ui/screen/` — Screen seperti Divisi, Kelola Karyawan, dll.
 - **ViewModel:** Setiap screen memiliki ViewModel sendiri (contoh: `DivisiViewModel.kt`)
+
+---
+
+## 🔄 CI/CD — GitHub Actions
+
+Project ini menggunakan **GitHub Actions** untuk Continuous Integration (CI) yang otomatis menjalankan quality check dan testing setiap kali ada push atau pull request.
+
+### Workflow yang Tersedia
+
+| Workflow | File | Trigger | Deskripsi |
+|----------|------|---------|-----------|
+| **Backend CI** | [`backend-ci.yml`](.github/workflows/backend-ci.yml) | Push/PR ke `main`/`develop` (backend berubah) | Code quality (Pint) + PHPUnit tests |
+| **Frontend CI** | [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | Push/PR ke `main`/`develop` (frontend berubah) | Lint + Unit Tests + Build APK |
+
+### Alur Pipeline Backend
+
+```
+Push/PR → Code Quality (Pint Lint) → Tests (PHPUnit + SQLite :memory:)
+```
+
+1. **Code Quality** — Menjalankan [`vendor/bin/pint --test`](coda-suaka-backend/composer.json:53) untuk memastikan kode sesuai coding standard Laravel
+2. **Tests** — Menjalankan PHPUnit dengan database SQLite in-memory (sesuai konfigurasi di [`phpunit.xml`](coda-suaka-backend/phpunit.xml:26))
+
+### Alur Pipeline Frontend
+
+```
+Push/PR → Lint Check → Unit Tests → Build Debug APK → Build Release APK (main only)
+```
+
+1. **Lint Check** — Menjalankan `./gradlew lint` untuk memeriksa kode Android
+2. **Unit Tests** — Menjalankan `./gradlew testDebugUnitTest` (menggunakan MockK & JUnit)
+3. **Build Debug APK** — Build APK debug untuk artifact
+4. **Build Release APK** — Hanya dijalankan saat push ke branch `main`
+
+### Cara Menggunakan
+
+Workflow akan otomatis berjalan saat:
+- **Push** ke branch `main` atau `develop` yang mengubah file di `coda-suaka-backend/` atau `coda-suaka-frontend/`
+- **Pull Request** ke branch `main` atau `develop`
+
+### Artifact yang Dihasilkan
+
+| Artifact | Deskripsi | Retensi |
+|----------|-----------|---------|
+| `lint-report` | Laporan lint Android | 7 hari |
+| `unit-test-results` | Hasil unit test Android | 7 hari |
+| `debug-apk` | APK debug build | 14 hari |
+| `release-apk` | APK release build (main only) | 30 hari |
+| `backend-coverage` | Coverage report PHP | 7 hari |
+
+### Setup Awal
+
+Tidak ada konfigurasi tambahan yang diperlukan. Workflow akan otomatis:
+1. Menginstall PHP 8.4 / JDK 17
+2. Menginstall dependencies (Composer / Gradle)
+3. Menjalankan quality check dan testing
+
+> **Catatan:** Untuk release signing APK, Anda perlu menambahkan **GitHub Secrets** berikut:
+> - `KEYSTORE_BASE64` — File keystore yang di-encode base64
+> - `KEYSTORE_PASSWORD` — Password keystore
+> - `KEY_ALIAS` — Alias key
+> - `KEY_PASSWORD` — Password key
 
 ---
 

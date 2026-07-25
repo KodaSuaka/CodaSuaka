@@ -3,7 +3,7 @@
 namespace Tests\Feature\Keuangan;
 
 use App\Models\User;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\role;
 use Database\Factories\KategoriTransaksiFactory;
@@ -15,14 +15,14 @@ class KategoriTransaksiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
-    private instansi $instansi;
+    private Instansi $instansi;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // Buat data test minimal
-        $this->instansi = instansi::factory()->create();
+        $this->instansi = Instansi::factory()->create();
         $role = role::factory()->create(['nama_role' => 'Owner']);
         $this->user = User::factory()->create([
             'instansi_id' => $this->instansi->id,
@@ -99,7 +99,7 @@ class KategoriTransaksiTest extends TestCase
     public function test_user_tidak_bisa_melihat_kategori_instansi_lain()
     {
         // Arrange
-        $instansiLain = instansi::factory()->create();
+        $instansiLain = Instansi::factory()->create();
         $kategoriLain = KategoriTransaksi::factory()->create([
             'instansi_id' => $instansiLain->id,
         ]);

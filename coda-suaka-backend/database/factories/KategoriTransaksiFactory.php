@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\KategoriTransaksi;
-use App\Models\instansi;
+use App\Models\Instansi;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +18,7 @@ class KategoriTransaksiFactory extends Factory
         $tipe = fake()->randomElement(['masuk', 'keluar']);
 
         return [
-            'instansi_id' => instansi::factory(),
+            'instansi_id' => Instansi::factory(),
             'nama_kategori' => fake()->unique()->word() . ' ' . $tipe,
             'tipe' => $tipe,
             'sifat' => fake()->randomElement(['operasional', 'non_operasional']),

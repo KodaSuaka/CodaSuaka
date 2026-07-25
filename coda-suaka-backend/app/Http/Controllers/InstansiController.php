@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateInstansiRequest;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +13,7 @@ class InstansiController extends Controller
 
     public function __construct()
     {
-        $this->authorizeResource(instansi::class, 'instansi');
+        $this->authorizeResource(Instansi::class, 'instansi');
     }
 
     /**
@@ -22,7 +22,7 @@ class InstansiController extends Controller
      */
     public function show(Request $request)
     {
-        $instansi = instansi::with(['paket'])
+        $instansi = Instansi::with(['paket'])
             ->where('id', $request->user()->instansi_id)
             ->first();
 
@@ -39,7 +39,7 @@ class InstansiController extends Controller
      */
     public function update(UpdateInstansiRequest $request)
     {
-        $instansi = instansi::findOrFail($request->user()->instansi_id);
+        $instansi = Instansi::findOrFail($request->user()->instansi_id);
 
         $instansi->update($request->only(['nama_instansi']));
         return $this->success($instansi, 'Instansi berhasil diperbarui');

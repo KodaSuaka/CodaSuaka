@@ -13,7 +13,7 @@ use App\Models\penugasan;
 use App\Models\AnggotaDivisi;
 use App\Models\attandence;
 use App\Models\transaksi_paket;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\paket;
 use App\Models\KategoriTransaksi;
 use App\Models\TransaksiKas;
@@ -62,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(AnggotaDivisi::class, AnggotaDivisiPolicy::class);
         Gate::policy(attandence::class, AttandencePolicy::class);
         Gate::policy(transaksi_paket::class, TransaksiPaketPolicy::class);
-        Gate::policy(instansi::class, InstansiPolicy::class);
+        Gate::policy(Instansi::class, InstansiPolicy::class);
         Gate::policy(paket::class, PaketPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(KategoriTransaksi::class, KategoriTransaksiPolicy::class);

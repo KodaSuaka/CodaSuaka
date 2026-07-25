@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Models\TransaksiKas;
 use App\Models\User;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\outlet;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -48,7 +48,7 @@ class TransaksiKasFactory extends Factory
         $tipe = fake()->randomElement(['masuk', 'keluar']);
 
         return [
-            'instansi_id' => instansi::factory(),
+            'instansi_id' => Instansi::factory(),
             'outlet_id' => outlet::factory(),
             'kategori_transaksi_id' => KategoriTransaksi::factory(),
             'tanggal' => fake()->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),

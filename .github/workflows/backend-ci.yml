@@ -1,0 +1,110 @@
+# =============================================================================
+# CodaSuaka Backend CI - Laravel
+# =============================================================================
+# Workflow ini menjalankan testing otomatis untuk backend Laravel
+# Trigger: push ke main/develop, pull request ke main/develop
+# =============================================================================
+
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'coda-suaka-backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'coda-suaka-backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+# Cancel in-progress runs untuk branch yang sama
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ===========================================================================
+  # Job 1: Code Quality Check (Pint / PHP CS Fixer)
+  # ===========================================================================
+  code-quality:
+    name: 🔍 Code Quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coda-suaka-backend
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, json, bcmath, pdo, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: 📦 Install dependencies
+        run: composer install --no-progress --prefer-dist --no-interaction
+
+      - name: 🔎 Run Pint (Lint Check)
+        run: vendor/bin/pint --test
+
+  # ===========================================================================
+  # Job 2: Testing
+  # ===========================================================================
+  test:
+    name: 🧪 Tests (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    needs: code-quality
+    defaults:
+      run:
+        working-directory: coda-suaka-backend
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.4']
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, xml, ctype, json, bcmath, pdo, pdo_sqlite
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: 📦 Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: backend-composer-${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            backend-composer-${{ runner.os }}-
+
+      - name: 📦 Install dependencies
+        run: composer install --no-progress --prefer-dist --no-interaction
+
+      - name: 🗄️ Setup environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: 🧪 Run tests
+        run: vendor/bin/phpunit --coverage-text
+
+      - name: 📊 Upload coverage (opsional)
+        if: matrix.php-version == '8.4'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coda-suaka-backend/coverage.txt
+          retention-days: 7
+          if-no-files-found: ignore

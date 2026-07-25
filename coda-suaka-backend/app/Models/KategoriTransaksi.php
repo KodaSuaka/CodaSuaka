@@ -63,7 +63,7 @@ class KategoriTransaksi extends Model
 
     public function instansi()
     {
-        return $this->belongsTo(instansi::class);
+        return $this->belongsTo(Instansi::class);
     }
 
     public function transaksiKas()

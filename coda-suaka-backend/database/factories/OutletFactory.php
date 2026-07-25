@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\outlet;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +21,7 @@ class OutletFactory extends Factory
         return [
             'nama_outlet' => fake()->company(),
             'alamat_outlet' => fake()->address(),
-            'instansi_id' => instansi::factory(),
+            'instansi_id' => Instansi::factory(),
             'is_active' => true,
         ];
     }

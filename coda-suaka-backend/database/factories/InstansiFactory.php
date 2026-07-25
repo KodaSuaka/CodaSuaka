@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Models\instansi;
+use App\Models\Instansi;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<instansi>
+ * @extends Factory<Instansi>
  */
 class InstansiFactory extends Factory
 {

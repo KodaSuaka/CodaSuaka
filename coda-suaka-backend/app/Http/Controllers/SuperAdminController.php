@@ -9,7 +9,7 @@ use App\Http\Requests\UpdateInstansiRequest;
 use App\Http\Requests\StorepaketRequest;
 use App\Http\Requests\UpdatepaketRequest;
 use App\Models\User;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\paket;
 use App\Models\karyawan;
 use App\Models\role;
@@ -35,7 +35,7 @@ class SuperAdminController extends Controller
      */
     public function indexInstansi()
     {
-        $instansis = instansi::with(['paket', 'users' => function ($q) {
+        $instansis = Instansi::with(['paket', 'users' => function ($q) {
             $q->whereHas('role', fn($r) => $r->where('nama_role', 'Owner'))
               ->with('profilKaryawan');
         }])->withCount('outlets')->orderBy('created_at', 'desc')->get();
@@ -63,7 +63,7 @@ class SuperAdminController extends Controller
     public function storeInstansi(StoreinstansiRequest $request)
     {
         // Buat instansi
-        $instansi = instansi::create([
+        $instansi = Instansi::create([
             'nama_instansi' => $request->nama_instansi,
             'paket_id' => $request->paket_id,
         ]);
@@ -309,7 +309,7 @@ class SuperAdminController extends Controller
      */
     public function dashboard()
     {
-        $totalInstansi = instansi::count();
+        $totalInstansi = Instansi::count();
         $totalOwner = User::whereHas('role', fn($q) => $q->where('nama_role', 'Owner'))->count();
         $totalPaket = paket::count();
         $totalPaketAktif = paket::where('is_active', true)->count();

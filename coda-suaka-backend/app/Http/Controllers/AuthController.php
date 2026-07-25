@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\role;
 use App\Models\karyawan;
 use App\Traits\ApiResponse;
@@ -27,7 +27,7 @@ class AuthController extends Controller
         }
 
         $user = DB::transaction(function () use ($request, $RoleOwner) {
-            $instansi = instansi::create([
+            $instansi = Instansi::create([
                 'nama_instansi'=>$request->nama_instansi,
                 'paket_id'=>null
             ]);
