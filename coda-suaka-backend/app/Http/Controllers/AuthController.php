@@ -14,6 +14,7 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterSuperAdminRequest;
 use App\Services\PermissionService;
+use Database\Seeders\TemplatePenugasanSeeder;
 
 class AuthController extends Controller
 {
@@ -47,6 +48,9 @@ class AuthController extends Controller
                 'kontak'=> null,
                 'foto_profil'=> null,
             ]);
+
+            // Copy template tugas global ke instansi baru
+            TemplatePenugasanSeeder::copyGlobalTemplatesToInstansi($instansi->id, $user->id);
 
             return $user;
         });

@@ -29,7 +29,11 @@ class TemplatePenugasan extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
-            $builder->where('instansi_id', $user->instansi_id);
+            // Tampilkan template global (instansi_id = NULL) + template milik instansi user
+            $builder->where(function ($q) use ($user) {
+                $q->whereNull('instansi_id')
+                    ->orWhere('instansi_id', $user->instansi_id);
+            });
         }));
     }
 

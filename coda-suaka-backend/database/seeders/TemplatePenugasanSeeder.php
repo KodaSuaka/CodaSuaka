@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Instansi;
 use App\Models\TemplatePenugasan;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -10,8 +9,9 @@ use Illuminate\Database\Seeder;
 class TemplatePenugasanSeeder extends Seeder
 {
     /**
-     * Template tugas default untuk UMKM.
-     *akan dibuat untuk setiap instansi yang ada.
+     * Template tugas default global untuk semua UMKM.
+     * Tidak terikat instansi (instansi_id = NULL).
+     * Akan di-copy ke instansi baru saat owner mendaftar.
      */
     private array $defaultTemplates = [
         [
@@ -76,53 +76,79 @@ class TemplatePenugasanSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Cari atau buat Super Admin sebagai creator template global.
+     */
+    private function getGlobalCreator(): ?User
+    {
+        $superAdmin = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Super Admin'))->first();
+        if ($superAdmin) {
+            return $superAdmin;
+        }
+
+        // Fallback: ambil user pertama
+        return User::first();
+    }
+
     public function run(): void
     {
-        // Ambil semua instansi yang ada
-        $instansis = Instansi::all();
+        $creator = $this->getGlobalCreator();
 
-        if ($instansis->isEmpty()) {
-            $this->command?->warn('Tidak ada instansi ditemukan. Seeder template penugasan dilewati.');
+        if (!$creator) {
+            $this->command?->warn('Tidak ada user ditemukan. Seeder template penugasan global dilewati.');
             return;
         }
 
-        foreach ($instansis as $instansi) {
-            // Cari user Owner atau Manager di instansi ini untuk created_by
-            $creator = User::where('instansi_id', $instansi->id)
-                ->whereHas('role', fn ($q) => $q->whereIn('nama_role', ['Owner', 'Manager']))
-                ->first();
+        // Cek template global yang sudah ada (instansi_id = NULL)
+        $existingCount = TemplatePenugasan::whereNull('instansi_id')->count();
+        $templatesToCreate = array_slice($this->defaultTemplates, 0, 10 - $existingCount);
 
-            if (!$creator) {
-                // Fallback: ambil user pertama di instansi ini
-                $creator = User::where('instansi_id', $instansi->id)->first();
-            }
+        if (empty($templatesToCreate)) {
+            $this->command?->info('Template penugasan global sudah lengkap (10 template).');
+            return;
+        }
 
-            if (!$creator) {
-                $this->command?->warn("Tidak ada user ditemukan untuk instansi: {$instansi->nama_instansi}");
-                continue;
-            }
-
-            // Maksimal 10 template per instansi
-            $existingCount = TemplatePenugasan::where('instansi_id', $instansi->id)->count();
-            $templatesToCreate = array_slice($this->defaultTemplates, 0, 10 - $existingCount);
-
-            if (empty($templatesToCreate)) {
-                $this->command?->info("Instansi '{$instansi->nama_instansi}' sudah memiliki 10 template.");
-                continue;
-            }
-
-            foreach ($templatesToCreate as $template) {
+        foreach ($templatesToCreate as $template) {
+            TemplatePenugasan::withoutTenantScope(function () use ($template, $creator) {
                 TemplatePenugasan::create([
                     'nama_template' => $template['nama_template'],
                     'deskripsi_template' => $template['deskripsi_template'],
                     'urgency_default' => $template['urgency_default'],
                     'poin_default' => $template['poin_default'],
-                    'instansi_id' => $instansi->id,
+                    'instansi_id' => null,
                     'created_by' => $creator->id,
                 ]);
-            }
-
-            $this->command?->info("Berhasil membuat " . count($templatesToCreate) . " template tugas untuk instansi: {$instansi->nama_instansi}");
+            });
         }
+
+        $this->command?->info("Berhasil membuat " . count($templatesToCreate) . " template penugasan global.");
+    }
+
+    /**
+     * Helper: copy template global ke instansi tertentu.
+     * Dipanggil dari AuthController saat owner baru mendaftar.
+     */
+    public static function copyGlobalTemplatesToInstansi(string $instansiId, int $createdBy): int
+    {
+        $globalTemplates = TemplatePenugasan::withoutTenantScope()
+            ->whereNull('instansi_id')
+            ->get();
+
+        $count = 0;
+        foreach ($globalTemplates as $template) {
+            TemplatePenugasan::withoutTenantScope(function () use ($template, $instansiId, $createdBy) {
+                TemplatePenugasan::create([
+                    'nama_template' => $template->nama_template,
+                    'deskripsi_template' => $template->deskripsi_template,
+                    'urgency_default' => $template->urgency_default,
+                    'poin_default' => $template->poin_default,
+                    'instansi_id' => $instansiId,
+                    'created_by' => $createdBy,
+                ]);
+            });
+            $count++;
+        }
+
+        return $count;
     }
 }
