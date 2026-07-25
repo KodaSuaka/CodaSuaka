@@ -34,6 +34,11 @@ class KaryawanPolicy
 
     public function delete(User $user, karyawan $karyawan): bool
     {
+        // MENCEGAH SELF-DELETION — karyawan tidak boleh hapus diri sendiri
+        if ($karyawan->user_id === $user->id) {
+            return false;
+        }
+        
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }

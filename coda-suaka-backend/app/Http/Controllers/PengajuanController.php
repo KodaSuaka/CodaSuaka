@@ -34,8 +34,10 @@ class PengajuanController extends Controller
             'alasan_penolakan', 'created_at',
         ]);
 
-        // Owner bisa lihat semua pengajuan di instansinya, karyawan hanya punya sendiri
-        if ($user->role?->nama_role !== 'Owner') {
+        // Owner/Manager/role dengan manage:pengajuan bisa lihat semua pengajuan
+        // Karyawan biasa hanya melihat pengajuan sendiri
+        $canManage = app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:pengajuan');
+        if (!$canManage) {
             $query->where('user_id', $user->id);
         }
 

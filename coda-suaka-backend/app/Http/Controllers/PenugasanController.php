@@ -110,6 +110,7 @@ class PenugasanController extends Controller
             'urgency' => $urgency,
             'poin' => penugasan::getPoinForUrgency($urgency),
             'is_template' => false,
+            'instansi_id' => $request->user()->instansi_id,
             'created_by' => $request->user()->id,
         ]);
 

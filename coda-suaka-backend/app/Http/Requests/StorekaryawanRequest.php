@@ -34,7 +34,7 @@ class StorekaryawanRequest extends FormRequest
             'alamat' => 'nullable|string',
             'role_id' => 'required|exists:roles,id',
             'outlet_id' => [
-                'nullable',
+                'required',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
             ],
             'sisa_cuti' => 'nullable|integer|min:0',
@@ -52,6 +52,7 @@ class StorekaryawanRequest extends FormRequest
             'password.min' => 'Password minimal 6 karakter.',
             'role_id.required' => 'Role wajib dipilih.',
             'role_id.exists' => 'Role tidak valid.',
+            'outlet_id.required' => 'Outlet wajib dipilih.',
             'outlet_id.exists' => 'Outlet tidak valid.',
         ];
     }

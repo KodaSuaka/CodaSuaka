@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AttandenceController extends Controller
 {
@@ -62,11 +63,12 @@ class AttandenceController extends Controller
     public function checkin(StoreattandenceRequest $request)
     {
         $user = $request->user();
-        $today = now()->toDateString();
-        $jamSekarang = now();
+        $tz = $this->getTimezone($user);
+        $today = now($tz)->toDateString();
+        $jamSekarang = now($tz);
 
-        // Standar waktu checkin: 07:30 WIB
-        $jamCheckinStandard = Carbon::today()->setTime(7, 30, 0);
+        // Standar waktu checkin: 07:30 waktu lokal instansi
+        $jamCheckinStandard = Carbon::today($tz)->setTime(7, 30, 0);
 
         // Tentukan status_keterangan berdasarkan waktu checkin
         $statusKeterangan = $this->tentukanStatusCheckin($jamSekarang, $jamCheckinStandard);
@@ -118,11 +120,12 @@ class AttandenceController extends Controller
     public function checkout(Request $request)
     {
         $user = $request->user();
-        $today = now()->toDateString();
-        $jamSekarang = now();
+        $tz = $this->getTimezone($user);
+        $today = now($tz)->toDateString();
+        $jamSekarang = now($tz);
 
-        // Standar waktu checkout: 16:30 WIB
-        $jamCheckoutStandard = Carbon::today()->setTime(16, 30, 0);
+        // Standar waktu checkout: 16:30 waktu lokal instansi
+        $jamCheckoutStandard = Carbon::today($tz)->setTime(16, 30, 0);
 
         // Tentukan status_keterangan berdasarkan waktu checkout
         $statusKeterangan = $this->tentukanStatusCheckout($jamSekarang, $jamCheckoutStandard);
@@ -161,7 +164,8 @@ class AttandenceController extends Controller
     public function today(Request $request)
     {
         $user = $request->user();
-        $today = now()->toDateString();
+        $tz = $this->getTimezone($user);
+        $today = now($tz)->toDateString();
 
         $presensi = attandence::where('user_id', $user->id)
             ->where('tanggal', $today)
@@ -187,8 +191,9 @@ class AttandenceController extends Controller
             return $this->error('Anda tidak memiliki akses ke rekap kehadiran', 403);
         }
 
-        $bulan = $request->get('bulan', now()->month);
-        $tahun = $request->get('tahun', now()->year);
+        $tz = $this->getTimezone($user);
+        $bulan = $request->get('bulan', now($tz)->month);
+        $tahun = $request->get('tahun', now($tz)->year);
 
         // Karyawan dalam instansi — eager load users to avoid N+1
         $userIds = User::where('instansi_id', $user->instansi_id)->pluck('id');
@@ -273,5 +278,32 @@ class AttandenceController extends Controller
             'checkout_terlambat' => 'Checkout Terlambat',
             default => $status,
         };
+    }
+
+    // ─── Helper: Ambil Timezone dari Instansi ──────────────────────
+
+    /**
+     * Mengambil timezone dari instansi milik user yang sedang login.
+     * Fallback ke 'Asia/Jakarta' jika instansi belum mengatur timezone.
+     *
+     * @param User $user
+     * @return string  Contoh: 'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'
+     */
+    private function getTimezone(User $user): string
+    {
+        try {
+            $timezone = $user->instansi?->timezone ?? 'Asia/Jakarta';
+
+            // Validasi timezone valid sebelum digunakan
+            if (!in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
+                Log::warning("Timezone tidak valid untuk instansi {$user->instansi_id}: {$timezone}, menggunakan fallback Asia/Jakarta");
+                return 'Asia/Jakarta';
+            }
+
+            return $timezone;
+        } catch (\Throwable $e) {
+            Log::error("Gagal mengambil timezone untuk user {$user->id}: {$e->getMessage()}");
+            return 'Asia/Jakarta';
+        }
     }
 }
