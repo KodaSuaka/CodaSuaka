@@ -27,6 +27,8 @@ return [
             'manage:jadwal',
             'view:karyawan',
             'manage:karyawan',
+            'view:outlets',
+            'manage:outlets',
             'view:keuangan',
             'manage:keuangan',
             'approve:keuangan',
