@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Schedule;
 | Scheduled Tasks — CodaSuaka
 |--------------------------------------------------------------------------
 |
-| Berikut adalah scheduler untuk notifikasi dan maintenance otomatis.
-| Jalankan `php artisan schedule:work` di production untuk menjalankan task.
+| Semua schedule dibaca dari config/schedule.php.
+| Untuk enable/disable, cukup ubah value 'enabled' → true/false di config.
+| Setelah ubah, jalankan: php artisan config:clear
 |
 */
 
@@ -18,25 +19,32 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// ─── Notifikasi: Pengingat tenggat penugasan ───────────────────
-// Berjalan setiap jam 08:00 pagi — kirim notifikasi jika tenggat besok/hari ini
-Schedule::command('notification:penugasan-deadline')
-    ->dailyAt('08:00')
-    ->withoutOverlapping()
-    ->runInBackground()
-    ->description('Kirim pengingat tenggat penugasan yang mendekati deadline');
+// ─── Baca config schedule ──────────────────────────────────────────
+$scheduleConfig = config('schedule', []);
 
-// [DINONAKTIFKAN SEMENTARA] Approval — fitur advance, belum diaktifkan
-// Schedule::command('notification:pending-approval')
-//     ->everyFourHours()
-//     ->withoutOverlapping()
-//     ->runInBackground()
-//     ->description('Kirim pengingat transaksi keuangan yang menunggu approval');
+// ─── Notifikasi: Pengingat tenggat penugasan ───────────────────────
+if ($scheduleConfig['penugasan_deadline_reminder']['enabled'] ?? false) {
+    Schedule::command('notification:penugasan-deadline')
+        ->dailyAt('08:00')
+        ->withoutOverlapping()
+        ->runInBackground()
+        ->description('Kirim pengingat tenggat penugasan yang mendekati deadline');
+}
 
-// ─── Maintenance: Cleanup expired tokens & notifikasi lama ──────
-// Berjalan setiap tengah malam — bersihkan token expired & notifikasi >30 hari
-Schedule::command('auth:cleanup-tokens')
-    ->dailyAt('00:00')
-    ->withoutOverlapping()
-    ->runInBackground()
-    ->description('Bersihkan token expired dan notifikasi yang sudah lama');
+// ─── Notifikasi: Approval keuangan pending ──────────────────────────
+if ($scheduleConfig['pending_approval_reminder']['enabled'] ?? false) {
+    Schedule::command('notification:pending-approval')
+        ->everyFourHours()
+        ->withoutOverlapping()
+        ->runInBackground()
+        ->description('Kirim pengingat transaksi keuangan yang menunggu approval');
+}
+
+// ─── Maintenance: Cleanup expired tokens & notifikasi lama ──────────
+if ($scheduleConfig['cleanup_expired_tokens']['enabled'] ?? false) {
+    Schedule::command('auth:cleanup-tokens')
+        ->dailyAt('00:00')
+        ->withoutOverlapping()
+        ->runInBackground()
+        ->description('Bersihkan token expired dan notifikasi yang sudah lama');
+}
