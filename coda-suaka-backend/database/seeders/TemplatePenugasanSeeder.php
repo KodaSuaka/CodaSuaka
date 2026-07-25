@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\TemplatePenugasan;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class TemplatePenugasanSeeder extends Seeder
@@ -76,31 +75,12 @@ class TemplatePenugasanSeeder extends Seeder
         ],
     ];
 
-    /**
-     * Cari atau buat Super Admin sebagai creator template global.
-     */
-    private function getGlobalCreator(): ?User
-    {
-        $superAdmin = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Super Admin'))->first();
-        if ($superAdmin) {
-            return $superAdmin;
-        }
-
-        // Fallback: ambil user pertama
-        return User::first();
-    }
-
     public function run(): void
     {
-        $creator = $this->getGlobalCreator();
-
-        if (!$creator) {
-            $this->command?->warn('Tidak ada user ditemukan. Seeder template penugasan global dilewati.');
-            return;
-        }
-
         // Cek template global yang sudah ada (instansi_id = NULL)
-        $existingCount = TemplatePenugasan::whereNull('instansi_id')->count();
+        $existingCount = TemplatePenugasan::withoutTenantScope()
+            ->whereNull('instansi_id')
+            ->count();
         $templatesToCreate = array_slice($this->defaultTemplates, 0, 10 - $existingCount);
 
         if (empty($templatesToCreate)) {
@@ -109,14 +89,14 @@ class TemplatePenugasanSeeder extends Seeder
         }
 
         foreach ($templatesToCreate as $template) {
-            TemplatePenugasan::withoutTenantScope(function () use ($template, $creator) {
+            TemplatePenugasan::withoutTenantScope(function () use ($template) {
                 TemplatePenugasan::create([
                     'nama_template' => $template['nama_template'],
                     'deskripsi_template' => $template['deskripsi_template'],
                     'urgency_default' => $template['urgency_default'],
                     'poin_default' => $template['poin_default'],
                     'instansi_id' => null,
-                    'created_by' => $creator->id,
+                    'created_by' => null,
                 ]);
             });
         }
