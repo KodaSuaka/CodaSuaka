@@ -127,7 +127,9 @@ class TokenManager(private val context: Context) {
      * Menghapus seluruh data autentikasi (saat logout).
      */
     suspend fun clearAuthData() {
-        prefs.edit().clear().apply()
+        // Gunakan commit() agar data benar-benar terhapus sebelum
+        // ada read berikutnya (mencegah race condition dengan cachedToken).
+        prefs.edit().clear().commit()
         cachedToken = null
     }
 }

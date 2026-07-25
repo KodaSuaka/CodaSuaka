@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Scopes\TenantScope;
 use App\Models\TemplatePenugasan;
 use Illuminate\Database\Seeder;
 
@@ -78,7 +79,7 @@ class TemplatePenugasanSeeder extends Seeder
     public function run(): void
     {
         // Cek template global yang sudah ada (instansi_id = NULL)
-        $existingCount = TemplatePenugasan::withoutTenantScope()
+        $existingCount = TemplatePenugasan::withoutGlobalScope(TenantScope::class)
             ->whereNull('instansi_id')
             ->count();
         $templatesToCreate = array_slice($this->defaultTemplates, 0, 10 - $existingCount);
@@ -89,16 +90,14 @@ class TemplatePenugasanSeeder extends Seeder
         }
 
         foreach ($templatesToCreate as $template) {
-            TemplatePenugasan::withoutTenantScope(function () use ($template) {
-                TemplatePenugasan::create([
-                    'nama_template' => $template['nama_template'],
-                    'deskripsi_template' => $template['deskripsi_template'],
-                    'urgency_default' => $template['urgency_default'],
-                    'poin_default' => $template['poin_default'],
-                    'instansi_id' => null,
-                    'created_by' => null,
-                ]);
-            });
+            TemplatePenugasan::withoutGlobalScope(TenantScope::class)->create([
+                'nama_template' => $template['nama_template'],
+                'deskripsi_template' => $template['deskripsi_template'],
+                'urgency_default' => $template['urgency_default'],
+                'poin_default' => $template['poin_default'],
+                'instansi_id' => null,
+                'created_by' => null,
+            ]);
         }
 
         $this->command?->info("Berhasil membuat " . count($templatesToCreate) . " template penugasan global.");
@@ -110,22 +109,20 @@ class TemplatePenugasanSeeder extends Seeder
      */
     public static function copyGlobalTemplatesToInstansi(string $instansiId, int $createdBy): int
     {
-        $globalTemplates = TemplatePenugasan::withoutTenantScope()
+        $globalTemplates = TemplatePenugasan::withoutGlobalScope(TenantScope::class)
             ->whereNull('instansi_id')
             ->get();
 
         $count = 0;
         foreach ($globalTemplates as $template) {
-            TemplatePenugasan::withoutTenantScope(function () use ($template, $instansiId, $createdBy) {
-                TemplatePenugasan::create([
-                    'nama_template' => $template->nama_template,
-                    'deskripsi_template' => $template->deskripsi_template,
-                    'urgency_default' => $template->urgency_default,
-                    'poin_default' => $template->poin_default,
-                    'instansi_id' => $instansiId,
-                    'created_by' => $createdBy,
-                ]);
-            });
+            TemplatePenugasan::withoutGlobalScope(TenantScope::class)->create([
+                'nama_template' => $template->nama_template,
+                'deskripsi_template' => $template->deskripsi_template,
+                'urgency_default' => $template->urgency_default,
+                'poin_default' => $template->poin_default,
+                'instansi_id' => $instansiId,
+                'created_by' => $createdBy,
+            ]);
             $count++;
         }
 
