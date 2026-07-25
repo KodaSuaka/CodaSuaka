@@ -75,7 +75,7 @@ fun NotificationScreen(
                 )
             )
         },
-        backgroundColor = Neutral
+        containerColor = Neutral
     ) { paddingValues ->
         Box(
             modifier = Modifier
