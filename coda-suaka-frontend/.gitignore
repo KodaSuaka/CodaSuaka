@@ -33,6 +33,27 @@ gradle/android/FakeDependency.jar
 # Release APK & AAB
 *.apk
 *.aab
+*.apks
 /app/release/
 /app/build/outputs/apk/release/
 /app/build/outputs/bundle/release/
+/app/build/outputs/apk/debug/
+/app/build/outputs/bundle/debug/
+/app/build/outputs/mapping/
+
+# Signing Keys & Keystore (RAHASIA - JANGAN DI-COMMIT!)
+*.jks
+*.keystore
+*.p12
+signing.properties
+keystore.properties
+key.properties
+*coda-suaka*.jks
+*coda-suaka*.keystore
+
+# ProGuard / R8 Mapping Files
+*.map
+mapping.txt
+
+# Build Version Info (auto-generated)
+version.properties
