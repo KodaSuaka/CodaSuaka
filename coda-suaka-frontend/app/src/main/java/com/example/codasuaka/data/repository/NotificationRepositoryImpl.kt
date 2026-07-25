@@ -4,11 +4,8 @@ import com.example.codasuaka.data.remote.ApiService
 import com.example.codasuaka.data.remote.dto.NotificationDto
 import com.example.codasuaka.data.remote.dto.PaginationMeta
 import com.example.codasuaka.domain.repository.NotificationRepository
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class NotificationRepositoryImpl @Inject constructor(
+class NotificationRepositoryImpl(
     private val apiService: ApiService
 ) : NotificationRepository {
 
