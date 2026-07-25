@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.androidx.compose.koinViewModel
+import com.example.codasuaka.util.ClickHelper
 import com.example.codasuaka.ui.screen.auth.AuthScreen
 import com.example.codasuaka.ui.screen.auth.AuthViewModel
 import com.example.codasuaka.ui.screen.pengajuan.PengajuanScreen
@@ -33,7 +34,6 @@ import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganScreen
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganScreen
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
-import com.example.codasuaka.ui.screen.notifikasi.NotificationScreen
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaScreen
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
@@ -66,7 +66,6 @@ object Routes {
     const val STATUS_KARYAWAN = "status_karyawan"
     const val APPROVAL_KEUANGAN = "approval_keuangan"
     const val POIN_KINERJA = "poin_kinerja"
-    const val NOTIFIKASI = "notifikasi"
     const val PENUGASAN = "penugasan"
 
     fun chatDetail(userId: Int, userName: String): String {
@@ -77,6 +76,24 @@ object Routes {
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
+    // Helper untuk navigasi balik dengan proteksi anti-spam
+    val safePopBackStack = {
+        if (ClickHelper.canClick()) {
+            navController.popBackStack()
+        }
+    }
+
+    // Helper untuk navigasi maju dengan proteksi anti-spam
+    val safeNavigate: (String) -> Unit = { route ->
+        if (ClickHelper.canClick()) {
+            try {
+                navController.navigate(route) {
+                    launchSingleTop = true
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Routes.AUTH
@@ -136,7 +153,7 @@ fun AppNavigation(navController: NavHostController) {
                     }
                 },
                 onNavigateToLogin = {
-                    navController.popBackStack()
+                    safePopBackStack()
                 },
                 viewModel = registerViewModel
             )
@@ -148,17 +165,13 @@ fun AppNavigation(navController: NavHostController) {
             val authViewModel: AuthViewModel = koinViewModel()
             DashboardScreen(
                 viewModel = dashboardViewModel,
-                onNavigateTo = { route ->
-                    try {
-                        navController.navigate(route)
-                    } catch (_: Exception) {
-                        // Route not available — ignore
-                    }
-                },
+                onNavigateTo = { route -> safeNavigate(route) },
                 onLogout = {
-                    authViewModel.logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
+                    if (ClickHelper.canClick()) {
+                        authViewModel.logout()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -169,17 +182,13 @@ fun AppNavigation(navController: NavHostController) {
             val dashboardKaryawanViewModel: DashboardKaryawanViewModel = koinViewModel()
             val authViewModel: AuthViewModel = koinViewModel()
             DashboardKaryawanScreen(
-                onNavigateTo = { route ->
-                    try {
-                        navController.navigate(route)
-                    } catch (_: Exception) {
-                        // Route not available — ignore
-                    }
-                },
+                onNavigateTo = { route -> safeNavigate(route) },
                 onLogout = {
-                    authViewModel.logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
+                    if (ClickHelper.canClick()) {
+                        authViewModel.logout()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 },
                 viewModel = dashboardKaryawanViewModel
@@ -190,7 +199,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.KELOLA_OUTLET) {
             val kelolaOutletViewModel: KelolaOutletViewModel = koinViewModel()
             KelolaOutletScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = kelolaOutletViewModel
             )
         }
@@ -199,7 +208,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.KELOLA_KARYAWAN) {
             val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
             KelolaKaryawanScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = kelolaKaryawanViewModel
             )
         }
@@ -208,7 +217,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.KALENDER) {
             val kalenderViewModel: KalenderViewModel = koinViewModel()
             KalenderScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = kalenderViewModel
             )
         }
@@ -217,7 +226,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.RIWAYAT_KEHADIRAN) {
             val riwayatKehadiranViewModel: RiwayatKehadiranViewModel = koinViewModel()
             RiwayatKehadiranScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = riwayatKehadiranViewModel
             )
         }
@@ -226,9 +235,11 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.CONTACT_LIST) {
             val chatContactViewModel: ChatContactViewModel = koinViewModel()
             ChatContactListScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 onContactClick = { userId, userName ->
-                    navController.navigate(Routes.chatDetail(userId, userName))
+                    if (ClickHelper.canClick()) {
+                        navController.navigate(Routes.chatDetail(userId, userName))
+                    }
                 },
                 viewModel = chatContactViewModel
             )
@@ -248,7 +259,7 @@ fun AppNavigation(navController: NavHostController) {
                 parameters = { parametersOf(userId, userName) }
             )
             ChatDetailScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = chatDetailViewModel
             )
         }
@@ -257,7 +268,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.DIVISI) {
             val divisiViewModel: DivisiViewModel = koinViewModel()
             DivisiScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = divisiViewModel
             )
         }
@@ -266,7 +277,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.TAMBAH_KARYAWAN) {
             val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
             KelolaKaryawanScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = kelolaKaryawanViewModel
             )
         }
@@ -275,7 +286,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.PENGAJUAN) {
             val pengajuanViewModel: PengajuanViewModel = koinViewModel()
             PengajuanScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = pengajuanViewModel
             )
         }
@@ -284,7 +295,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.LOG_ABSENSI) {
             val riwayatKehadiranViewModel: RiwayatKehadiranViewModel = koinViewModel()
             RiwayatKehadiranScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = riwayatKehadiranViewModel
             )
         }
@@ -293,7 +304,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.LAPORAN_KEUANGAN) {
             val laporanKeuanganViewModel: LaporanKeuanganViewModel = koinViewModel()
             LaporanKeuanganScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = laporanKeuanganViewModel
             )
         }
@@ -302,7 +313,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.APPROVAL_KEUANGAN) {
             val approvalKeuanganViewModel: ApprovalKeuanganViewModel = koinViewModel()
             ApprovalKeuanganScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = approvalKeuanganViewModel
             )
         }
@@ -311,25 +322,17 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.POIN_KINERJA) {
             val poinKinerjaViewModel: PoinKinerjaViewModel = koinViewModel()
             PoinKinerjaScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = poinKinerjaViewModel
             )
         }
 
-        // ── Notifikasi ──
-        composable(Routes.NOTIFIKASI) {
-            val notificationViewModel: NotificationViewModel = koinViewModel()
-            NotificationScreen(
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = notificationViewModel
-            )
-        }
 
         // ── Penugasan ──
         composable(Routes.PENUGASAN) {
             val penugasanViewModel: PenugasanViewModel = koinViewModel()
             PenugasanScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = penugasanViewModel
             )
         }
@@ -338,7 +341,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Routes.STATUS_KARYAWAN) {
             val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
             KelolaKaryawanScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { safePopBackStack() },
                 viewModel = kelolaKaryawanViewModel
             )
         }

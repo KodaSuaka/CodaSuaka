@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.CreateJadwalRequest
 import com.example.codasuaka.data.remote.dto.JadwalDto
 import com.example.codasuaka.domain.repository.JadwalRepository
+import com.example.codasuaka.util.DateTimeUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -263,11 +264,7 @@ class KalenderViewModel(
                 "tugas" -> EventCategory.TUGAS
                 else -> EventCategory.EVENT
             }
-            val date = try {
-                LocalDate.parse(this.tanggal?.take(10))
-            } catch (e: Exception) {
-                LocalDate.now()
-            }
+            val date = DateTimeUtil.toLocalLocalDate(this.tanggal)
             return KalenderEvent(
                 id = this.id,
                 namaEvent = this.namaEvent,

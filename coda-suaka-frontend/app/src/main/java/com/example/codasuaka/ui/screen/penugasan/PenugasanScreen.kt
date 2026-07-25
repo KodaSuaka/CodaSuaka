@@ -2,14 +2,17 @@ package com.example.codasuaka.ui.screen.penugasan
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +30,7 @@ import com.example.codasuaka.data.remote.dto.KaryawanDto
 import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 
 // ─── Colors ────────────────────────────────────────────────
 private val UrgentColor = Color(0xFFEF4444)
@@ -45,136 +50,143 @@ fun PenugasanScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Penugasan",
-                        fontWeight = FontWeight.Bold,
-                        color = Secondary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = Secondary
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.showCreateDialog() }) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Tambah Tugas",
-                            tint = Secondary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showCreateDialog() },
-                containerColor = Primary,
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah Tugas")
-            }
-        },
-        containerColor = Tertiary
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // ── Error / Success Message ──
-            if (uiState.errorMessage != null) {
-                NotificationBannerStatic(
-                    message = uiState.errorMessage ?: "",
-                    mapFromServer = true,
-                    onDismiss = { viewModel.clearError() }
-                )
-            }
-            if (uiState.successMessage != null) {
-                NotificationBannerStatic(
-                    message = uiState.successMessage ?: "",
-                    mapFromServer = false,
-                    onDismiss = { viewModel.clearSuccess() }
-                )
-            }
-
-            // ── Filter Chips ──
-            FilterChipRow(
-                selectedStatus = uiState.filterStatus,
-                onStatusSelected = { viewModel.filterByStatus(it) }
-            )
-
-            // ── Loading ──
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-            } else if (uiState.penugasans.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Assignment,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+    // ─── Force Light Theme for this screen ───
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            primary = Primary,
+            onPrimary = Color.White,
+            secondary = Secondary,
+            onSecondary = Color.White,
+            tertiary = Tertiary,
+            surface = Surface,
+            onSurface = OnSurface,
+            onSurfaceVariant = OnSurfaceVariant,
+            error = Error,
+            outline = NeutralBorder
+        )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
                         Text(
-                            text = "Belum ada tugas",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = OnSurfaceVariant
+                            text = "Penugasan",
+                            fontWeight = FontWeight.Bold,
+                            color = Secondary
                         )
-                    }
-                }
-            } else {
-                // ── Task List ──
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Kembali",
+                                tint = Secondary
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { viewModel.showCreateDialog() },
+                    containerColor = Primary,
+                    contentColor = Color.White,
+                    shape = CircleShape
                 ) {
-                    items(uiState.penugasans, key = { it.id }) { penugasan ->
-                        PenugasanCard(
-                            penugasan = penugasan,
-                            onDelete = { viewModel.deletePenugasan(penugasan.id) }
-                        )
+                    Icon(Icons.Default.Add, contentDescription = "Tambah Tugas")
+                }
+            },
+            containerColor = Tertiary
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // ── Error / Success Message ──
+                if (uiState.errorMessage != null) {
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearError() }
+                    )
+                }
+                if (uiState.successMessage != null) {
+                    NotificationBannerStatic(
+                        message = uiState.successMessage ?: "",
+                        mapFromServer = false,
+                        onDismiss = { viewModel.clearSuccess() }
+                    )
+                }
+
+                // ── Filter Chips ──
+                FilterChipRow(
+                    selectedStatus = uiState.filterStatus,
+                    onStatusSelected = { viewModel.filterByStatus(it) }
+                )
+
+                // ── Loading ──
+                if (uiState.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                } else if (uiState.penugasans.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Assignment,
+                                contentDescription = null,
+                                tint = OnSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Belum ada tugas",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = OnSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    // ── Task List ──
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.penugasans, key = { it.id }) { penugasan ->
+                            PenugasanCard(
+                                penugasan = penugasan,
+                                onDelete = { viewModel.deletePenugasan(penugasan.id) }
+                            )
+                        }
                     }
                 }
             }
         }
-    }
 
-    // ── Create Dialog ──
-    if (uiState.showCreateDialog) {
-        CreatePenugasanDialog(
-            uiState = uiState,
-            onDismiss = { viewModel.dismissCreateDialog() },
-            onJudulChange = { viewModel.updateFormJudul(it) },
-            onDeskripsiChange = { viewModel.updateFormDeskripsi(it) },
-            onPenanggungJawabChange = { viewModel.updateFormPenanggungJawabId(it) },
-            onDivisiChange = { viewModel.updateFormDivisiId(it) },
-            onTenggatChange = { viewModel.updateFormTenggat(it) },
-            onUrgencyChange = { viewModel.updateFormUrgency(it) },
-            onCreate = { viewModel.createPenugasan() }
-        )
+        // ── Create Dialog ──
+        if (uiState.showCreateDialog) {
+            CreatePenugasanDialog(
+                uiState = uiState,
+                onDismiss = { viewModel.dismissCreateDialog() },
+                onJudulChange = { viewModel.updateFormJudul(it) },
+                onDeskripsiChange = { viewModel.updateFormDeskripsi(it) },
+                onPenanggungJawabChange = { viewModel.updateFormPenanggungJawabId(it) },
+                onDivisiChange = { viewModel.updateFormDivisiId(it) },
+                onTenggatChange = { viewModel.updateFormTenggat(it) },
+                onUrgencyChange = { viewModel.updateFormUrgency(it) },
+                onCreate = { viewModel.createPenugasan() }
+            )
+        }
     }
 }
 
@@ -186,36 +198,57 @@ private fun FilterChipRow(
     onStatusSelected: (String?) -> Unit
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
+        horizontalArrangement = Arrangement.spacedBy(12.dp), // Spasi antar chip diperlebar
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 4.dp, vertical = 12.dp) // Padding luar diperbaiki
     ) {
+        // --- Chip SEMUA ---
+        val isSemuaSelected = selectedStatus == null
         FilterChip(
-            selected = selectedStatus == null,
+            selected = isSemuaSelected,
             onClick = { onStatusSelected(null) },
-            label = { Text("Semua", fontSize = 12.sp) },
+            label = { 
+                Text(
+                    text = "Semua", 
+                    fontSize = 13.sp, 
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (isSemuaSelected) Color.White else Secondary // Paksa warna teks
+                ) 
+            },
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = Primary,
-                selectedLabelColor = Color.White
-            )
+                containerColor = Neutral.copy(alpha = 0.8f) // Background unselected lebih tegas
+            ),
+            border = null
         )
+
+        // --- Chip Status Lainnya ---
         listOf("belum", "proses", "selesai").forEach { status ->
+            val isSelected = selectedStatus == status
+            val selectedColor = when (status) {
+                "belum" -> StatusBelum
+                "proses" -> StatusProses
+                else -> StatusSelesai
+            }
+            
             FilterChip(
-                selected = selectedStatus == status,
+                selected = isSelected,
                 onClick = { onStatusSelected(status) },
-                label = {
+                label = { 
                     Text(
                         text = status.replaceFirstChar { it.uppercase() },
-                        fontSize = 12.sp
-                    )
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (isSelected) Color.White else Secondary // Paksa warna teks
+                    ) 
                 },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = when (status) {
-                        "belum" -> StatusBelum
-                        "proses" -> StatusProses
-                        else -> StatusSelesai
-                    },
-                    selectedLabelColor = Color.White
-                )
+                    selectedContainerColor = selectedColor,
+                    containerColor = Neutral.copy(alpha = 0.8f) // Background unselected lebih tegas
+                ),
+                border = null
             )
         }
     }
@@ -245,140 +278,123 @@ private fun PenugasanCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── Header: Judul + Actions ──
+            // ── Header: Judul & Action ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = penugasan.judul,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Secondary,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Urgency Badge
-                    Surface(
-                        color = urgencyColor.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = penugasan.urgency?.replaceFirstChar { it.uppercase() } ?: "-",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = urgencyColor
-                        )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = penugasan.judul,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Secondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Urgency Badge
+                        Surface(
+                            color = urgencyColor.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = penugasan.urgency?.replaceFirstChar { it.uppercase() } ?: "-",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = urgencyColor
+                            )
+                        }
+                        // Status Badge
+                        Surface(
+                            color = statusColor.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = penugasan.status.replaceFirstChar { it.uppercase() },
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = statusColor
+                            )
+                        }
                     }
-                    // Status Badge
-                    Surface(
-                        color = statusColor.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = penugasan.status.replaceFirstChar { it.uppercase() },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = statusColor
-                        )
-                    }
+                }
+
+                // Delete Button (Pojok Kanan Atas)
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(Error.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Hapus",
+                        tint = Error,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 
             // ── Deskripsi ──
             if (!penugasan.deskripsi.isNullOrBlank()) {
-                Text(
-                    text = penugasan.deskripsi,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            // ── Info Row ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Penanggung Jawab
-                if (penugasan.penanggungJawab != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = penugasan.penanggungJawab.namaLengkap,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                }
-
-                // Divisi
-                if (penugasan.divisi != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Business,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = penugasan.divisi.namaDivisi,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                }
-
-                // Tenggat
-                if (!penugasan.tenggat.isNullOrBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = penugasan.tenggat,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // ── Delete Button ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(
-                    onClick = { showDeleteConfirm = true },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Error)
+                Surface(
+                    color = Neutral.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Hapus", fontSize = 12.sp)
+                    Text(
+                        text = penugasan.deskripsi,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurface.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(12.dp),
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+
+            HorizontalDivider(color = Neutral, thickness = 1.dp)
+
+            // ── Metadata Row (Grid-like) ──
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Baris PJ & Divisi
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (penugasan.penanggungJawab != null) {
+                        MetadataItem(
+                            icon = Icons.Default.Person,
+                            text = penugasan.penanggungJawab.namaLengkap,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (penugasan.divisi != null) {
+                        MetadataItem(
+                            icon = Icons.Default.Groups,
+                            text = penugasan.divisi.namaDivisi,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                
+                // Baris Tenggat
+                if (!penugasan.tenggat.isNullOrBlank()) {
+                    MetadataItem(
+                        icon = Icons.AutoMirrored.Filled.EventNote,
+                        text = "Tenggat: ${DateTimeUtil.formatIsoToLocal(penugasan.tenggat)}",
+                        iconColor = Primary
+                    )
                 }
             }
         }
@@ -388,24 +404,63 @@ private fun PenugasanCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Hapus Tugas", fontWeight = FontWeight.Bold) },
-            text = { Text("Yakin ingin menghapus tugas \"${penugasan.judul}\"?") },
+            containerColor = Surface,
+            titleContentColor = Secondary,
+            textContentColor = OnSurfaceVariant,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.Warning, null, tint = Error)
+                    Text("Hapus Tugas", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Text("Apakah Anda yakin ingin menghapus tugas \"${penugasan.judul}\"? Tindakan ini tidak dapat dibatalkan.")
+            },
             confirmButton = {
                 Button(
                     onClick = {
                         showDeleteConfirm = false
                         onDelete()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Error)
+                    colors = ButtonDefaults.buttonColors(containerColor = Error),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Hapus", color = Color.White)
+                    Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Batal")
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Batal", color = OnSurfaceVariant)
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun MetadataItem(
+    icon: ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
+    iconColor: Color = OnSurfaceVariant
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = Secondary.copy(alpha = 0.8f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -433,30 +488,54 @@ private fun CreatePenugasanDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Surface,
+        titleContentColor = Secondary,
+        textContentColor = OnSurface,
         title = {
-            Text("Buat Tugas Baru", fontWeight = FontWeight.Bold, color = Secondary)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.EditCalendar, null, tint = Primary, modifier = Modifier.size(20.dp))
+                }
+                Text("Buat Tugas Baru", fontWeight = FontWeight.ExtraBold)
+            }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
                 // Judul
                 OutlinedTextField(
                     value = uiState.formJudul,
                     onValueChange = onJudulChange,
-                    label = { Text("Judul Tugas *") },
+                    label = { Text("Judul Tugas *", fontWeight = FontWeight.Bold) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = NeutralBorder,
+                        focusedLabelColor = Primary
+                    )
                 )
 
                 // Deskripsi
                 OutlinedTextField(
                     value = uiState.formDeskripsi,
                     onValueChange = onDeskripsiChange,
-                    label = { Text("Deskripsi") },
+                    label = { Text("Deskripsi", fontWeight = FontWeight.Bold) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     minLines = 2,
-                    maxLines = 4
+                    maxLines = 4,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = NeutralBorder,
+                        focusedLabelColor = Primary
+                    )
                 )
 
                 // Penanggung Jawab (Dropdown)
@@ -468,18 +547,24 @@ private fun CreatePenugasanDialog(
                         value = uiState.karyawans.find { it.id == uiState.formPenanggungJawabId }?.namaLengkap ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Penanggung Jawab *") },
+                        label = { Text("Penanggung Jawab *", fontWeight = FontWeight.Bold) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedKaryawan) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = NeutralBorder,
+                            focusedLabelColor = Primary
+                        )
                     )
                     ExposedDropdownMenu(
                         expanded = expandedKaryawan,
-                        onDismissRequest = { expandedKaryawan = false }
+                        onDismissRequest = { expandedKaryawan = false },
+                        modifier = Modifier.background(Surface)
                     ) {
                         uiState.karyawans.forEach { karyawan ->
                             DropdownMenuItem(
-                                text = { Text(karyawan.namaLengkap) },
+                                text = { Text(karyawan.namaLengkap, color = OnSurface) },
                                 onClick = {
                                     onPenanggungJawabChange(karyawan.id)
                                     expandedKaryawan = false
@@ -498,17 +583,23 @@ private fun CreatePenugasanDialog(
                         value = uiState.divisis.find { it.id == uiState.formDivisiId }?.namaDivisi ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Divisi") },
+                        label = { Text("Divisi", fontWeight = FontWeight.Bold) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDivisi) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = NeutralBorder,
+                            focusedLabelColor = Primary
+                        )
                     )
                     ExposedDropdownMenu(
                         expanded = expandedDivisi,
-                        onDismissRequest = { expandedDivisi = false }
+                        onDismissRequest = { expandedDivisi = false },
+                        modifier = Modifier.background(Surface)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("— Tidak Ada —") },
+                            text = { Text("— Tidak Ada —", color = OnSurfaceVariant) },
                             onClick = {
                                 onDivisiChange(null)
                                 expandedDivisi = false
@@ -516,7 +607,7 @@ private fun CreatePenugasanDialog(
                         )
                         uiState.divisis.forEach { divisi ->
                             DropdownMenuItem(
-                                text = { Text(divisi.namaDivisi) },
+                                text = { Text(divisi.namaDivisi, color = OnSurface) },
                                 onClick = {
                                     onDivisiChange(divisi.id)
                                     expandedDivisi = false
@@ -530,11 +621,17 @@ private fun CreatePenugasanDialog(
                 OutlinedTextField(
                     value = uiState.formTenggat,
                     onValueChange = onTenggatChange,
-                    label = { Text("Tenggat (YYYY-MM-DD)") },
+                    label = { Text("Tenggat (YYYY-MM-DD)", fontWeight = FontWeight.Bold) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     singleLine = true,
-                    placeholder = { Text("2026-12-31") }
+                    placeholder = { Text("Contoh: 2026-12-31") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = NeutralBorder,
+                        focusedLabelColor = Primary
+                    ),
+                    trailingIcon = { Icon(Icons.Default.CalendarToday, null, tint = Primary, modifier = Modifier.size(20.dp)) }
                 )
 
                 // Urgency (Dropdown)
@@ -546,18 +643,24 @@ private fun CreatePenugasanDialog(
                         value = uiState.formUrgency.replaceFirstChar { it.uppercase() },
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Urgency") },
+                        label = { Text("Prioritas", fontWeight = FontWeight.Bold) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUrgency) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = NeutralBorder,
+                            focusedLabelColor = Primary
+                        )
                     )
                     ExposedDropdownMenu(
                         expanded = expandedUrgency,
-                        onDismissRequest = { expandedUrgency = false }
+                        onDismissRequest = { expandedUrgency = false },
+                        modifier = Modifier.background(Surface)
                     ) {
                         urgencyOptions.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option.replaceFirstChar { it.uppercase() }) },
+                                text = { Text(option.replaceFirstChar { it.uppercase() }, color = OnSurface) },
                                 onClick = {
                                     onUrgencyChange(option)
                                     expandedUrgency = false
@@ -572,7 +675,8 @@ private fun CreatePenugasanDialog(
             Button(
                 onClick = onCreate,
                 enabled = !uiState.isCreating,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.height(48.dp).fillMaxWidth(0.5f),
                 colors = ButtonDefaults.buttonColors(containerColor = Primary)
             ) {
                 if (uiState.isCreating) {
@@ -582,13 +686,16 @@ private fun CreatePenugasanDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Buat Tugas", color = Color.White)
+                    Text("Buat Tugas", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) {
-                Text("Batal")
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text("Batal", color = OnSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
         }
     )

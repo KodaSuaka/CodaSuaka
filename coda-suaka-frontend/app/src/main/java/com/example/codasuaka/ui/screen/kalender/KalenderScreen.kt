@@ -374,8 +374,9 @@ private fun RowScope.DateCell(
             .weight(1f)
             .aspectRatio(1f)
             .clip(CircleShape)
+            .background(if (isToday) Primary.copy(alpha = 0.15f) else Color.Transparent)
             .then(
-                if (isToday) Modifier.border(2.dp, Primary, CircleShape) else Modifier
+                if (isToday) Modifier.border(1.5.dp, Primary.copy(alpha = 0.5f), CircleShape) else Modifier
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -387,15 +388,21 @@ private fun RowScope.DateCell(
             Text(
                 text = dayNumber.toString(),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                color = if (isToday) Primary else OnSurface
+                fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Medium,
+                color = if (isToday) Secondary else OnSurface
             )
             if (dotColor != null) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
+                        .size(7.dp)
                         .clip(CircleShape)
                         .background(color = dotColor)
+                        .then(
+                            // Efek glow sederhana
+                            Modifier.background(dotColor.copy(alpha = 0.3f), CircleShape)
+                                .padding(1.dp)
+                        )
                 )
             }
         }
@@ -629,17 +636,25 @@ private fun DialogTambahEvent(
                         ) {
                             if (showYearPicker) {
                                 val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .atZone(java.time.ZoneId.of("UTC"))
                                     .toLocalDate()
                                     
                                 YearPickerDialog(
                                     selectedYear = displayMonth.year,
                                     onYearSelected = { year ->
-                                        val cal = java.util.Calendar.getInstance().apply {
+                                        val tz = java.util.TimeZone.getTimeZone("UTC")
+                                        val cal = java.util.Calendar.getInstance(tz).apply {
                                             timeInMillis = datePickerState.displayedMonthMillis
                                             set(java.util.Calendar.YEAR, year)
                                         }
                                         datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        
+                                        val selCal = java.util.Calendar.getInstance(tz).apply {
+                                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                            set(java.util.Calendar.YEAR, year)
+                                        }
+                                        datePickerState.selectedDateMillis = selCal.timeInMillis
+                                        
                                         showYearPicker = false
                                     },
                                     onDismiss = { showYearPicker = false }
@@ -649,7 +664,7 @@ private fun DialogTambahEvent(
                             Column(modifier = Modifier.padding(top = 16.dp)) {
                                 // Header Kustom
                                 val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .atZone(java.time.ZoneId.of("UTC"))
                                     .toLocalDate()
                                 
                                 val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -657,17 +672,17 @@ private fun DialogTambahEvent(
                                 CustomCalendarNavigation(
                                     title = monthTitle.replaceFirstChar { it.uppercase() },
                                     onPrevClick = {
-                                        val cal = java.util.Calendar.getInstance().apply {
+                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                             timeInMillis = datePickerState.displayedMonthMillis
+                                            add(java.util.Calendar.MONTH, -1)
                                         }
-                                        cal.add(java.util.Calendar.MONTH, -1)
                                         datePickerState.displayedMonthMillis = cal.timeInMillis
                                     },
                                     onNextClick = {
-                                        val cal = java.util.Calendar.getInstance().apply {
+                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                             timeInMillis = datePickerState.displayedMonthMillis
+                                            add(java.util.Calendar.MONTH, 1)
                                         }
-                                        cal.add(java.util.Calendar.MONTH, 1)
                                         datePickerState.displayedMonthMillis = cal.timeInMillis
                                     },
                                     onTitleClick = { showYearPicker = true },
@@ -691,16 +706,16 @@ private fun DialogTambahEvent(
                                             containerColor = Color.White,
                                             titleContentColor = Secondary,
                                             headlineContentColor = Secondary,
-                                            weekdayContentColor = Color.Gray,
-                                            subheadContentColor = Color.Gray,
-                                            yearContentColor = Color.DarkGray,
+                                            weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                            subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                            yearContentColor = Secondary.copy(alpha = 0.7f),
                                             currentYearContentColor = Primary,
                                             selectedYearContentColor = Color.White,
                                             selectedYearContainerColor = Primary,
-                                            dayContentColor = Color.Black,
+                                            dayContentColor = OnSurface,
                                             selectedDayContentColor = Color.White,
                                             selectedDayContainerColor = Primary,
-                                            todayContentColor = Primary,
+                                            todayContentColor = Secondary,
                                             todayDateBorderColor = Primary
                                         ),
                                         modifier = Modifier.offset(y = (-48).dp)

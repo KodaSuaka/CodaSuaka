@@ -28,12 +28,16 @@ import androidx.compose.ui.unit.sp
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.components.NotificationBannerStatic
+import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
+import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.theme.*
+import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.draw.clipToBounds
+import com.example.codasuaka.util.ClickHelper
 
 // ─── Data class menu items ───────────────────────────────────
 
@@ -51,9 +55,11 @@ private data class MenuItem(
 fun DashboardScreen(
     onNavigateTo: (String) -> Unit,
     onLogout: () -> Unit,
-    viewModel: DashboardViewModel
+    viewModel: DashboardViewModel,
+    notificationViewModel: NotificationViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val notificationUiState by notificationViewModel.uiState.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     // ── Tangani drawer via ViewModel ──
@@ -97,12 +103,29 @@ fun DashboardScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { onNavigateTo("notifikasi") }) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Notifikasi",
-                                tint = Secondary
-                            )
+                        IconButton(onClick = { notificationViewModel.toggleSidebar(true) }) {
+                            BadgedBox(
+                                badge = {
+                                    if (notificationUiState.unreadCount > 0) {
+                                        Badge(
+                                            containerColor = Error,
+                                            modifier = Modifier.size(16.dp).offset(x = (-4).dp, y = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = if (notificationUiState.unreadCount > 99) "9+" else notificationUiState.unreadCount.toString(),
+                                                fontSize = 9.sp,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = "Notifikasi",
+                                    tint = Primary
+                                )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -175,7 +198,7 @@ fun DashboardScreen(
                         MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
                         MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
                         MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
-                        MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, PurpleLog)
+                        MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus) // Ganti dari Purple ke TealStatus
                     ),
                     onItemClick = { label ->
                         when (label) {
@@ -209,6 +232,15 @@ fun DashboardScreen(
             }
         }
     }
+
+    // ── Sidebar Notifikasi (Overlay) ──
+    NotificationSidebar(
+        uiState = notificationUiState,
+        onClose = { notificationViewModel.toggleSidebar(false) },
+        onMarkAsRead = { notificationViewModel.markAsRead(it) },
+        onMarkAllAsRead = { notificationViewModel.markAllAsRead() },
+        onRefresh = { notificationViewModel.refresh() }
+    )
 }
 
 // ─── Section Omset ──────────────────────────────────────────
@@ -266,17 +298,27 @@ private fun SectionOmset(
             ) {
                 if (showYearPicker) {
                     val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(ZoneId.systemDefault())
+                        .atZone(ZoneId.of("UTC"))
                         .toLocalDate()
                         
                     YearPickerDialog(
                         selectedYear = displayMonth.year,
                         onYearSelected = { year ->
-                            val cal = java.util.Calendar.getInstance().apply {
+                            val tz = java.util.TimeZone.getTimeZone("UTC")
+                            // 1. Update Tampilan (Bulan berjalan)
+                            val cal = java.util.Calendar.getInstance(tz).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
+                                set(java.util.Calendar.YEAR, year)
                             }
-                            cal.set(java.util.Calendar.YEAR, year)
                             datePickerState.displayedMonthMillis = cal.timeInMillis
+                            
+                            // 2. Update Seleksi (Agar saat klik OK tidak balik ke tahun lama)
+                            val selCal = java.util.Calendar.getInstance(tz).apply {
+                                timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                set(java.util.Calendar.YEAR, year)
+                            }
+                            datePickerState.selectedDateMillis = selCal.timeInMillis
+                            
                             showYearPicker = false
                         },
                         onDismiss = { showYearPicker = false }
@@ -288,7 +330,7 @@ private fun SectionOmset(
                 ) {
                     // ── Header Kustom < Bulan Tahun > ──
                     val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(ZoneId.systemDefault())
+                        .atZone(ZoneId.of("UTC"))
                         .toLocalDate()
                     
                     val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -296,17 +338,17 @@ private fun SectionOmset(
                     CustomCalendarNavigation(
                         title = monthTitle.replaceFirstChar { it.uppercase() },
                         onPrevClick = {
-                            val cal = java.util.Calendar.getInstance().apply {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, -1)
                             }
-                            cal.add(java.util.Calendar.MONTH, -1)
                             datePickerState.displayedMonthMillis = cal.timeInMillis
                         },
                         onNextClick = {
-                            val cal = java.util.Calendar.getInstance().apply {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, 1)
                             }
-                            cal.add(java.util.Calendar.MONTH, 1)
                             datePickerState.displayedMonthMillis = cal.timeInMillis
                         },
                         onTitleClick = { showYearPicker = true },
@@ -332,16 +374,16 @@ private fun SectionOmset(
                                 containerColor = Color.White,
                                 titleContentColor = Secondary,
                                 headlineContentColor = Secondary,
-                                weekdayContentColor = Color.Gray,
-                                subheadContentColor = Color.Gray,
-                                yearContentColor = Color.DarkGray,
+                                weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                yearContentColor = Secondary.copy(alpha = 0.7f),
                                 currentYearContentColor = Primary,
                                 selectedYearContentColor = Color.White,
                                 selectedYearContainerColor = Primary,
-                                dayContentColor = Color.Black,
+                                dayContentColor = OnSurface,
                                 selectedDayContentColor = Color.White,
                                 selectedDayContainerColor = Primary,
-                                todayContentColor = Primary,
+                                todayContentColor = Secondary,
                                 todayDateBorderColor = Primary
                             ),
                             modifier = Modifier.offset(y = (-48).dp) // Geser ke atas untuk sembunyikan pager asli

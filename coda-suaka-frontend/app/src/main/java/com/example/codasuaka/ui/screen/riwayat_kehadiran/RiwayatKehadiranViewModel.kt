@@ -10,6 +10,7 @@ import com.example.codasuaka.domain.repository.OutletRepository
 import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PresensiRepository
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
+import com.example.codasuaka.util.DateTimeUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -392,7 +393,7 @@ class RiwayatKehadiranViewModel(
                 outlet = "",
                 outletId = 0,
                 role = this.user?.role?.namaRole ?: "",
-                jamKehadiran = this.jamCheckin ?: "",
+                jamKehadiran = DateTimeUtil.formatIsoToTime(this.jamCheckin),
                 status = status
             )
         }

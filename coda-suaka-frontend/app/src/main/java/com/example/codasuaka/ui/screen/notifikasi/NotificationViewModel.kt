@@ -14,6 +14,7 @@ data class NotificationUiState(
     val unreadCount: Int = 0,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
+    val isSidebarOpen: Boolean = false,
     val error: String? = null,
     val currentPage: Int = 1,
     val lastPage: Int = 1,
@@ -30,6 +31,13 @@ class NotificationViewModel(
     init {
         loadNotifications()
         loadUnreadCount()
+    }
+
+    fun toggleSidebar(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isSidebarOpen = open)
+        if (open) {
+            refresh() // Refresh when opening to show latest
+        }
     }
 
     fun loadNotifications() {

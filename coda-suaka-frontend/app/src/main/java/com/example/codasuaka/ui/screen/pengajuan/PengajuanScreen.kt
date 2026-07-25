@@ -26,6 +26,7 @@ import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.components.NotificationBanner
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -483,17 +484,25 @@ private fun DatePickerField(
                     ) {
                         if (showYearPicker) {
                             val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                                 
                             YearPickerDialog(
                                 selectedYear = displayMonth.year,
                                 onYearSelected = { year ->
-                                    val cal = Calendar.getInstance().apply {
+                                    val tz = java.util.TimeZone.getTimeZone("UTC")
+                                    val cal = java.util.Calendar.getInstance(tz).apply {
                                         timeInMillis = datePickerState.displayedMonthMillis
+                                        set(java.util.Calendar.YEAR, year)
                                     }
-                                    cal.set(Calendar.YEAR, year)
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    
+                                    val selCal = java.util.Calendar.getInstance(tz).apply {
+                                        timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                        set(java.util.Calendar.YEAR, year)
+                                    }
+                                    datePickerState.selectedDateMillis = selCal.timeInMillis
+                                    
                                     showYearPicker = false
                                 },
                                 onDismiss = { showYearPicker = false }
@@ -503,7 +512,7 @@ private fun DatePickerField(
                         Column(modifier = Modifier.padding(top = 16.dp)) {
                             // Header Kustom
                             val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                             
                             val monthTitle = displayMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("id", "ID")))
@@ -511,17 +520,17 @@ private fun DatePickerField(
                             CustomCalendarNavigation(
                                 title = monthTitle.replaceFirstChar { it.uppercase() },
                                 onPrevClick = {
-                                    val cal = Calendar.getInstance().apply {
+                                    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                         timeInMillis = datePickerState.displayedMonthMillis
+                                        add(java.util.Calendar.MONTH, -1)
                                     }
-                                    cal.add(Calendar.MONTH, -1)
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
                                 },
                                 onNextClick = {
-                                    val cal = Calendar.getInstance().apply {
+                                    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                         timeInMillis = datePickerState.displayedMonthMillis
+                                        add(java.util.Calendar.MONTH, 1)
                                     }
-                                    cal.add(Calendar.MONTH, 1)
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
                                 },
                                 onTitleClick = { showYearPicker = true },
@@ -545,16 +554,16 @@ private fun DatePickerField(
                                         containerColor = Color.White,
                                         titleContentColor = Secondary,
                                         headlineContentColor = Secondary,
-                                        weekdayContentColor = Color.Gray,
-                                        subheadContentColor = Color.Gray,
-                                        yearContentColor = Color.DarkGray,
+                                        weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                        subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                        yearContentColor = Secondary.copy(alpha = 0.7f),
                                         currentYearContentColor = Primary,
                                         selectedYearContentColor = Color.White,
                                         selectedYearContainerColor = Primary,
-                                        dayContentColor = Color.Black,
+                                        dayContentColor = OnSurface,
                                         selectedDayContentColor = Color.White,
                                         selectedDayContainerColor = Primary,
-                                        todayContentColor = Primary,
+                                        todayContentColor = Secondary,
                                         todayDateBorderColor = Primary
                                     ),
                                     modifier = Modifier.offset(y = (-48).dp)
@@ -633,7 +642,7 @@ private fun RiwayatPengajuanItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "${pengajuan.tanggalMulai} - ${pengajuan.tanggalSelesai} (${pengajuan.jumlahHari} hari)",
+                    "${DateTimeUtil.formatIsoToLocal(pengajuan.tanggalMulai)} - ${DateTimeUtil.formatIsoToLocal(pengajuan.tanggalSelesai)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = OnSurfaceVariant,
                     maxLines = 1,

@@ -46,6 +46,7 @@ val viewModelModule = module {
         karyawanRepository = get(),
         pengajuanRepository = get(),
         dashboardRepository = get(),
+        jadwalRepository = get(),
         chatRepository = get()
     ) }
 

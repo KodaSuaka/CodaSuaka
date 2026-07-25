@@ -2,12 +2,14 @@ package com.example.codasuaka.ui.screen.dashboard_karyawan
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -23,9 +25,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.example.codasuaka.data.remote.dto.JadwalDto
 import com.example.codasuaka.ui.components.NotificationBannerStatic
+import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
+import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.util.ErrorMessageMapper
+import com.example.codasuaka.util.ClickHelper
+import com.example.codasuaka.util.DateTimeUtil
+import org.koin.androidx.compose.koinViewModel
+import java.time.format.DateTimeFormatter
 
 // ─── Color Palette Tambahan (Fresh & Soft) ─────
 private val Teal = Color(0xFF2DD4BF)      // Soft Teal
@@ -42,9 +52,11 @@ private val ScoreGreen = Color(0xFF10B981)
 fun DashboardKaryawanScreen(
     onNavigateTo: (String) -> Unit,
     onLogout: () -> Unit,
-    viewModel: DashboardKaryawanViewModel
+    viewModel: DashboardKaryawanViewModel,
+    notificationViewModel: NotificationViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val notificationUiState by notificationViewModel.uiState.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -58,12 +70,29 @@ fun DashboardKaryawanScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { onNavigateTo("notifikasi") }) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifikasi",
-                            tint = Secondary
-                        )
+                    IconButton(onClick = { notificationViewModel.toggleSidebar(true) }) {
+                        BadgedBox(
+                            badge = {
+                                if (notificationUiState.unreadCount > 0) {
+                                    Badge(
+                                        containerColor = Error,
+                                        modifier = Modifier.size(16.dp).offset(x = (-4).dp, y = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = if (notificationUiState.unreadCount > 99) "9+" else notificationUiState.unreadCount.toString(),
+                                            fontSize = 9.sp,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notifikasi",
+                                tint = Primary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -133,8 +162,16 @@ fun DashboardKaryawanScreen(
                 isLoading = uiState.isLoading,
                 onCheckClick = { viewModel.toggleAbsensi() },
                 onRiwayatPresensiClick = { onNavigateTo("riwayat_kehadiran") },
-                onJadwalShiftClick = { onNavigateTo("kalender") }
+                onJadwalShiftClick = { viewModel.toggleJadwalDialog(true) }
             )
+
+            // ── Popup Daftar Jadwal/Event ──
+            if (uiState.showJadwalDialog) {
+                DialogDaftarJadwal(
+                    jadwalList = uiState.jadwalList,
+                    onDismiss = { viewModel.toggleJadwalDialog(false) }
+                )
+            }
 
             // ══════════════════════════════════════════════════
             // 3. Menu Jabatan
@@ -281,6 +318,15 @@ fun DashboardKaryawanScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
+
+    // ── Sidebar Notifikasi (Overlay) ──
+    NotificationSidebar(
+        uiState = notificationUiState,
+        onClose = { notificationViewModel.toggleSidebar(false) },
+        onMarkAsRead = { notificationViewModel.markAsRead(it) },
+        onMarkAllAsRead = { notificationViewModel.markAllAsRead() },
+        onRefresh = { notificationViewModel.refresh() }
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -529,6 +575,7 @@ private fun SectionPresensiToday(
                         modifier = Modifier
                             .clip(RoundedCornerShape(99.dp))
                             .background(OceanBlue.copy(alpha = 0.1f))
+                            .clickable { onJadwalShiftClick() }
                             .padding(horizontal = 10.dp, vertical = 2.dp)
                     )
                 }
@@ -1172,6 +1219,185 @@ private fun BottomNavigationBar(
                     unselectedTextColor = OnSurfaceVariant,
                     indicatorColor = Primary.copy(alpha = 0.1f)
                 )
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DIALOG — Daftar Jadwal (Popup Event)
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun DialogDaftarJadwal(
+    jadwalList: List<JadwalDto>,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(OceanBlue.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.EventNote,
+                                contentDescription = null,
+                                tint = OceanBlue,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Text(
+                            text = "Agenda & Event",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Secondary
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Tutup", tint = OnSurfaceVariant)
+                    }
+                }
+
+                HorizontalDivider(color = Neutral)
+
+                // List
+                if (jadwalList.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Tidak ada agenda atau event bulan ini.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OnSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
+                    val sortedJadwal = jadwalList.sortedBy { it.tanggal }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        sortedJadwal.forEach { jadwal ->
+                            JadwalItemRow(jadwal, dateFormatter)
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                ) {
+                    Text("Tutup", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JadwalItemRow(
+    jadwal: JadwalDto,
+    formatter: DateTimeFormatter
+) {
+    val dateText = DateTimeUtil.formatIsoToLocal(jadwal.tanggal)
+
+    val categoryColor = when (jadwal.kategori.lowercase()) {
+        "libur" -> Coral
+        "tugas" -> OrangeManage
+        else -> OceanBlue
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Neutral.copy(alpha = 0.3f))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(categoryColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            val icon = when (jadwal.kategori.lowercase()) {
+                "libur" -> Icons.Default.Info
+                "tugas" -> Icons.Default.Assignment
+                else -> Icons.Default.Star
+            }
+            Icon(imageVector = icon, contentDescription = null, tint = categoryColor, modifier = Modifier.size(20.dp))
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = jadwal.namaEvent,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = Secondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = dateText,
+                style = MaterialTheme.typography.labelSmall,
+                color = OnSurfaceVariant
+            )
+        }
+
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = categoryColor.copy(alpha = 0.1f)
+        ) {
+            Text(
+                text = jadwal.kategori.replaceFirstChar { it.uppercase() },
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = categoryColor
             )
         }
     }

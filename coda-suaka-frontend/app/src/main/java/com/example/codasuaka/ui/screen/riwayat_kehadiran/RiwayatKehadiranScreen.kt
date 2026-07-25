@@ -352,17 +352,25 @@ private fun DatePickerField(
             ) {
                 if (showYearPicker) {
                     val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(java.time.ZoneId.systemDefault())
+                        .atZone(java.time.ZoneId.of("UTC"))
                         .toLocalDate()
                         
                     YearPickerDialog(
                         selectedYear = displayMonth.year,
                         onYearSelected = { year ->
-                            val cal = java.util.Calendar.getInstance().apply {
+                            val tz = java.util.TimeZone.getTimeZone("UTC")
+                            val cal = java.util.Calendar.getInstance(tz).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
                                 set(java.util.Calendar.YEAR, year)
                             }
                             datePickerState.displayedMonthMillis = cal.timeInMillis
+                            
+                            val selCal = java.util.Calendar.getInstance(tz).apply {
+                                timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                set(java.util.Calendar.YEAR, year)
+                            }
+                            datePickerState.selectedDateMillis = selCal.timeInMillis
+                            
                             showYearPicker = false
                         },
                         onDismiss = { showYearPicker = false }
@@ -371,7 +379,7 @@ private fun DatePickerField(
 
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(java.time.ZoneId.systemDefault())
+                        .atZone(java.time.ZoneId.of("UTC"))
                         .toLocalDate()
                     
                     val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -379,17 +387,17 @@ private fun DatePickerField(
                     CustomCalendarNavigation(
                         title = monthTitle.replaceFirstChar { it.uppercase() },
                         onPrevClick = {
-                            val cal = java.util.Calendar.getInstance().apply {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, -1)
                             }
-                            cal.add(java.util.Calendar.MONTH, -1)
                             datePickerState.displayedMonthMillis = cal.timeInMillis
                         },
                         onNextClick = {
-                            val cal = java.util.Calendar.getInstance().apply {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, 1)
                             }
-                            cal.add(java.util.Calendar.MONTH, 1)
                             datePickerState.displayedMonthMillis = cal.timeInMillis
                         },
                         onTitleClick = { showYearPicker = true },
@@ -410,22 +418,22 @@ private fun DatePickerField(
                             headline = null,
                             showModeToggle = false,
                             colors = DatePickerDefaults.colors(
-                                containerColor = Color.White,
-                                titleContentColor = Secondary,
-                                headlineContentColor = Secondary,
-                                weekdayContentColor = Color.Gray,
-                                subheadContentColor = Color.Gray,
-                                yearContentColor = Color.DarkGray,
-                                currentYearContentColor = Primary,
-                                selectedYearContentColor = Color.White,
-                                selectedYearContainerColor = Primary,
-                                dayContentColor = Color.Black,
-                                selectedDayContentColor = Color.White,
-                                selectedDayContainerColor = Primary,
-                                todayContentColor = Primary,
-                                todayDateBorderColor = Primary
-                            ),
-                            modifier = Modifier.offset(y = (-48).dp)
+                    containerColor = Color.White,
+                    titleContentColor = Secondary,
+                    headlineContentColor = Secondary,
+                    weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                    subheadContentColor = Secondary.copy(alpha = 0.6f),
+                    yearContentColor = Secondary.copy(alpha = 0.7f),
+                    currentYearContentColor = Primary,
+                    selectedYearContentColor = Color.White,
+                    selectedYearContainerColor = Primary,
+                    dayContentColor = OnSurface,
+                    selectedDayContentColor = Color.White,
+                    selectedDayContainerColor = Primary,
+                    todayContentColor = Secondary,
+                    todayDateBorderColor = Primary
+                ),
+                modifier = Modifier.offset(y = (-48).dp)
                         )
                     }
                 }

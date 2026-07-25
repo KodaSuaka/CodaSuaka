@@ -39,6 +39,7 @@ import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 import com.example.codasuaka.util.ErrorMessageMapper
 import java.time.Instant
 import java.time.ZoneId
@@ -219,10 +220,10 @@ fun LaporanKeuanganScreen(
             FloatingActionButton(
                 onClick = { viewModel.showAddForm("masuk") },
                 containerColor = Primary,
-                contentColor = OnPrimary,
+                contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, "Tambah Transaksi", modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.Add, contentDescription = "Tambah", modifier = Modifier.size(28.dp))
             }
         }
     ) { innerPadding ->
@@ -271,17 +272,25 @@ fun LaporanKeuanganScreen(
                     ) {
                         if (showYearPicker) {
                             val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                                 
                             YearPickerDialog(
                                 selectedYear = displayMonth.year,
                                 onYearSelected = { year ->
-                                    val cal = java.util.Calendar.getInstance().apply {
+                                    val tz = java.util.TimeZone.getTimeZone("UTC")
+                                    val cal = java.util.Calendar.getInstance(tz).apply {
                                         timeInMillis = datePickerState.displayedMonthMillis
+                                        set(java.util.Calendar.YEAR, year)
                                     }
-                                    cal.set(java.util.Calendar.YEAR, year)
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    
+                                    val selCal = java.util.Calendar.getInstance(tz).apply {
+                                        timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                        set(java.util.Calendar.YEAR, year)
+                                    }
+                                    datePickerState.selectedDateMillis = selCal.timeInMillis
+                                    
                                     showYearPicker = false
                                 },
                                 onDismiss = { showYearPicker = false }
@@ -291,7 +300,7 @@ fun LaporanKeuanganScreen(
                         Column(modifier = Modifier.padding(top = 16.dp)) {
                             // Header Kustom < Bulan Tahun >
                             val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                             
                             val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -299,17 +308,17 @@ fun LaporanKeuanganScreen(
                             CustomCalendarNavigation(
                                 title = monthTitle.replaceFirstChar { it.uppercase() },
                                 onPrevClick = {
-                                    val cal = java.util.Calendar.getInstance().apply {
+                                    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                         timeInMillis = datePickerState.displayedMonthMillis
+                                        add(java.util.Calendar.MONTH, -1)
                                     }
-                                    cal.add(java.util.Calendar.MONTH, -1)
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
                                 },
                                 onNextClick = {
-                                    val cal = java.util.Calendar.getInstance().apply {
+                                    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                         timeInMillis = datePickerState.displayedMonthMillis
+                                        add(java.util.Calendar.MONTH, 1)
                                     }
-                                    cal.add(java.util.Calendar.MONTH, 1)
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
                                 },
                                 onTitleClick = { showYearPicker = true },
@@ -333,16 +342,16 @@ fun LaporanKeuanganScreen(
                                         containerColor = Color.White,
                                         titleContentColor = Secondary,
                                         headlineContentColor = Secondary,
-                                        weekdayContentColor = Color.Gray,
-                                        subheadContentColor = Color.Gray,
-                                        yearContentColor = Color.DarkGray,
+                                        weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                        subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                        yearContentColor = Secondary.copy(alpha = 0.7f),
                                         currentYearContentColor = Primary,
                                         selectedYearContentColor = Color.White,
                                         selectedYearContainerColor = Primary,
-                                        dayContentColor = Color.Black,
+                                        dayContentColor = OnSurface,
                                         selectedDayContentColor = Color.White,
                                         selectedDayContainerColor = Primary,
-                                        todayContentColor = Primary,
+                                        todayContentColor = Secondary,
                                         todayDateBorderColor = Primary
                                     ),
                                     modifier = Modifier.offset(y = (-48).dp)
@@ -824,7 +833,7 @@ private fun TransaksiCard(
                         Icon(Icons.Default.Event, null, tint = OnSurfaceVariant, modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = transaksi.tanggal,
+                            text = DateTimeUtil.formatIsoToLocal(transaksi.tanggal),
                             fontSize = 11.sp,
                             color = OnSurfaceVariant
                         )
@@ -895,11 +904,14 @@ private fun TransaksiCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Row {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         IconButton(
                             onClick = onEdit,
                             enabled = !isPending,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 Icons.Default.Edit,
@@ -908,23 +920,30 @@ private fun TransaksiCard(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
+                        
+                        VerticalDivider(
+                            modifier = Modifier.height(16.dp).padding(horizontal = 2.dp),
+                            color = NeutralBorder.copy(alpha = 0.5f)
+                        )
+
                         TextButton(
                             onClick = { showDeleteConfirm = true },
                             enabled = !isPending,
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            modifier = Modifier.height(36.dp)
                         ) {
                             Icon(
                                 Icons.Default.Delete,
                                 contentDescription = "Hapus",
                                 tint = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(2.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Hapus",
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 color = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -959,94 +978,120 @@ private fun TransaksiCard(
 
     // ── Konfirmasi Hapus ──
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = KeluarColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Hapus Transaksi")
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Yakin ingin menghapus transaksi berikut?")
-                    // Detail transaksi yang akan dihapus
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Neutral.copy(alpha = 0.3f)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+        MaterialTheme(colorScheme = lightColorScheme(
+            surface = Color.White,
+            onSurface = OnSurface,
+            onSurfaceVariant = OnSurfaceVariant,
+            primary = Primary,
+            secondary = Secondary
+        )) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                containerColor = Color.White,
+                titleContentColor = Secondary,
+                textContentColor = OnSurface,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = KeluarColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Hapus Transaksi", fontWeight = FontWeight.ExtraBold)
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Yakin ingin menghapus transaksi ini?", style = MaterialTheme.typography.bodyMedium)
+                        
+                        // Detail transaksi yang akan dihapus
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            color = Neutral.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, NeutralBorder.copy(alpha = 0.3f))
                         ) {
-                            Row {
-                                Text("Kategori: ", fontSize = 13.sp, color = OnSurfaceVariant)
-                                Text(
-                                    text = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Secondary
-                                )
-                            }
-                            Row {
-                                Text("Tanggal: ", fontSize = 13.sp, color = OnSurfaceVariant)
-                                Text(
-                                    text = transaksi.tanggal,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Secondary
-                                )
-                            }
-                            Row {
-                                Text("Nominal: ", fontSize = 13.sp, color = OnSurfaceVariant)
-                                Text(
-                                    text = (if (transaksi.tipe == "masuk") "+" else "-") +
-                                           LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
-                                )
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Kategori:", fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Secondary
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Tanggal:", fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = DateTimeUtil.formatIsoToLocal(transaksi.tanggal),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Secondary
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Nominal:", fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = (if (transaksi.tipe == "masuk") "+" else "-") +
+                                               LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
+                                    )
+                                }
                             }
                         }
+                        Text(
+                            text = "⚠️ Tindakan ini permanen.",
+                            fontSize = 12.sp,
+                            color = KeluarColor,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "⚠️ Tindakan ini tidak dapat dibatalkan.",
-                        fontSize = 12.sp,
-                        color = KeluarColor,
-                        fontWeight = FontWeight.Medium
-                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDeleteConfirm = false
+                            onDelete()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = KeluarColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDeleteConfirm = false },
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Text("Batal", color = OnSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = KeluarColor),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Ya, Hapus")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { showDeleteConfirm = false },
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("Batal")
-                }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -1230,17 +1275,25 @@ private fun FormTransaksiDialog(
                         ) {
                             if (showYearPicker) {
                                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                    .atZone(ZoneId.systemDefault())
+                                    .atZone(ZoneId.of("UTC"))
                                     .toLocalDate()
                                     
                                 YearPickerDialog(
                                     selectedYear = displayMonth.year,
                                     onYearSelected = { year ->
-                                        val cal = java.util.Calendar.getInstance().apply {
+                                        val tz = java.util.TimeZone.getTimeZone("UTC")
+                                        val cal = java.util.Calendar.getInstance(tz).apply {
                                             timeInMillis = datePickerState.displayedMonthMillis
+                                            set(java.util.Calendar.YEAR, year)
                                         }
-                                        cal.set(java.util.Calendar.YEAR, year)
                                         datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        
+                                        val selCal = java.util.Calendar.getInstance(tz).apply {
+                                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                            set(java.util.Calendar.YEAR, year)
+                                        }
+                                        datePickerState.selectedDateMillis = selCal.timeInMillis
+                                        
                                         showYearPicker = false
                                     },
                                     onDismiss = { showYearPicker = false }
@@ -1249,7 +1302,7 @@ private fun FormTransaksiDialog(
 
                             Column(modifier = Modifier.padding(top = 16.dp)) {
                                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                    .atZone(ZoneId.systemDefault())
+                                    .atZone(ZoneId.of("UTC"))
                                     .toLocalDate()
                                 
                                 val monthTitle = displayMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("id", "ID")))
@@ -1257,17 +1310,17 @@ private fun FormTransaksiDialog(
                                 CustomCalendarNavigation(
                                     title = monthTitle.replaceFirstChar { it.uppercase() },
                                     onPrevClick = {
-                                        val cal = java.util.Calendar.getInstance().apply {
+                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                             timeInMillis = datePickerState.displayedMonthMillis
+                                            add(java.util.Calendar.MONTH, -1)
                                         }
-                                        cal.add(java.util.Calendar.MONTH, -1)
                                         datePickerState.displayedMonthMillis = cal.timeInMillis
                                     },
                                     onNextClick = {
-                                        val cal = java.util.Calendar.getInstance().apply {
+                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                             timeInMillis = datePickerState.displayedMonthMillis
+                                            add(java.util.Calendar.MONTH, 1)
                                         }
-                                        cal.add(java.util.Calendar.MONTH, 1)
                                         datePickerState.displayedMonthMillis = cal.timeInMillis
                                     },
                                     onTitleClick = { showYearPicker = true },
@@ -1291,16 +1344,16 @@ private fun FormTransaksiDialog(
                                             containerColor = Color.White,
                                             titleContentColor = Secondary,
                                             headlineContentColor = Secondary,
-                                            weekdayContentColor = Color.Gray,
-                                            subheadContentColor = Color.Gray,
-                                            yearContentColor = Color.DarkGray,
+                                            weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                            subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                            yearContentColor = Secondary.copy(alpha = 0.7f),
                                             currentYearContentColor = Primary,
                                             selectedYearContentColor = Color.White,
                                             selectedYearContainerColor = Primary,
-                                            dayContentColor = Color.Black,
+                                            dayContentColor = OnSurface,
                                             selectedDayContentColor = Color.White,
                                             selectedDayContainerColor = Primary,
-                                            todayContentColor = Primary,
+                                            todayContentColor = Secondary,
                                             todayDateBorderColor = Primary
                                         ),
                                         modifier = Modifier.offset(y = (-48).dp)
@@ -1333,10 +1386,13 @@ private fun FormTransaksiDialog(
                         enabled = !isSubmitting,
                         modifier = Modifier.weight(1.5f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Secondary)
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
                     ) {
                         if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = OnPrimary)
-                        else Text(if (isEditing) "Simpan" else "Tambah Transaksi")
+                        else Text(
+                            text = if (isEditing) "Simpan" else "Tambah",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

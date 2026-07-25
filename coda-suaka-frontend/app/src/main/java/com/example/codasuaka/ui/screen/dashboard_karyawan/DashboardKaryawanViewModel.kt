@@ -2,8 +2,10 @@ package com.example.codasuaka.ui.screen.dashboard_karyawan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.remote.dto.JadwalDto
 import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.domain.repository.DashboardRepository
+import com.example.codasuaka.domain.repository.JadwalRepository
 import com.example.codasuaka.domain.repository.KaryawanRepository
 import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
@@ -77,6 +79,10 @@ data class DashboardKaryawanUiState(
     val sisaCuti: Int = 12,
     val additionalContent: List<AdditionalMenuItem> = emptyList(),
 
+    // ── Jadwal / Event Popup ──
+    val jadwalList: List<JadwalDto> = emptyList(),
+    val showJadwalDialog: Boolean = false,
+
     // ── Bottom Nav ──
     val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Pengajuan, 2 = Pesan
     val hasUnreadMessages: Boolean = false
@@ -113,6 +119,7 @@ class DashboardKaryawanViewModel(
     private val karyawanRepository: KaryawanRepository,
     private val pengajuanRepository: PengajuanRepository,
     private val dashboardRepository: DashboardRepository,
+    private val jadwalRepository: JadwalRepository,
     private val chatRepository: com.example.codasuaka.domain.repository.ChatRepository
 ) : ViewModel() {
 
@@ -227,6 +234,12 @@ class DashboardKaryawanViewModel(
                     )
                 }
 
+                // ── Load Jadwal/Event ──
+                jadwalRepository.getJadwals(bulan = java.time.LocalDate.now().monthValue, tahun = java.time.LocalDate.now().year)
+                    .onSuccess { jadwals ->
+                        _uiState.update { it.copy(jadwalList = jadwals) }
+                    }
+
                 _uiState.value = _uiState.value.copy(isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -315,6 +328,12 @@ class DashboardKaryawanViewModel(
                 isProcessingAbsensi.set(false)
             }
         }
+    }
+
+    // ─── Dialog Jadwal ────────────────────────────────────────
+
+    fun toggleJadwalDialog(show: Boolean) {
+        _uiState.update { it.copy(showJadwalDialog = show) }
     }
 
     // ─── Bottom Navigation ─────────────────────────────────────
