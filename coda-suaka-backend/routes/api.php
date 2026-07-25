@@ -24,6 +24,7 @@ use App\Http\Controllers\TransaksiKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanExportController;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\TemplatePenugasanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,6 +104,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Penugasan / Tugas ────────────────────────────────────
     Route::apiResource('/penugasans', PenugasanController::class);
+
+    // ─── Template Penugasan (maks 10 per instansi) ────────────
+    Route::apiResource('/template-penugasans', TemplatePenugasanController::class);
+
+    // ─── Poin Kinerja Karyawan ────────────────────────────────
+    Route::get('/karyawan/poin-kinerja', [DashboardController::class, 'poinKinerja']);
 
     // ─── Paket ─────────────────────────────────────────────────
     // Regular users: read-only. Write only via Super Admin routes below.

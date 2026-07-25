@@ -251,7 +251,7 @@ fun LaporanKeuanganScreen(
                             TextButton(onClick = {
                                 datePickerState.selectedDateMillis?.let {
                                     val ld = Instant.ofEpochMilli(it)
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ZoneId.of("UTC"))
                                         .toLocalDate()
                                     // Update filter range: set start and end to the selected day
                                     viewModel.setFilterDateRange(ld.toString(), ld.toString())
@@ -1135,7 +1135,7 @@ private fun FormTransaksiDialog(
                                 TextButton(onClick = {
                                     datePickerState.selectedDateMillis?.let {
                                         val ld = Instant.ofEpochMilli(it)
-                                            .atZone(ZoneId.systemDefault())
+                                            .atZone(ZoneId.of("UTC"))
                                             .toLocalDate()
                                         onFieldChanged(null, null, null, ld.toString(), null, null)
                                     }

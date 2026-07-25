@@ -383,6 +383,8 @@ data class PenugasanDto(
     @SerializedName("divisi_id") val divisiId: Int?,
     @SerializedName("tenggat") val tenggat: String?,
     @SerializedName("status") val status: String,
+    @SerializedName("urgency") val urgency: String?,
+    @SerializedName("poin") val poin: Int?,
     @SerializedName("created_by") val createdBy: Int?,
     @SerializedName("penanggung_jawab") val penanggungJawab: KaryawanDto?,
     @SerializedName("divisi") val divisi: DivisiDto?,
@@ -656,4 +658,60 @@ data class ApprovalUserDto(
     @SerializedName("email") val email: String?,
     @SerializedName("nama_role") val namaRole: String?,
     @SerializedName("nama_outlet") val namaOutlet: String?
+)
+
+// ─── Poin Kinerja ───────────────────────────────────────────
+
+data class PoinKinerjaResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: PoinKinerjaData
+)
+
+data class PoinKinerjaData(
+    @SerializedName("total_poin") val totalPoin: Int,
+    @SerializedName("total_tugas_selesai") val totalTugasSelesai: Int,
+    @SerializedName("rata_rata_poin") val rataRataPoin: Double,
+    @SerializedName("detail_urgency") val detailUrgency: List<DetailUrgency>
+)
+
+data class DetailUrgency(
+    @SerializedName("urgency") val urgency: String,
+    @SerializedName("jumlah") val jumlah: Int,
+    @SerializedName("total_poin") val totalPoin: Int
+)
+
+// ─── Template Penugasan ─────────────────────────────────────
+
+data class TemplatePenugasanListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<TemplatePenugasanDto>
+)
+
+data class TemplatePenugasanSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: TemplatePenugasanDto
+)
+
+data class TemplatePenugasanDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("nama_template") val namaTemplate: String,
+    @SerializedName("deskripsi_template") val deskripsiTemplate: String?,
+    @SerializedName("urgency_default") val urgencyDefault: String?,
+    @SerializedName("poin_default") val poinDefault: Int?,
+    @SerializedName("instansi_id") val instansiId: Int?,
+    @SerializedName("created_by") val createdBy: Int?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class CreateTemplatePenugasanRequest(
+    @SerializedName("nama_template") val namaTemplate: String,
+    @SerializedName("deskripsi_template") val deskripsiTemplate: String?,
+    @SerializedName("urgency_default") val urgencyDefault: String?
+)
+
+data class UpdateTemplatePenugasanRequest(
+    @SerializedName("nama_template") val namaTemplate: String?,
+    @SerializedName("deskripsi_template") val deskripsiTemplate: String?,
+    @SerializedName("urgency_default") val urgencyDefault: String?
 )

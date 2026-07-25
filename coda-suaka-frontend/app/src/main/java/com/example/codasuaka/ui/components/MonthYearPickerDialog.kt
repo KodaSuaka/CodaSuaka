@@ -33,7 +33,7 @@ fun MonthYearPickerDialog(
     var selectedYear by remember { mutableStateOf(initialYear) }
     
     val currentYear = java.time.LocalDate.now().year
-    val years = (2024..currentYear + 1).toList() // Logika Progresif
+    val years = (currentYear - 5..currentYear + 1).toList()
     val months = Month.values()
 
     Dialog(onDismissRequest = onDismiss) {

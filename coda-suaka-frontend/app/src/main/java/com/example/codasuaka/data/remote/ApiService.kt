@@ -35,6 +35,9 @@ interface ApiService {
     @GET("api/karyawan/dashboard")
     suspend fun getKaryawanDashboard(): Response<KaryawanDashboardResponse>
 
+    @GET("api/karyawan/poin-kinerja")
+    suspend fun getPoinKinerja(): Response<PoinKinerjaResponse>
+
     // ─── Instansi ─────────────────────────────────────────────
 
     @GET("api/instansi")
@@ -220,6 +223,26 @@ interface ApiService {
 
     @DELETE("api/penugasans/{id}")
     suspend fun deletePenugasan(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    // ─── Template Penugasan (maks 10 per instansi) ─────────────
+
+    @GET("api/template-penugasans")
+    suspend fun getTemplatePenugasans(): Response<TemplatePenugasanListResponse>
+
+    @GET("api/template-penugasans/{id}")
+    suspend fun getTemplatePenugasan(@Path("id") id: Int): Response<TemplatePenugasanSingleResponse>
+
+    @POST("api/template-penugasans")
+    suspend fun createTemplatePenugasan(@Body request: CreateTemplatePenugasanRequest): Response<TemplatePenugasanSingleResponse>
+
+    @PUT("api/template-penugasans/{id}")
+    suspend fun updateTemplatePenugasan(
+        @Path("id") id: Int,
+        @Body request: UpdateTemplatePenugasanRequest
+    ): Response<TemplatePenugasanSingleResponse>
+
+    @DELETE("api/template-penugasans/{id}")
+    suspend fun deleteTemplatePenugasan(@Path("id") id: Int): Response<ApiStatusResponse>
 
     // ─── Chat / Kontak ────────────────────────────────────────
 

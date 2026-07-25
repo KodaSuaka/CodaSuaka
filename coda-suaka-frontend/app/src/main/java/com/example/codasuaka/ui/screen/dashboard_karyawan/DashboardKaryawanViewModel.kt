@@ -12,7 +12,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Status absensi (checkin / checkout).
@@ -115,6 +117,9 @@ class DashboardKaryawanViewModel(
 
     private var unreadCheckJob: Job? = null
 
+    /** Guard anti-spam: mencegah multiple API calls dari rapid taps */
+    private val isProcessingAbsensi = AtomicBoolean(false)
+
     init {
         loadDashboardData()
         startUnreadMessagesPolling()
@@ -134,6 +139,7 @@ class DashboardKaryawanViewModel(
                 val tugasResult = penugasanRepository.getPenugasans(status = "belum,proses")
                 val pengajuanResult = pengajuanRepository.getPengajuans()
                 val dashboardResult = dashboardRepository.getKaryawanDashboard()
+                val poinResult = dashboardRepository.getPoinKinerja()
 
                 karyawanResult.onSuccess { karyawan ->
                     _uiState.value = _uiState.value.copy(
@@ -141,10 +147,19 @@ class DashboardKaryawanViewModel(
                             id = karyawan.id,
                             nama = karyawan.namaLengkap,
                             jabatan = karyawan.user?.role?.namaRole ?: "Staff",
-                            poinPerforma = 0,
+                            poinPerforma = _uiState.value.employeeInfo.poinPerforma,
                             fotoUrl = karyawan.fotoProfil
                         ),
-                        sisaCuti = karyawan.sisaCuti ?: 12
+                        sisaCuti = karyawan.sisaCuti ?: 0
+                    )
+                }
+
+                poinResult.onSuccess { poinData ->
+                    _uiState.value = _uiState.value.copy(
+                        employeeInfo = _uiState.value.employeeInfo.copy(
+                            poinPerforma = poinData.totalPoin
+                        ),
+                        poinKinerja = poinData.totalPoin
                     )
                 }
 
@@ -220,46 +235,75 @@ class DashboardKaryawanViewModel(
      * Melakukan checkin atau checkout via API.
      */
     fun toggleAbsensi() {
+        // Guard anti-spam: tolak jika sudah ada proses berjalan
+        if (!isProcessingAbsensi.compareAndSet(false, true)) return
+
         viewModelScope.launch {
             val current = _uiState.value.absensiStatus
-            if (current == AbsensiStatus.COMPLETED) return@launch
-            
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            if (current == AbsensiStatus.COMPLETED) {
+                isProcessingAbsensi.set(false)
+                return@launch
+            }
 
-            if (current == AbsensiStatus.CHECKED_OUT) {
-                // Checkin
-                presensiRepository.checkin()
-                    .onSuccess { presensi ->
-                        _uiState.value = _uiState.value.copy(
-                            absensiStatus = AbsensiStatus.CHECKED_IN,
-                            absensiTime = presensi.jamCheckin?.let { "$it WIB" },
-                            isLoading = false
-                        )
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            try {
+                when (current) {
+                    AbsensiStatus.CHECKED_OUT -> {
+                        // Checkin
+                        presensiRepository.checkin()
+                            .onSuccess { presensi ->
+                                _uiState.update {
+                                    it.copy(
+                                        absensiStatus = AbsensiStatus.CHECKED_IN,
+                                        absensiTime = presensi.jamCheckin,
+                                        isLoading = false
+                                    )
+                                }
+                            }
+                            .onFailure { error ->
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        errorMessage = error.message ?: "Gagal melakukan check-in"
+                                    )
+                                }
+                            }
                     }
-                    .onFailure { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = error.message
-                        )
+                    AbsensiStatus.CHECKED_IN -> {
+                        // Checkout
+                        presensiRepository.checkout()
+                            .onSuccess { presensi ->
+                                val checkinTime = presensi.jamCheckin ?: "-"
+                                val checkoutTime = presensi.jamCheckout ?: "-"
+                                _uiState.update {
+                                    it.copy(
+                                        absensiStatus = AbsensiStatus.COMPLETED,
+                                        absensiTime = "$checkinTime - $checkoutTime",
+                                        isLoading = false
+                                    )
+                                }
+                            }
+                            .onFailure { error ->
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        errorMessage = error.message ?: "Gagal melakukan check-out"
+                                    )
+                                }
+                            }
                     }
-            } else if (current == AbsensiStatus.CHECKED_IN) {
-                // Checkout
-                presensiRepository.checkout()
-                    .onSuccess { presensi ->
-                        val checkinTime = presensi.jamCheckin ?: "-"
-                        val checkoutTime = presensi.jamCheckout ?: "-"
-                        _uiState.value = _uiState.value.copy(
-                            absensiStatus = AbsensiStatus.COMPLETED,
-                            absensiTime = "$checkinTime - $checkoutTime",
-                            isLoading = false
-                        )
-                    }
-                    .onFailure { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = error.message
-                        )
-                    }
+                    else -> { /* COMPLETED - no-op */ }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Terjadi kesalahan tidak terduga"
+                    )
+                }
+            } finally {
+                isProcessingAbsensi.set(false)
             }
         }
     }

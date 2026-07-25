@@ -289,7 +289,7 @@ private fun DatePickerField(
             try {
                 val parts = selectedDate.split("-")
                 val ld = LocalDate.of(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
-                ld.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                ld.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
             } catch (_: Exception) {
                 null
             }
@@ -331,7 +331,7 @@ private fun DatePickerField(
                         onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
                                 val ld = java.time.Instant.ofEpochMilli(millis)
-                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .atZone(java.time.ZoneId.of("UTC"))
                                     .toLocalDate()
                                 onDateSelected(ld.toString())
                             }

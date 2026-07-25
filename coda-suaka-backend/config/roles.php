@@ -55,6 +55,23 @@ return [
             'view:laporan',
         ],
 
+        'Manager' => [
+            'view:presensi',
+            'manage:presensi',
+            'view:pengajuan',
+            'manage:pengajuan',
+            'view:divisi',
+            'manage:divisi',
+            'view:penugasan',
+            'manage:penugasan',
+            'view:jadwal',
+            'manage:jadwal',
+            'view:karyawan',
+            'manage:karyawan',
+            // NOTE: Manager TIDAK punya akses keuangan (view:keuangan, manage:keuangan)
+            // Khusus untuk mengelola karyawan saja
+        ],
+
         'Staff' => [
             'view:presensi',
             'view:penugasan',

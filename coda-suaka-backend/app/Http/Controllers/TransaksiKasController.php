@@ -33,8 +33,17 @@ class TransaksiKasController extends Controller
     {
         $user = $request->user();
 
-        $query = TransaksiKas::with(['kategoriTransaksi', 'outlet', 'createdByUser'])
-            ->where('instansi_id', $user->instansi_id);
+        // Select kolom yang dibutuhkan + eager loading relasi
+        $query = TransaksiKas::with([
+            'kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori', 'tipe']),
+            'outlet' => fn($q) => $q->select(['id', 'nama_outlet']),
+            'createdByUser' => fn($q) => $q->select(['id', 'name']),
+        ])->select([
+            'id', 'instansi_id', 'tanggal', 'tipe', 'nominal',
+            'kategori_transaksi_id', 'outlet_id', 'metode_pembayaran',
+            'keterangan', 'status_approval', 'created_by',
+            'created_at', 'updated_at',
+        ])->where('instansi_id', $user->instansi_id);
 
         // Filter by outlet
         if ($request->has('outlet_id')) {
@@ -252,7 +261,10 @@ class TransaksiKasController extends Controller
 
         $user = $request->user();
 
-        $query = TransaksiKas::with('kategoriTransaksi')
+        $query = TransaksiKas::with([
+                'kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori', 'termasuk_hpp']),
+            ])
+            ->select(['id', 'tipe', 'nominal', 'kategori_transaksi_id', 'tanggal'])
             ->where('instansi_id', $user->instansi_id);
 
         // Filter by outlet

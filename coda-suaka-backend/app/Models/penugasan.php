@@ -15,6 +15,8 @@ class penugasan extends Model
         'divisi_id',
         'tenggat',
         'status',
+        'urgency',
+        'poin',
         'created_by',
     ];
 
@@ -22,7 +24,22 @@ class penugasan extends Model
     {
         return [
             'tenggat' => 'date',
+            'poin' => 'integer',
         ];
+    }
+
+    /**
+     * Mapping urgency ke poin yang diperoleh saat tugas selesai.
+     * urgent = 30, sedang = 20, rendah = 10.
+     */
+    public static function getPoinForUrgency(string $urgency): int
+    {
+        return match ($urgency) {
+            'urgent' => 30,
+            'sedang' => 20,
+            'rendah' => 10,
+            default => 0,
+        };
     }
 
     protected static function booted(): void

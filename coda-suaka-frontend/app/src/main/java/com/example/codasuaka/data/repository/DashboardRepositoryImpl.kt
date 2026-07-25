@@ -4,6 +4,7 @@ import com.example.codasuaka.data.remote.ApiService
 import com.example.codasuaka.data.remote.dto.DashboardData
 import com.example.codasuaka.data.remote.dto.KaryawanDashboardData
 import com.example.codasuaka.data.remote.dto.OmsetData
+import com.example.codasuaka.data.remote.dto.PoinKinerjaData
 import com.example.codasuaka.domain.repository.DashboardRepository
 
 class DashboardRepositoryImpl(
@@ -34,6 +35,15 @@ class DashboardRepositoryImpl(
             response.body()?.data ?: throw Exception("Data omset kosong")
         } else {
             throw Exception("Gagal memuat omset: ${response.code()}")
+        }
+    }
+
+    override suspend fun getPoinKinerja(): Result<PoinKinerjaData> = runCatching {
+        val response = apiService.getPoinKinerja()
+        if (response.isSuccessful) {
+            response.body()?.data ?: throw Exception("Data poin kinerja kosong")
+        } else {
+            throw Exception("Gagal memuat poin kinerja: ${response.code()}")
         }
     }
 }

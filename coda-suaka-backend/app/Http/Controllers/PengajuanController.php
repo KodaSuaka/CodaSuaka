@@ -23,7 +23,16 @@ class PengajuanController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = pengajuan::with(['user.profilKaryawan', 'penyetuju.profilKaryawan']);
+
+        // Select kolom yang dibutuhkan + eager loading relasi
+        $query = pengajuan::with([
+            'user' => fn($q) => $q->select(['id', 'name', 'instansi_id']),
+            'user.profilKaryawan' => fn($q) => $q->select(['id', 'user_id', 'nama_lengkap']),
+        ])->select([
+            'id', 'user_id', 'jenis', 'tanggal_mulai', 'tanggal_selesai',
+            'keterangan', 'status', 'disetujui_oleh', 'tanggal_disetujui',
+            'alasan_penolakan', 'created_at',
+        ]);
 
         // Owner bisa lihat semua pengajuan di instansinya, karyawan hanya punya sendiri
         if ($user->role?->nama_role !== 'Owner') {
@@ -45,11 +54,25 @@ class PengajuanController extends Controller
     {
         $user = $request->user();
 
-        // Jika cuti tahunan, cek sisa cuti
+        // Jika cuti tahunan, hitung durasi hari kerja dan bandingkan dengan sisa cuti
         if ($request->jenis === 'cuti_tahunan') {
             $karyawan = $user->profilKaryawan;
-            if ($karyawan && $karyawan->sisa_cuti <= 0) {
+            if (!$karyawan || $karyawan->sisa_cuti <= 0) {
                 return $this->error('Sisa cuti Anda habis', 400);
+            }
+
+            // Hitung hari kerja (exclude weekend) — sama dengan logika di approve()
+            $mulai = \Carbon\Carbon::parse($request->tanggal_mulai);
+            $selesai = \Carbon\Carbon::parse($request->tanggal_selesai);
+            $hariCuti = $mulai->diffInDaysFiltered(function ($date) {
+                return !$date->isSaturday() && !$date->isSunday();
+            }, $selesai) + 1;
+
+            if ($hariCuti > $karyawan->sisa_cuti) {
+                return $this->error(
+                    "Durasi cuti {$hariCuti} hari melebihi sisa cuti Anda ({$karyawan->sisa_cuti} hari)",
+                    400
+                );
             }
         }
 
@@ -106,6 +129,21 @@ class PengajuanController extends Controller
             $karyawan = $pengajuan->user->profilKaryawan;
             if (!$karyawan || $karyawan->sisa_cuti <= 0) {
                 return $this->error('Sisa cuti karyawan habis, tidak dapat menyetujui', 400);
+            }
+
+            // Hitung hari kerja (exclude weekend) dan validasi vs sisa cuti
+            $mulai = \Carbon\Carbon::parse($pengajuan->tanggal_mulai);
+            $selesai = \Carbon\Carbon::parse($pengajuan->tanggal_selesai);
+            $hariCuti = $mulai->diffInDaysFiltered(function ($date) {
+                return !$date->isSaturday() && !$date->isSunday();
+            }, $selesai) + 1;
+
+            if ($hariCuti > $karyawan->sisa_cuti) {
+                return $this->error(
+                    "Durasi cuti {$hariCuti} hari melebihi sisa cuti karyawan ({$karyawan->sisa_cuti} hari). " .
+                    "Silakan setujui sebagian atau tolak pengajuan ini.",
+                    400
+                );
             }
         }
 

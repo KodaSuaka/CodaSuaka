@@ -96,10 +96,18 @@ class ApprovalService
     public function getPendingApprovals(User $user, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         return ApprovalLog::with([
-                'transaksiKas.kategoriTransaksi',
-                'transaksiKas.outlet',
-                'transaksiKas.createdByUser',
-                'pengaju',
+                'transaksiKas' => fn($q) => $q->select([
+                    'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
+                    'keterangan', 'status_approval', 'created_by', 'outlet_id',
+                ]),
+                'transaksiKas.kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori']),
+                'transaksiKas.outlet' => fn($q) => $q->select(['id', 'nama_outlet']),
+                'transaksiKas.createdByUser' => fn($q) => $q->select(['id', 'name']),
+                'pengaju' => fn($q) => $q->select(['id', 'name']),
+            ])
+            ->select([
+                'id', 'transaksi_kas_id', 'diajukan_oleh', 'disetujui_oleh',
+                'status', 'catatan', 'tanggal_diajukan', 'created_at',
             ])
             ->whereHas('transaksiKas', function ($q) use ($user, $filters) {
                 $q->where('instansi_id', $user->instansi_id);
@@ -129,11 +137,20 @@ class ApprovalService
     public function getRiwayatApproval(User $user, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $query = ApprovalLog::with([
-                'transaksiKas.kategoriTransaksi',
-                'transaksiKas.outlet',
-                'transaksiKas.createdByUser',
-                'pengaju',
-                'pemeriksa',
+                'transaksiKas' => fn($q) => $q->select([
+                    'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
+                    'keterangan', 'status_approval', 'created_by', 'outlet_id',
+                ]),
+                'transaksiKas.kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori']),
+                'transaksiKas.outlet' => fn($q) => $q->select(['id', 'nama_outlet']),
+                'transaksiKas.createdByUser' => fn($q) => $q->select(['id', 'name']),
+                'pengaju' => fn($q) => $q->select(['id', 'name']),
+                'pemeriksa' => fn($q) => $q->select(['id', 'name']),
+            ])
+            ->select([
+                'id', 'transaksi_kas_id', 'diajukan_oleh', 'disetujui_oleh',
+                'status', 'catatan', 'tanggal_diajukan', 'tanggal_diproses',
+                'created_at',
             ])
             ->whereHas('transaksiKas', function ($q) use ($user, $filters) {
                 $q->where('instansi_id', $user->instansi_id);

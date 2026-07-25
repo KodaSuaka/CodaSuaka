@@ -27,8 +27,9 @@ class ChatController extends Controller
         $users = User::where('instansi_id', $instansiId)
             ->where('id', '!=', $user->id)
             ->with(['role', 'profilKaryawan'])
-            ->withCount(['pesanDiterima as unread_count' => function ($q) use ($user) {
-                $q->where('pengirim_id', $user->id)->where('is_read', false);
+            // Hitung pesan dari kontak ke user yang belum dibaca (badge unread)
+            ->withCount(['pesanDikirim as unread_count' => function ($q) use ($user) {
+                $q->where('penerima_id', $user->id)->where('is_read', false);
             }])
             ->get();
 
@@ -64,15 +65,18 @@ class ChatController extends Controller
                 'foto_profil' => $kontak->profilKaryawan ? $kontak->profilKaryawan->foto_profil : null,
                 'unread_count' => (int) $kontak->unread_count,
                 'last_message' => $lastMessage ? $lastMessage->pesan : null,
-                'last_message_time' => $lastMessage ? $lastMessage->created_at->diffForHumans() : null,
+                // Timestamp mentah untuk sorting (bukan string diffForHumans)
+                'last_message_at' => $lastMessage?->created_at?->toDateTimeString(),
+                // Diff for humans untuk tampilan
+                'last_message_time' => $lastMessage?->created_at?->diffForHumans(),
             ];
         });
 
-        // Kelompokkan berdasarkan role
+        // Kelompokkan berdasarkan role — sort by timestamp mentah (bukan string diffForHumans)
         $grouped = $contacts->groupBy('role')->map(function ($items, $role) {
             return [
                 'role' => $role,
-                'contacts' => $items->sortByDesc('last_message_time')->values()->toArray(),
+                'contacts' => $items->sortByDesc('last_message_at')->values()->toArray(),
             ];
         })->values();
 

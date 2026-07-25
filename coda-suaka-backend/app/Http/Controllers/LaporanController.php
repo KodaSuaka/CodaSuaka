@@ -40,9 +40,13 @@ class LaporanController extends Controller
             )
             ->value('saldo') ?? 0;
 
-        // Query transaksi dalam periode
-        $transaksiQuery = TransaksiKas::with('kategoriTransaksi')
-            ->where('instansi_id', $user->instansi_id)
+        // Query transaksi dalam periode — select kolom yang dibutuhkan
+        $transaksiQuery = TransaksiKas::with([
+            'kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori']),
+        ])->select([
+            'id', 'tanggal', 'tipe', 'nominal', 'kategori_transaksi_id',
+            'keterangan', 'metode_pembayaran',
+        ])->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id));
 

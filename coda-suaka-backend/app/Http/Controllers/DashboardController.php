@@ -110,11 +110,12 @@ class DashboardController extends Controller
             ->where('tanggal', $today)
             ->first();
 
-        // Tugas milik karyawan ini
+        // Tugas milik karyawan ini — select kolom yang dibutuhkan
         $tugas = [];
         if ($karyawan) {
             $tugas = penugasan::where('penanggung_jawab_id', $karyawan->id)
                 ->where('status', '!=', 'selesai')
+                ->select(['id', 'judul', 'tenggat', 'status', 'urgency'])
                 ->orderBy('tenggat', 'asc')
                 ->limit(5)
                 ->get();
@@ -165,6 +166,66 @@ class DashboardController extends Controller
             'end_date' => $endDate,
             'total_omset' => (float) $totalOmset,
             'message' => null,
+        ]);
+    }
+
+    /**
+     * GET /api/karyawan/poin-kinerja
+     * Total poin kinerja karyawan dari tugas yang sudah selesai.
+     * Poin dihitung berdasarkan urgency: urgent=30, sedang=20, rendah=10.
+     */
+    public function poinKinerja(Request $request)
+    {
+        $user = $request->user();
+        $karyawan = $user->profilKaryawan;
+
+        if (!$karyawan) {
+            return $this->success([
+                'total_poin' => 0,
+                'total_tugas_selesai' => 0,
+                'rata_rata_poin' => 0.0,
+                'detail_urgency' => [
+                    'urgent' => ['jumlah' => 0, 'poin' => 0],
+                    'sedang' => ['jumlah' => 0, 'poin' => 0],
+                    'rendah' => ['jumlah' => 0, 'poin' => 0],
+                ],
+            ]);
+        }
+
+        // Ambil semua tugas selesai untuk karyawan ini
+        // Hanya select kolom yang dibutuhkan untuk performa optimal
+        $tugasSelesai = \App\Models\penugasan::where('penanggung_jawab_id', $karyawan->id)
+            ->where('status', 'selesai')
+            ->select(['urgency', 'poin'])
+            ->get();
+
+        $totalPoin = $tugasSelesai->sum('poin');
+        $totalSelesai = $tugasSelesai->count();
+        $rataRata = $totalSelesai > 0 ? round($totalPoin / $totalSelesai, 1) : 0.0;
+
+        // Detail per urgency — gunakan groupBy untuk efisiensi
+        $detailByUrgency = $tugasSelesai->groupBy('urgency');
+
+        $detailUrgency = [
+            'urgent' => [
+                'jumlah' => isset($detailByUrgency['urgent']) ? $detailByUrgency['urgent']->count() : 0,
+                'poin' => isset($detailByUrgency['urgent']) ? $detailByUrgency['urgent']->sum('poin') : 0,
+            ],
+            'sedang' => [
+                'jumlah' => isset($detailByUrgency['sedang']) ? $detailByUrgency['sedang']->count() : 0,
+                'poin' => isset($detailByUrgency['sedang']) ? $detailByUrgency['sedang']->sum('poin') : 0,
+            ],
+            'rendah' => [
+                'jumlah' => isset($detailByUrgency['rendah']) ? $detailByUrgency['rendah']->count() : 0,
+                'poin' => isset($detailByUrgency['rendah']) ? $detailByUrgency['rendah']->sum('poin') : 0,
+            ],
+        ];
+
+        return $this->success([
+            'total_poin' => (int) $totalPoin,
+            'total_tugas_selesai' => (int) $totalSelesai,
+            'rata_rata_poin' => (float) $rataRata,
+            'detail_urgency' => $detailUrgency,
         ]);
     }
 }

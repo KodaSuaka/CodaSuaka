@@ -28,6 +28,19 @@ return [
         /*
         | Role yang bisa menjadi pemeriksa (approver).
         */
-        'role_pemeriksa' => ['Owner', 'Manajemen'],
+        'role_pemeriksa' => ['Owner', 'Manajemen', 'Manager'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cuti Tahunan
+    |--------------------------------------------------------------------------
+    */
+    'cuti' => [
+        /*
+        | Kuota cuti tahunan default untuk setiap karyawan baru (hari).
+        | Di-reset otomatis di awal tahun jika menggunakan scheduler.
+        */
+        'kuota_tahunan_default' => (int) env('CUTI_KUOTA_TAHUNAN_DEFAULT', 12),
     ],
 ];

@@ -29,6 +29,7 @@ class StorepenugasanRequest extends FormRequest
         return [
             'judul' => 'required|string|max:200',
             'deskripsi' => 'nullable|string',
+            'urgency' => 'nullable|in:urgent,sedang,rendah',
             'penanggung_jawab_id' => [
                 'required',
                 function ($attribute, $value, $fail) use ($user) {

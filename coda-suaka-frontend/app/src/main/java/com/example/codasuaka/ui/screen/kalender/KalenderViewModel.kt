@@ -91,10 +91,15 @@ class KalenderViewModel(
 
     /**
      * Mengubah tahun secara langsung.
+     * Validasi: tahun harus antara 2020-2099 untuk mencegah input tidak valid.
      */
     fun selectYear(year: Int) {
+        val clampedYear = year.coerceIn(2020, 2099)
+        val currentMonth = _uiState.value.currentMonth
+        // Hanya reload jika tahun benar-benar berubah
+        if (clampedYear == currentMonth.year) return
         _uiState.value = _uiState.value.copy(
-            currentMonth = _uiState.value.currentMonth.withYear(year)
+            currentMonth = currentMonth.withYear(clampedYear)
         )
         loadEvents()
     }

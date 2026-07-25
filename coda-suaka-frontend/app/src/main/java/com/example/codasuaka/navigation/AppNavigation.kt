@@ -100,7 +100,7 @@ fun AppNavigation(navController: NavHostController) {
                     // Functional roles (Keuangan, Manajemen, Staff) dan Karyawan
                     // semua masuk ke DASHBOARD_KARYAWAN
                     // Owner masuk ke DASHBOARD
-                    val functionalRoles = listOf("Keuangan", "Manajemen", "Staff", "Karyawan")
+                    val functionalRoles = listOf("Keuangan", "Manajemen", "Staff", "Karyawan", "Manager")
                     val destination = if (role in functionalRoles) {
                         Routes.DASHBOARD_KARYAWAN
                     } else {

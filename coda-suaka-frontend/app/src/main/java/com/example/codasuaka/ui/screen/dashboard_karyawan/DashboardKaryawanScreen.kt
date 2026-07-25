@@ -56,7 +56,7 @@ fun DashboardKaryawanScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { /* notifikasi */ }) {
+                    IconButton(onClick = { onNavigateTo("chat_list") }) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifikasi",
@@ -136,6 +136,7 @@ fun DashboardKaryawanScreen(
                 absensiTime = uiState.absensiTime,
                 specialEvent = uiState.specialEvent,
                 showSpecialEvent = uiState.showSpecialEvent,
+                isLoading = uiState.isLoading,
                 onCheckClick = { viewModel.toggleAbsensi() },
                 onRiwayatPresensiClick = { onNavigateTo("riwayat_kehadiran") },
                 onJadwalShiftClick = { onNavigateTo("kalender") }
@@ -388,6 +389,7 @@ private fun SectionPresensiToday(
     absensiTime: String?,
     specialEvent: String?,
     showSpecialEvent: Boolean,
+    isLoading: Boolean,
     onCheckClick: () -> Unit,
     onRiwayatPresensiClick: () -> Unit,
     onJadwalShiftClick: () -> Unit
@@ -402,8 +404,8 @@ private fun SectionPresensiToday(
     }
 
     val detailText = when (absensiStatus) {
-        AbsensiStatus.CHECKED_IN -> "Masuk pukul ${absensiTime ?: "-"} WIB"
-        AbsensiStatus.COMPLETED -> "Jam Kerja: $absensiTime WIB"
+        AbsensiStatus.CHECKED_IN -> "Masuk pukul ${absensiTime ?: "-"}"
+        AbsensiStatus.COMPLETED -> "Jam Kerja: $absensiTime"
         else -> "Belum ada catatan"
     }
 
@@ -458,8 +460,18 @@ private fun SectionPresensiToday(
                         tint = Primary,
                         modifier = Modifier.size(18.dp)
                     )
+                    val today = java.time.LocalDate.now()
+                    val indonesianMonths = listOf(
+                        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                    )
+                    val indonesianDays = listOf(
+                        "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"
+                    )
+                    val dayName = indonesianDays[today.dayOfWeek.value - 1]
+                    val monthName = indonesianMonths[today.monthValue - 1]
                     Text(
-                        text = "Senin, 7 Juli 2026",
+                        text = "$dayName, ${today.dayOfMonth} $monthName ${today.year}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Primary
@@ -492,13 +504,14 @@ private fun SectionPresensiToday(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Shift Pagi",
+                            text = "Hari Ini",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = OnSurface
                         )
                         Text(
-                            text = "07:00 - 15:00 WIB",
+                            text = today.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale("id", "ID"))
+                                .replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.labelSmall,
                             color = OnSurfaceVariant
                         )
@@ -549,7 +562,7 @@ private fun SectionPresensiToday(
                     }
                     Button(
                         onClick = onCheckClick,
-                        enabled = !isCompleted,
+                        enabled = !isCompleted && !isLoading,
                         shape = RoundedCornerShape(99.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = buttonColor,

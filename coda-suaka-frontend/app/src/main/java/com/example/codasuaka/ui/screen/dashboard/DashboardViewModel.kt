@@ -52,6 +52,7 @@ class DashboardViewModel(
     init {
         loadUserData()
         loadDashboardData()
+        loadOmsetForCurrentMonth()
         startUnreadMessagesPolling()
     }
 
@@ -98,6 +99,17 @@ class DashboardViewModel(
                     )
                 }
         }
+    }
+
+    /**
+     * Memuat data omset untuk bulan berjalan secara otomatis saat dashboard dibuka.
+     * Jika ada data keuangan, tampilkan; jika tidak, biarkan kosong (0.0).
+     */
+    private fun loadOmsetForCurrentMonth() {
+        val now = java.time.LocalDate.now()
+        val startDate = now.withDayOfMonth(1).toString()
+        val endDate = now.toString()
+        loadOmset(startDate, endDate)
     }
 
     /**

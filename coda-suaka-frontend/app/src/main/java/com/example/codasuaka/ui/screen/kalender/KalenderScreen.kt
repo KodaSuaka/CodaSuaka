@@ -618,7 +618,7 @@ private fun DialogTambahEvent(
                                 TextButton(onClick = {
                                     datePickerState.selectedDateMillis?.let {
                                         val ld = java.time.Instant.ofEpochMilli(it)
-                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .atZone(java.time.ZoneId.of("UTC"))
                                             .toLocalDate()
                                         onTanggalChange(ld.toString())
                                     }

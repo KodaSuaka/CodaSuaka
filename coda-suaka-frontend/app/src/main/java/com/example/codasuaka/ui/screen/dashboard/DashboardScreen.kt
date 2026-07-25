@@ -96,7 +96,7 @@ fun DashboardScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { /* notifikasi */ }) {
+                        IconButton(onClick = { onNavigateTo("chat_list") }) {
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Notifikasi",
@@ -254,7 +254,7 @@ private fun SectionOmset(
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let {
                             val formattedDate = Instant.ofEpochMilli(it)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                                 .format(DateTimeFormatter.ISO_LOCAL_DATE)
 

@@ -24,7 +24,14 @@ class AttandenceController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = attandence::with('user.profilKaryawan');
+
+        // Select kolom yang dibutuhkan + eager loading relasi
+        $query = attandence::with([
+            'user' => fn($q) => $q->select(['id', 'name', 'instansi_id']),
+        ])->select([
+            'id', 'user_id', 'tanggal', 'jam_checkin', 'jam_checkout',
+            'status', 'keterangan', 'lokasi_checkin',
+        ]);
 
         // Owner/Manajemen (view:presensi) bisa lihat semua, karyawan hanya lihat sendiri
         $canViewAll = app(\App\Services\PermissionService::class)->userHasPermission($user, 'view:presensi');
@@ -56,32 +63,40 @@ class AttandenceController extends Controller
         $user = $request->user();
         $today = now()->toDateString();
 
-        // Cek apakah sudah checkin hari ini
-        $existing = attandence::where('user_id', $user->id)
-            ->where('tanggal', $today)
-            ->first();
+        try {
+            // Gunakan transaksi DB + lockForUpdate agar atomic (cegah race condition)
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $today, $request) {
+                $existing = attandence::where('user_id', $user->id)
+                    ->where('tanggal', $today)
+                    ->lockForUpdate()
+                    ->first();
 
-        if ($existing && $existing->jam_checkin) {
+                if ($existing && $existing->jam_checkin) {
+                    return $this->error('Anda sudah melakukan checkin hari ini', 409);
+                }
+
+                if (!$existing) {
+                    $existing = attandence::create([
+                        'user_id' => $user->id,
+                        'tanggal' => $today,
+                        'jam_checkin' => now()->toTimeString(),
+                        'status' => 'hadir',
+                        'lokasi_checkin' => $request->lokasi ?? null,
+                    ]);
+                } else {
+                    $existing->update([
+                        'jam_checkin' => now()->toTimeString(),
+                        'status' => 'hadir',
+                        'lokasi_checkin' => $request->lokasi ?? $existing->lokasi_checkin,
+                    ]);
+                }
+
+                return $this->success($existing, 'Checkin berhasil');
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Tangkap race condition jika unique constraint violated
             return $this->error('Anda sudah melakukan checkin hari ini', 409);
         }
-
-        if (!$existing) {
-            $existing = attandence::create([
-                'user_id' => $user->id,
-                'tanggal' => $today,
-                'jam_checkin' => now()->toTimeString(),
-                'status' => 'hadir',
-                'lokasi_checkin' => $request->lokasi ?? null,
-            ]);
-        } else {
-            $existing->update([
-                'jam_checkin' => now()->toTimeString(),
-                'status' => 'hadir',
-                'lokasi_checkin' => $request->lokasi ?? $existing->lokasi_checkin,
-            ]);
-        }
-
-        return $this->success($existing, 'Checkin berhasil');
     }
 
     /**
@@ -93,21 +108,28 @@ class AttandenceController extends Controller
         $user = $request->user();
         $today = now()->toDateString();
 
-        $presensi = attandence::where('user_id', $user->id)
-            ->where('tanggal', $today)
-            ->first();
+        try {
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $today) {
+                $presensi = attandence::where('user_id', $user->id)
+                    ->where('tanggal', $today)
+                    ->lockForUpdate()
+                    ->first();
 
-        if (!$presensi || !$presensi->jam_checkin) {
-            return $this->error('Anda belum melakukan checkin hari ini', 400);
+                if (!$presensi || !$presensi->jam_checkin) {
+                    return $this->error('Anda belum melakukan checkin hari ini', 400);
+                }
+
+                if ($presensi->jam_checkout) {
+                    return $this->error('Anda sudah melakukan checkout', 409);
+                }
+
+                $presensi->update(['jam_checkout' => now()->toTimeString()]);
+
+                return $this->success($presensi, 'Checkout berhasil');
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            return $this->error('Terjadi kesalahan, silakan coba lagi', 500);
         }
-
-        if ($presensi->jam_checkout) {
-            return $this->error('Anda sudah melakukan checkout', 409);
-        }
-
-        $presensi->update(['jam_checkout' => now()->toTimeString()]);
-
-        return $this->success($presensi, 'Checkout berhasil');
     }
 
     /**
