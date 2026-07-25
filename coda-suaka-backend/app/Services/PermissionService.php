@@ -108,13 +108,14 @@ class PermissionService
                 'route' => 'laporan_keuangan',
                 'permission' => 'view:keuangan',
             ],
-            [
-                'id' => 'approval_keuangan',
-                'label' => 'Approval Keuangan',
-                'icon' => 'HowToReg',
-                'route' => 'approval_keuangan',
-                'permission' => 'manage:keuangan',
-            ],
+            // [DINONAKTIFKAN SEMENTARA] Approval Keuangan — fitur advance, belum diaktifkan
+            // [
+            //     'id' => 'approval_keuangan',
+            //     'label' => 'Approval Keuangan',
+            //     'icon' => 'HowToReg',
+            //     'route' => 'approval_keuangan',
+            //     'permission' => 'manage:keuangan',
+            // ],
             [
                 'id' => 'riwayat_absensi',
                 'label' => 'Riwayat Absensi',
@@ -136,13 +137,14 @@ class PermissionService
                 'route' => 'pengajuan',
                 'permission' => 'manage:pengajuan',
             ],
-            [
-                'id' => 'audit_log',
-                'label' => 'Audit Log',
-                'icon' => 'History',
-                'route' => 'audit_log',
-                'permission' => 'view:audit',
-            ],
+            // [DINONAKTIFKAN SEMENTARA] Audit Log — fitur advance, belum diaktifkan
+            // [
+            //     'id' => 'audit_log',
+            //     'label' => 'Audit Log',
+            //     'icon' => 'History',
+            //     'route' => 'audit_log',
+            //     'permission' => 'view:audit',
+            // ],
         ];
 
         $menuItems = array_filter($allMenuItems, function ($item) use ($permissions) {

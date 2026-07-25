@@ -26,13 +26,12 @@ Schedule::command('notification:penugasan-deadline')
     ->runInBackground()
     ->description('Kirim pengingat tenggat penugasan yang mendekati deadline');
 
-// ─── Notifikasi: Pengingat approval keuangan pending ────────────
-// Berjalan setiap 4 jam — kirim pengingat ke role Keuangan/Owner
-Schedule::command('notification:pending-approval')
-    ->everyFourHours()
-    ->withoutOverlapping()
-    ->runInBackground()
-    ->description('Kirim pengingat transaksi keuangan yang menunggu approval');
+// [DINONAKTIFKAN SEMENTARA] Approval — fitur advance, belum diaktifkan
+// Schedule::command('notification:pending-approval')
+//     ->everyFourHours()
+//     ->withoutOverlapping()
+//     ->runInBackground()
+//     ->description('Kirim pengingat transaksi keuangan yang menunggu approval');
 
 // ─── Maintenance: Cleanup expired tokens & notifikasi lama ──────
 // Berjalan setiap tengah malam — bersihkan token expired & notifikasi >30 hari

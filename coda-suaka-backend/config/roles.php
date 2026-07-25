@@ -31,12 +31,12 @@ return [
             'manage:outlets',
             'view:keuangan',
             'manage:keuangan',
-            'approve:keuangan',
+            // 'approve:keuangan',  // [DINONAKTIFKAN] fitur approval — advance
             'export:keuangan',
             'view:laporan',
             'manage:laporan',
-            'view:audit',
-            'manage:audit',
+            // 'view:audit',       // [DINONAKTIFKAN] fitur audit log — advance
+            // 'manage:audit',     // [DINONAKTIFKAN] fitur audit log — advance
         ],
 
         'Keuangan' => [
@@ -61,10 +61,10 @@ return [
             'manage:jadwal',
             'view:karyawan',
             'manage:karyawan',
-            'view:audit',
-            'manage:audit',
+            // 'view:audit',       // [DINONAKTIFKAN] fitur audit log — advance
+            // 'manage:audit',     // [DINONAKTIFKAN] fitur audit log — advance
             // NOTE: Manager TIDAK punya akses keuangan (view:keuangan, manage:keuangan)
-            // Fokus: kelola karyawan, persetujuan izin, dan audit
+            // Fokus: kelola karyawan, persetujuan izin
         ],
 
         'Staff' => [

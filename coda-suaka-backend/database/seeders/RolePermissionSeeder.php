@@ -22,6 +22,7 @@ class RolePermissionSeeder extends Seeder
             // Buat role jika belum ada, atau ambil yang sudah ada
             $role = role::firstOrCreate(['nama_role' => $roleName]);
 
+            // 1. Tambah/update permission yang ada di config
             foreach ($permissions as $permission) {
                 role_permission::updateOrInsert(
                     [
@@ -34,6 +35,12 @@ class RolePermissionSeeder extends Seeder
                     ]
                 );
             }
+
+            // 2. Hapus permission yang TIDAK ada di config lagi
+            //    (misalnya permission yang dikomentari/dihapus)
+            role_permission::where('role_id', $role->id)
+                ->whereNotIn('permission', $permissions)
+                ->delete();
         }
     }
 }
