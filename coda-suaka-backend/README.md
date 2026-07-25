@@ -350,47 +350,112 @@ php artisan permission:sync --force    # Skip konfirmasi
 ## Setup & Instalasi
 
 ### Prasyarat
-- PHP ≥ 8.4
-- Composer
-- Node.js (untuk Vite asset build)
-- SQLite atau MySQL
 
-### Instalasi
+- **PHP** ≥ 8.4
+- **Composer** (package manager PHP)
+- **Node.js** ≥ 18 + npm (untuk Vite asset build)
+- **SQLite** (default, tanpa konfigurasi tambahan) **atau** **MySQL** ≥ 8.0
+
+### Langkah Instalasi
+
+#### 1. Clone & Install Dependencies
 
 ```bash
 # Clone repository
 git clone <repo-url>
 cd coda-suaka-backend
 
-# Install dependencies
+# Install PHP dependencies
 composer install
-
-# Setup environment
-cp .env.example .env
-php artisan key:generate
-
-# Database migration
-php artisan migrate
-
-# Seed database (opsional)
-php artisan db:seed
-
-# Sync permissions
-php artisan permission:sync --force
-
-# Build assets
-npm install && npm run build
 ```
 
-### Development
+#### 2. Setup Environment (.env)
 
 ```bash
-# Jalankan semua service sekaligus (server, queue, logs, vite)
+# Copy template .env.example ke .env
+copy .env.example .env      # Windows
+# cp .env.example .env      # macOS / Linux
+
+# Generate APP_KEY otomatis
+php artisan key:generate
+```
+
+> ⚠️ **PENTING:** File `.env` berisi secrets (APP_KEY, database credentials) dan **sudah di-`.gitignore`**. Jangan pernah commit file `.env` ke repository!
+
+#### 3. Konfigurasi Database
+
+Buka file `.env` dan sesuaikan konfigurasi database:
+
+**Opsi A — SQLite (default, tanpa install tambahan):**
+
+```env
+DB_CONNECTION=sqlite
+```
+
+Buat file database SQLite:
+
+```bash
+type nul > database\database.sqlite    # Windows
+# touch database/database.sqlite       # macOS / Linux
+```
+
+**Opsi B — MySQL:**
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database_name
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
+> Ganti `your_database_name`, `your_username`, dan `your_password` dengan data database kamu. **Jangan commit file `.env` ke repository!**
+
+#### 4. Konfigurasi URL Frontend (CORS)
+
+Di file `.env`, sesuaikan `APP_URL` dan `FRONTEND_URLS`:
+
+```env
+APP_URL=http://localhost:8000
+FRONTEND_URLS=http://localhost:8000,http://10.0.2.2:8000
+```
+
+- `APP_URL` — URL backend itu sendiri
+- `FRONTEND_URLS` — URL frontend yang diizinkan akses API (Android emulator pakai `10.0.2.2` untuk mengakses localhost)
+- Untuk production, tambahkan domain frontend: `FRONTEND_URLS=https://your-domain.com`
+
+#### 5. Migration, Seed & Permissions
+
+```bash
+# Jalankan migrasi database
+php artisan migrate
+
+# Seed data awal (opsional — untuk development)
+php artisan db:seed
+
+# Sinkronisasi permission RBAC dari config/permissions.php ke database
+php artisan permission:sync --force
+```
+
+#### 6. Build Assets
+
+```bash
+npm install
+npm run build
+```
+
+#### 7. Jalankan Aplikasi
+
+```bash
+# Otomatis jalankan: server + queue + logs + vite (rekomendasi)
 composer dev
 
 # Atau manual:
 php artisan serve
 ```
+
+Aplikasi akan berjalan di `http://localhost:8000`.
 
 ### Testing
 
@@ -402,15 +467,23 @@ composer test
 
 ## Konfigurasi
 
-### Environment Variables Penting
+### Environment Variables
 
-| Variable | Deskripsi | Default |
-|----------|-----------|---------|
-| `DB_CONNECTION` | Driver database | `sqlite` |
-| `APPROVAL_ENABLED` | Aktifkan approval workflow | `true` |
-| `APPROVAL_THRESHOLD` | Threshold nominal untuk approval | `1000000` |
-| `CUTI_KUOTA_TAHUNAN_DEFAULT` | Kuota cuti default per tahun | `12` |
-| `FRONTEND_URLS` | URL frontend untuk CORS | `${APP_URL}` |
+| Variable | Deskripsi | Default | Contoh |
+|----------|-----------|---------|---------|
+| `APP_URL` | URL backend | `http://localhost` | `https://api.your-domain.com` |
+| `DB_CONNECTION` | Driver database | `sqlite` | `sqlite` atau `mysql` |
+| `DB_HOST` | Host database (MySQL) | `127.0.0.1` | `127.0.0.1` |
+| `DB_PORT` | Port database (MySQL) | `3306` | `3306` |
+| `DB_DATABASE` | Nama database | — | `codasuaka_db` |
+| `DB_USERNAME` | Username database | — | `root` |
+| `DB_PASSWORD` | Password database | — | `secret` |
+| `FRONTEND_URLS` | URL frontend untuk CORS | `${APP_URL}` | `https://your-domain.com` |
+| `APPROVAL_ENABLED` | Aktifkan approval workflow | `true` | `true` / `false` |
+| `APPROVAL_THRESHOLD` | Threshold nominal untuk approval | `1000000` | `500000` |
+| `CUTI_KUOTA_TAHUNAN_DEFAULT` | Kuota cuti default per tahun | `12` | `12` |
+
+> ⚠️ Semua values di atas **contoh saja**. Isi sesuai kebutuhan server kamu di file `.env`. **Jangan commit `.env` ke repository!**
 
 ### Konfigurasi Keuangan
 

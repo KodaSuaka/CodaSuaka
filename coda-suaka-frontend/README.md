@@ -370,22 +370,53 @@ object Routes {
 ## Setup & Instalasi
 
 ### Prasyarat
-- Android Studio Hedgehog (2023.1.1) atau lebih baru
-- JDK 11+
-- Android SDK 36
-- Device/emulator dengan Android 10+ (API 29)
 
-### Instalasi
+- **Android Studio** Hedgehog (2023.1.1) atau lebih baru
+- **JDK** 11+
+- **Android SDK** 36 (akan didownload otomatis oleh Android Studio)
+- **Device/emulator** dengan Android 10+ (API 29)
+- Backend API CodaSuaka sudah berjalan (lihat [README Backend](../coda-suaka-backend/README.md))
+
+### Langkah Instalasi
+
+#### 1. Clone & Buka di Android Studio
 
 ```bash
 # Clone repository
 git clone <repo-url>
 cd coda-suaka-frontend
-
-# Buka di Android Studio
-# Atau build via CLI:
-./gradlew assembleDebug
 ```
+
+Buka folder `coda-suaka-frontend` di Android Studio: **File → Open** → pilih folder project.
+
+#### 2. Konfigurasi Base URL API
+
+Buka file [`gradle.properties`](gradle.properties) dan tambahkan/base URL server backend:
+
+```properties
+# Untuk development (Android emulator → localhost)
+BASE_URL=http://10.0.2.2:8000/api/
+
+# Untuk produksi
+# BASE_URL=https://your-domain.com/api/
+```
+
+> **Catatan:**
+> - Android emulator menggunakan `10.0.2.2` sebagai alias untuk `localhost` di host machine
+> - Pastikan backend sudah berjalan di URL yang sesuai
+> - Base URL di [`build.gradle.kts`](app/build.gradle.kts) sudah memiliki default value, tapi bisa di-override via `gradle.properties`
+
+#### 3. Build & Run
+
+```bash
+# Build debug APK via CLI
+./gradlew assembleDebug
+
+# Install ke device/emulator
+./gradlew installDebug
+```
+
+Atau langsung dari Android Studio: klik ▶ **Run 'app'**.
 
 ### Build Variants
 
@@ -394,22 +425,13 @@ cd coda-suaka-frontend
 | `debug` | ❌ | Untuk development, logging aktif |
 | `release` | ✅ | ProGuard enabled, optimized |
 
-### Running
-
-```bash
-# Debug build
-./gradlew installDebug
-
-# Atau langsung dari Android Studio → Run 'app'
-```
-
 ### Testing
 
 ```bash
 # Unit tests
 ./gradlew test
 
-# Instrumented tests
+# Instrumented tests (memerlukan device/emulator)
 ./gradlew connectedAndroidTest
 ```
 
@@ -419,18 +441,27 @@ cd coda-suaka-frontend
 
 ### Base URL API
 
-Base URL dikonfigurasi di [`build.gradle.kts`](app/build.gradle.kts) melalui `buildConfigField`:
+Base URL dikonfigurasi di [`build.gradle.kts`](app/build.gradle.kts:20) melalui `buildConfigField`:
 
 ```kotlin
-buildConfigField("String", "BASE_URL", 
-    "\"${project.findProperty("BASE_URL") ?: "https://codasuaka.my.id/"}\"")
+buildConfigField("String", "BASE_URL",
+    "\"${project.findProperty("BASE_URL") ?: "http://10.0.2.2:8000/api/"}\"")
 ```
 
-Untuk mengubah base URL, tambahkan di file `gradle.properties`:
+Default value adalah `http://10.0.2.2:8000/api/` (untuk Android emulator). Untuk mengubah, edit file [`gradle.properties`](gradle.properties):
 
 ```properties
-BASE_URL=http://10.0.2.2:8000/  # Untuk emulator (localhost)
+# Development (emulator)
+BASE_URL=http://10.0.2.2:8000/api/
+
+# Production
+BASE_URL=https://your-domain.com/api/
 ```
+
+> ⚠️ **Jangan hardcode URL produksi di source code.** Gunakan `gradle.properties` untuk konfigurasi per environment. Untuk CI/CD, pass value via command line:
+> ```bash
+> ./gradlew assembleRelease -PBASE_URL=https://your-domain.com/api/
+> ```
 
 ### Auth Interceptor
 
