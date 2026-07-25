@@ -59,12 +59,6 @@ return new class extends Migration
         Schema::table('kategori_transaksis', function (Blueprint $table) {
             $table->index('tipe', 'idx_kategori_transaksi_tipe');
         });
-
-        // ─── transaksi_pakets ───────────────────────────────────
-        // Index untuk query transaksi paket per user
-        Schema::table('transaksi_pakets', function (Blueprint $table) {
-            $table->index('user_id', 'idx_transaksi_pakets_user_id');
-        });
     }
 
     public function down(): void
@@ -87,10 +81,6 @@ return new class extends Migration
 
         Schema::table('kategori_transaksis', function (Blueprint $table) {
             $table->dropIndex('idx_kategori_transaksi_tipe');
-        });
-
-        Schema::table('transaksi_pakets', function (Blueprint $table) {
-            $table->dropIndex('idx_transaksi_pakets_user_id');
         });
     }
 };
