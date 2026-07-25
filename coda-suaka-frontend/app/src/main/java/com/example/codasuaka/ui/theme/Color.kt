@@ -28,7 +28,14 @@ val OnSurfaceVariant = Color(0xFF718096) // Placeholder / hint text
 
 // Status
 val Error = Color(0xFFE53E3E)
+val ErrorLight = Color(0xFFFFF5F5)
 val Success = Color(0xFF38A169)
+val SuccessLight = Color(0xFFF0FFF4)
+val WarningColor = Color(0xFFDD6B20)
+val WarningBg = Color(0xFFFFFAF0)
+val InfoColor = Color(0xFF3182CE)
+val InfoBg = Color(0xFFEBF8FF)
+val Coral = Color(0xFFF56565)
 
 // Category Colors (Dashboard Menu)
 val OrangeManage = Color(0xFFED8936)

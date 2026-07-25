@@ -27,7 +27,16 @@ class KaryawanController extends Controller
     {
         $user = $request->user();
 
-        $query = karyawan::with(['user.role', 'outlet']);
+        // Exclude pemilik (Owner) dan Super Admin dari daftar karyawan
+        // karena pemilik dianggap entitas terpisah, bukan karyawan
+        $excludedRoleNames = ['Super Admin', 'Owner'];
+
+        $query = karyawan::with(['user.role', 'outlet'])
+            ->whereHas('user', function ($q) use ($excludedRoleNames) {
+                $q->whereHas('role', function ($rq) use ($excludedRoleNames) {
+                    $rq->whereNotIn('nama_role', $excludedRoleNames);
+                });
+            });
 
         if ($request->has('outlet_id')) {
             $query->where('outlet_id', $request->outlet_id);

@@ -28,6 +28,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -124,22 +125,14 @@ fun KalenderScreen(
                 }
             }
 
-            // ── Error message ──
+            // ── Error message (User-Friendly Notification) ──
             if (uiState.errorMessage != null && (uiState.dialogMode !is KalenderDialogMode.Tambah)) {
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(20.dp))
-                            Text(uiState.errorMessage ?: "", color = Error, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
                 }
             }
 

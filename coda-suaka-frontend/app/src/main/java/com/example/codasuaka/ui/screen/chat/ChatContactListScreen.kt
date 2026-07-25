@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.codasuaka.data.remote.dto.ContactDto
 import com.example.codasuaka.data.remote.dto.ContactGroupDto
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,20 +84,19 @@ fun ChatContactListScreen(
                     CircularProgressIndicator(color = Primary)
                 }
             } else if (uiState.errorMessage != null && uiState.contactGroups.isEmpty()) {
-                // ... Error UI tetap sama ...
+                // Empty state with user-friendly error + retry
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = uiState.errorMessage ?: "Terjadi kesalahan",
-                        color = Error,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "Terjadi kesalahan",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearError() }
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { viewModel.loadContacts() },
                         colors = ButtonDefaults.buttonColors(containerColor = Primary)

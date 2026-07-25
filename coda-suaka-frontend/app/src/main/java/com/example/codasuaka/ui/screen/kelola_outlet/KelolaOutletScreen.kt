@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 
 /**
@@ -107,26 +108,14 @@ fun KelolaOutletScreen(
                 }
             }
 
-            // Error message
+            // Error message (User-Friendly Notification)
             if (uiState.errorMessage != null && uiState.dialogMode !is DialogMode.Tambah) {
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(20.dp))
-                            Text(
-                                uiState.errorMessage ?: "",
-                                color = Error,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
                 }
             }
 

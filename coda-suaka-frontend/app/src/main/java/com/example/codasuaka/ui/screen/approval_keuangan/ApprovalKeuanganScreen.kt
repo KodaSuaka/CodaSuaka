@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.codasuaka.data.remote.dto.ApprovalLogDto
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.ErrorMessageMapper
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -38,7 +39,8 @@ fun ApprovalKeuanganScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
+            val friendlyMsg = ErrorMessageMapper.map(it, "approval transaksi").message
+            snackbarHostState.showSnackbar(friendlyMsg)
             viewModel.clearError()
         }
     }

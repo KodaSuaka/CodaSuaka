@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.codasuaka.ui.screen.components.CodaSuakaLogo
 import com.example.codasuaka.ui.screen.components.CustomTextField
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 
 @Composable
@@ -74,22 +75,13 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Error Message
+            // Error Message (User-Friendly Notification)
             if (uiState.errorMessage != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Error.copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = uiState.errorMessage ?: "",
-                        color = Error,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                NotificationBannerStatic(
+                    message = uiState.errorMessage ?: "",
+                    mapFromServer = true,
+                    onDismiss = { viewModel.clearError() }
+                )
                 Spacer(modifier = Modifier.height(16.dp))
             }
 

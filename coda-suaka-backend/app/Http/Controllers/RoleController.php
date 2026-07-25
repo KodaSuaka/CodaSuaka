@@ -25,7 +25,12 @@ class RoleController extends Controller
         if (!Gate::allows('manage-roles') && !app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:karyawan')) {
             return $this->success([]);
         }
-        $roles = role::orderBy('nama_role')->get();
+        // Exclude role platform-level: Super Admin & Owner
+        // Karena pemilik dianggap entitas terpisah, bukan karyawan
+        $excludedRoles = ['Super Admin', 'Owner'];
+        $roles = role::whereNotIn('nama_role', $excludedRoles)
+            ->orderBy('nama_role')
+            ->get();
         return $this->success($roles);
     }
 

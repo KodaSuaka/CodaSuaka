@@ -21,12 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
-
-// ─── Warna Bantu ──────────────────────────────────────────────
-private val InfoColor = Color(0xFF3B82F6)
-private val InfoBg = Color(0xFFDBEAFE)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,42 +103,18 @@ fun KelolaKaryawanScreen(
                 }
             }
 
-            // ── Error Message (Refined for Management) ──
+            // ── Error Message (User-Friendly Notification) ──
             if (uiState.errorMessage != null &&
                 uiState.dialogMode !is KaryawanDialogMode.Tambah &&
                 uiState.dialogMode !is KaryawanDialogMode.Edit
             ) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (uiState.errorMessage!!.contains("Catatan")) InfoBg else Error.copy(alpha = 0.1f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp, 
-                            if (uiState.errorMessage!!.contains("Catatan")) InfoColor else Error
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.errorMessage!!.contains("Catatan")) Icons.Default.Info else Icons.Default.Error,
-                                contentDescription = null,
-                                tint = if (uiState.errorMessage!!.contains("Catatan")) InfoColor else Error,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = uiState.errorMessage ?: "",
-                                color = if (uiState.errorMessage!!.contains("Catatan")) Secondary else Error,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
+                    val isError = !uiState.errorMessage!!.contains("Catatan")
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        type = if (isError) ErrorMessageMapper.NotificationType.ERROR else ErrorMessageMapper.NotificationType.INFO,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
                 }
             }
 

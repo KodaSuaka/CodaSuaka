@@ -178,15 +178,10 @@ class TransaksiKasController extends Controller
         // Audit log: updated
         $this->auditService->updated($transaksi_kas, $original, $user);
 
-        // Reset status_approval ke default setelah diupdate
-        // jika sebelumnya ditolak, dan transaksi perlu approval, ajukan lagi
-        if ($transaksi_kas->status_approval === 'ditolak') {
-            $transaksi_kas->update(['status_approval' => 'disetujui']);
-
-            if ($this->approvalService->perluApproval($transaksi_kas)) {
-                $this->approvalService->ajukanApproval($transaksi_kas, $user);
-            }
-        }
+        // CATATAN: Status approval TIDAK di-reset otomatis setelah update.
+        // Jika sebelumnya ditolak, status tetap 'ditolak'.
+        // User harus menggunakan endpoint /ajukan secara eksplisit untuk submit ulang.
+        // Ini mencegah bug auto-resubmit yang menyebabkan loop tak berujuk.
 
         $transaksi_kas->load(['kategoriTransaksi', 'outlet', 'createdByUser']);
 

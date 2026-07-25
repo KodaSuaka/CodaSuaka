@@ -18,6 +18,7 @@ class penugasan extends Model
         'urgency',
         'poin',
         'created_by',
+        'template_penugasan_id',
     ];
 
     protected function casts(): array

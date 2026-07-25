@@ -23,7 +23,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.ErrorMessageMapper
 
 // ─── Color Palette Tambahan (Fresh & Soft) ─────
 private val Teal = Color(0xFF2DD4BF)      // Soft Teal
@@ -103,22 +105,13 @@ fun DashboardKaryawanScreen(
                 }
             }
 
-            // ── Error Message ──
+            // ── Error Message (User-Friendly Notification) ──
             if (uiState.errorMessage != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Coral.copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = uiState.errorMessage ?: "",
-                        color = Coral,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                NotificationBannerStatic(
+                    message = uiState.errorMessage ?: "",
+                    mapFromServer = true,
+                    onDismiss = { viewModel.clearError() }
+                )
             }
 
             // ══════════════════════════════════════════════════
@@ -134,6 +127,7 @@ fun DashboardKaryawanScreen(
             SectionPresensiToday(
                 absensiStatus = uiState.absensiStatus,
                 absensiTime = uiState.absensiTime,
+                statusKeterangan = uiState.statusKeterangan,
                 specialEvent = uiState.specialEvent,
                 showSpecialEvent = uiState.showSpecialEvent,
                 isLoading = uiState.isLoading,
@@ -157,7 +151,16 @@ fun DashboardKaryawanScreen(
             // ══════════════════════════════════════════════════
             SectionPerformance(
                 poinKinerja = uiState.poinKinerja,
-                onDetailKinerjaClick = { onNavigateTo("kalender") }
+                onDetailKinerjaClick = { onNavigateTo("poin_kinerja") }
+            )
+
+            // ══════════════════════════════════════════════════
+            // 4b. Notifikasi Tugas Aktif
+            // ══════════════════════════════════════════════════
+            SectionTaskNotification(
+                daftarTugas = uiState.daftarTugas,
+                totalTugas = uiState.totalTugas,
+                tugasSelesai = uiState.tugasSelesai
             )
 
             // ══════════════════════════════════════════════════
@@ -387,6 +390,7 @@ private fun SectionEmployeeInfo(
 private fun SectionPresensiToday(
     absensiStatus: AbsensiStatus,
     absensiTime: String?,
+    statusKeterangan: String?,
     specialEvent: String?,
     showSpecialEvent: Boolean,
     isLoading: Boolean,
@@ -530,6 +534,40 @@ private fun SectionPresensiToday(
                 }
 
                 HorizontalDivider(color = Neutral)
+
+                // ── Status Keterangan (Checkin/Checkout Timing) ──
+                if (statusKeterangan != null) {
+                    val (label, chipColor) = when (statusKeterangan) {
+                        "tepat_waktu" -> "✅ Tepat Waktu" to ScoreGreen
+                        "checkin_awal" -> "🔵 Check-in Awal" to OceanBlue
+                        "checkin_terlambat" -> "🔴 Check-in Terlambat" to Coral
+                        "checkout_awal" -> "🟡 Check-out Awal" to Amber
+                        "checkout_terlambat" -> "🔴 Check-out Terlambat" to Coral
+                        else -> statusKeterangan to OnSurfaceVariant
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(chipColor.copy(alpha = 0.1f))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(chipColor)
+                        )
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = chipColor
+                        )
+                    }
+                }
 
                 // ── Status Absensi ──
                 Row(
@@ -828,6 +866,167 @@ private fun SectionPerformance(
                     tint = OnSurfaceVariant,
                     modifier = Modifier.size(28.dp)
                 )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 4b. Notifikasi Tugas Aktif (Compact Banner)
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun SectionTaskNotification(
+    daftarTugas: List<TugasItem>,
+    totalTugas: Int,
+    tugasSelesai: Int
+) {
+    if (daftarTugas.isEmpty()) return
+
+    val tugasHarian = daftarTugas.filter { !it.isTugasKhusus && !it.isSelesai }
+    val tugasKhusus = daftarTugas.filter { it.isTugasKhusus && !it.isSelesai }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = PrimaryLight.copy(alpha = 0.15f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Assignment,
+                    contentDescription = null,
+                    tint = Primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "Tugas Hari Ini",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Secondary
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (totalTugas > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Primary.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "$tugasSelesai/$totalTugas",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Primary,
+                            modifier = Modifier.padding(
+                                horizontal = 8.dp,
+                                vertical = 3.dp
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Tugas Harian (dari template)
+            if (tugasHarian.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = BlueSchedule.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = "📋 ${tugasHarian.size} tugas harian",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = BlueSchedule,
+                            modifier = Modifier.padding(
+                                horizontal = 8.dp,
+                                vertical = 3.dp
+                            )
+                        )
+                    }
+                    // Ringkas judul pertama
+                    if (tugasHarian.size <= 2) {
+                        tugasHarian.forEach { t ->
+                            Text(
+                                text = t.judul,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "${tugasHarian.first().judul} +${tugasHarian.size - 1} lagi",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // Tugas Khusus (dari pemilik)
+            if (tugasKhusus.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = OrangeManage.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = "⭐ ${tugasKhusus.size} tugas khusus",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = OrangeManage,
+                            modifier = Modifier.padding(
+                                horizontal = 8.dp,
+                                vertical = 3.dp
+                            )
+                        )
+                    }
+                    if (tugasKhusus.size <= 2) {
+                        tugasKhusus.forEach { t ->
+                            Text(
+                                text = t.judul,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "${tugasKhusus.first().judul} +${tugasKhusus.size - 1} lagi",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
     }

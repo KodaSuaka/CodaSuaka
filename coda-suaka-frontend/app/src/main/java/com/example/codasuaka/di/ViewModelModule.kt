@@ -16,6 +16,7 @@ import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
+import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -91,4 +92,7 @@ val viewModelModule = module {
 
     // Approval Keuangan
     viewModel { ApprovalKeuanganViewModel(keuanganRepository = get()) }
+
+    // Poin Kinerja
+    viewModel { PoinKinerjaViewModel(dashboardRepository = get()) }
 }

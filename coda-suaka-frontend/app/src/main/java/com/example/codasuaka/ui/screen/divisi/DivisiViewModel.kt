@@ -263,7 +263,16 @@ class DivisiViewModel(
                     ?: (state.outlets.firstOrNull()?.id ?: 0)
             )
             divisiRepository.createDivisi(request).onSuccess { dto ->
-                val newDivisi = dto.toDivisi(state.karyawanList, state.outlets)
+                val newDivisiId = dto.id
+                // Sinkronisasi anggota divisi ke backend
+                for (anggota in state.formAnggota) {
+                    divisiRepository.createAnggotaDivisi(
+                        CreateAnggotaDivisiRequest(divisiId = newDivisiId, karyawanId = anggota.id)
+                    )
+                }
+                val newDivisi = dto.toDivisi(state.karyawanList, state.outlets).copy(
+                    anggota = state.formAnggota
+                )
                 _uiState.value = _uiState.value.copy(
                     divisiList = _uiState.value.divisiList + newDivisi,
                     isSaving = false,
@@ -307,12 +316,36 @@ class DivisiViewModel(
                 outletId = state.formOutletId.takeIf { it > 0 }
             )
             divisiRepository.updateDivisi(id, request).onSuccess {
+                // Sinkronisasi anggota divisi: ambil data saat ini dari backend
+                divisiRepository.getAnggotaDivisis().onSuccess { allAnggota ->
+                    // Filter anggota yang sesuai dengan divisi ini
+                    val existingAnggota = allAnggota.filter { it.divisiId == id }
+                    val existingKaryawanIds = existingAnggota.map { it.karyawanId }.toSet()
+                    val desiredKaryawanIds = state.formAnggota.map { it.id }.toSet()
+
+                    // Tambah anggota baru (ada di formAnggota tapi belum di backend)
+                    val toAdd = state.formAnggota.filter { it.id !in existingKaryawanIds }
+                    for (anggota in toAdd) {
+                        divisiRepository.createAnggotaDivisi(
+                            CreateAnggotaDivisiRequest(divisiId = id, karyawanId = anggota.id)
+                        )
+                    }
+
+                    // Hapus anggota yang tidak ada di formAnggota
+                    val toRemove = existingAnggota.filter { it.karyawanId !in desiredKaryawanIds }
+                    for (anggota in toRemove) {
+                        divisiRepository.deleteAnggotaDivisi(anggota.id)
+                    }
+                }
+
                 // Reload divisi list
                 divisiRepository.getDivisis().onSuccess { dtos ->
                     _uiState.value = _uiState.value.copy(
                         divisiList = dtos.map { it.toDivisi(state.karyawanList, state.outlets) },
                         isSaving = false,
                         dialogMode = DivisiDialogMode.Closed,
+                        formAnggota = emptyList(),
+                        formAvailableKaryawan = emptyList(),
                         successMessage = "Divisi berhasil diperbarui."
                     )
                 }.onFailure {
@@ -320,6 +353,8 @@ class DivisiViewModel(
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         dialogMode = DivisiDialogMode.Closed,
+                        formAnggota = emptyList(),
+                        formAvailableKaryawan = emptyList(),
                         successMessage = "Divisi berhasil diperbarui."
                     )
                 }

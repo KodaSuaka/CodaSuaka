@@ -90,9 +90,13 @@ class KelolaKaryawanViewModel(
             var loadedKaryawan = emptyList<Karyawan>()
             var errorMsg: String? = null
 
-            // Load roles
+            // Load roles — exclude platform-level roles (Super Admin & Owner)
+            // karena pemilik dianggap entitas terpisah, bukan karyawan
+            val excludedRoleNames = setOf("Super Admin", "Owner")
             karyawanRepository.getRoles().onSuccess { dtos ->
-                loadedRoles = dtos.map { it.toRole() }
+                loadedRoles = dtos
+                    .filter { it.namaRole !in excludedRoleNames }
+                    .map { it.toRole() }
             }.onFailure {
                 errorMsg = it.message
             }

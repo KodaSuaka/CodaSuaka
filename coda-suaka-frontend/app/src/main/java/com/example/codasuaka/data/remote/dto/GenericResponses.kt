@@ -250,6 +250,7 @@ data class PresensiDto(
     @SerializedName("status") val status: String?,
     @SerializedName("keterangan") val keterangan: String?,
     @SerializedName("lokasi_checkin") val lokasiCheckin: String?,
+    @SerializedName("status_keterangan") val statusKeterangan: String?,
     @SerializedName("user") val user: KaryawanUserDto?
 )
 
@@ -386,6 +387,7 @@ data class PenugasanDto(
     @SerializedName("urgency") val urgency: String?,
     @SerializedName("poin") val poin: Int?,
     @SerializedName("created_by") val createdBy: Int?,
+    @SerializedName("template_penugasan_id") val templatePenugasanId: Int?,
     @SerializedName("penanggung_jawab") val penanggungJawab: KaryawanDto?,
     @SerializedName("divisi") val divisi: DivisiDto?,
     @SerializedName("created_at") val createdAt: String?,

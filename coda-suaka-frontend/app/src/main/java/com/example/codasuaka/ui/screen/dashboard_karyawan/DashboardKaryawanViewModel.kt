@@ -43,7 +43,10 @@ data class TugasItem(
     val id: Int,
     val judul: String,
     val tenggat: String,
-    val isSelesai: Boolean = false
+    val isSelesai: Boolean = false,
+    val urgency: String? = null,
+    val poin: Int? = null,
+    val isTugasKhusus: Boolean = false
 )
 
 /**
@@ -57,6 +60,7 @@ data class DashboardKaryawanUiState(
     // ── Section Tengah: Menu Personal ──
     val absensiStatus: AbsensiStatus = AbsensiStatus.CHECKED_OUT,
     val absensiTime: String? = null,
+    val statusKeterangan: String? = null,
     val specialEvent: String? = null,
     val showSpecialEvent: Boolean = false,
 
@@ -180,7 +184,8 @@ class DashboardKaryawanViewModel(
                     }
                     _uiState.value = _uiState.value.copy(
                         absensiStatus = status,
-                        absensiTime = time
+                        absensiTime = time,
+                        statusKeterangan = today.presensi?.statusKeterangan
                     )
                 }
 
@@ -190,7 +195,10 @@ class DashboardKaryawanViewModel(
                             id = tugas.id,
                             judul = tugas.judul,
                             tenggat = tugas.tenggat ?: "-",
-                            isSelesai = tugas.status == "selesai"
+                            isSelesai = tugas.status == "selesai",
+                            urgency = tugas.urgency,
+                            poin = tugas.poin,
+                            isTugasKhusus = tugas.templatePenugasanId == null
                         )
                     }
                     _uiState.value = _uiState.value.copy(
@@ -257,6 +265,7 @@ class DashboardKaryawanViewModel(
                                     it.copy(
                                         absensiStatus = AbsensiStatus.CHECKED_IN,
                                         absensiTime = presensi.jamCheckin,
+                                        statusKeterangan = presensi.statusKeterangan,
                                         isLoading = false
                                     )
                                 }

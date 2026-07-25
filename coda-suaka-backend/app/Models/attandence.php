@@ -16,6 +16,7 @@ class attandence extends Model
         'status',
         'keterangan',
         'lokasi_checkin',
+        'status_keterangan',
     ];
 
     protected function casts(): array

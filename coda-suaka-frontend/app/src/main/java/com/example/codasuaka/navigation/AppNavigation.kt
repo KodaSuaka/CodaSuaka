@@ -33,6 +33,8 @@ import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganScreen
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganScreen
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
+import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaScreen
+import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -59,6 +61,7 @@ object Routes {
     const val LAPORAN_KEUANGAN = "laporan_keuangan"
     const val STATUS_KARYAWAN = "status_karyawan"
     const val APPROVAL_KEUANGAN = "approval_keuangan"
+    const val POIN_KINERJA = "poin_kinerja"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -295,6 +298,15 @@ fun AppNavigation(navController: NavHostController) {
             ApprovalKeuanganScreen(
                 onBack = { navController.popBackStack() },
                 viewModel = approvalKeuanganViewModel
+            )
+        }
+
+        // ── Poin Kinerja ──
+        composable(Routes.POIN_KINERJA) {
+            val poinKinerjaViewModel: PoinKinerjaViewModel = koinViewModel()
+            PoinKinerjaScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = poinKinerjaViewModel
             )
         }
 

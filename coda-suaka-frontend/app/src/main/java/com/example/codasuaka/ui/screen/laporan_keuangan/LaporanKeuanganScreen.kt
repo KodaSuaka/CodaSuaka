@@ -39,11 +39,13 @@ import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.ErrorMessageMapper
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.animation.AnimatedVisibility
 
 // ─── Warna Bantu ──────────────────────────────────────────────
 private val MasukColor = Color(0xFF10B981)
@@ -83,7 +85,8 @@ fun LaporanKeuanganScreen(
     }
     LaunchedEffect(uiState.exportError) {
         uiState.exportError?.let {
-            snackbarHostState.showSnackbar("Gagal: $it")
+            val friendlyMsg = ErrorMessageMapper.map(it, "ekspor data").message
+            snackbarHostState.showSnackbar(friendlyMsg)
         }
     }
 
@@ -905,16 +908,23 @@ private fun TransaksiCard(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
-                        IconButton(
+                        TextButton(
                             onClick = { showDeleteConfirm = true },
                             enabled = !isPending,
-                            modifier = Modifier.size(32.dp)
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                "Hapus",
-                                tint = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor.copy(alpha = 0.6f),
-                                modifier = Modifier.size(18.dp)
+                                contentDescription = "Hapus",
+                                tint = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = "Hapus",
+                                fontSize = 11.sp,
+                                color = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -951,21 +961,88 @@ private fun TransaksiCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Hapus Transaksi") },
-            text = { Text("Yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.") },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = KeluarColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Hapus Transaksi")
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Yakin ingin menghapus transaksi berikut?")
+                    // Detail transaksi yang akan dihapus
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Neutral.copy(alpha = 0.3f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row {
+                                Text("Kategori: ", fontSize = 13.sp, color = OnSurfaceVariant)
+                                Text(
+                                    text = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Secondary
+                                )
+                            }
+                            Row {
+                                Text("Tanggal: ", fontSize = 13.sp, color = OnSurfaceVariant)
+                                Text(
+                                    text = transaksi.tanggal,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Secondary
+                                )
+                            }
+                            Row {
+                                Text("Nominal: ", fontSize = 13.sp, color = OnSurfaceVariant)
+                                Text(
+                                    text = (if (transaksi.tipe == "masuk") "+" else "-") +
+                                           LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "⚠️ Tindakan ini tidak dapat dibatalkan.",
+                        fontSize = 12.sp,
+                        color = KeluarColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         showDeleteConfirm = false
                         onDelete()
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = KeluarColor)
+                    colors = ButtonDefaults.buttonColors(containerColor = KeluarColor),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Hapus")
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Ya, Hapus")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = false },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
                     Text("Batal")
                 }
             }
@@ -1441,7 +1518,8 @@ private fun LabaRugiBottomSheet(
                 } else if (error != null) {
                     Text(error, color = KeluarColor)
                 } else if (labaRugiData != null) {
-                    // Pendapatan
+                    // ── Pendapatan ──
+                    var showPendapatan by remember { mutableStateOf(false) }
                     SaldoRowItem(
                         icon = Icons.Default.TrendingUp,
                         label = "Pendapatan",
@@ -1449,7 +1527,52 @@ private fun LabaRugiBottomSheet(
                         color = MasukColor,
                         bgColor = MasukBg
                     )
-                    // HPP
+                    if (!labaRugiData.pendapatanPerKategori.isNullOrEmpty()) {
+                        TextButton(
+                            onClick = { showPendapatan = !showPendapatan },
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Icon(
+                                if (showPendapatan) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showPendapatan) "Sembunyikan Rincian" else "Lihat Rincian Kategori",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        AnimatedVisibility(visible = showPendapatan) {
+                            Column(
+                                modifier = Modifier.padding(start = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                labaRugiData.pendapatanPerKategori!!.toSortedMap().forEach { (kategori, nominal) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• $kategori",
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = LaporanKeuanganViewModel.formatRupiah(nominal),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MasukColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── HPP ──
+                    var showHpp by remember { mutableStateOf(false) }
                     SaldoRowItem(
                         icon = Icons.Default.ShoppingCart,
                         label = "HPP (Harga Pokok Penjualan)",
@@ -1457,7 +1580,52 @@ private fun LabaRugiBottomSheet(
                         color = WarningColor,
                         bgColor = WarningBg
                     )
-                    // Beban Operasional
+                    if (!labaRugiData.hppPerKategori.isNullOrEmpty()) {
+                        TextButton(
+                            onClick = { showHpp = !showHpp },
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Icon(
+                                if (showHpp) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showHpp) "Sembunyikan Rincian" else "Lihat Rincian Kategori",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        AnimatedVisibility(visible = showHpp) {
+                            Column(
+                                modifier = Modifier.padding(start = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                labaRugiData.hppPerKategori!!.toSortedMap().forEach { (kategori, nominal) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• $kategori",
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = LaporanKeuanganViewModel.formatRupiah(nominal),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = WarningColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Beban Operasional ──
+                    var showBeban by remember { mutableStateOf(false) }
                     SaldoRowItem(
                         icon = Icons.Default.Receipt,
                         label = "Beban Operasional",
@@ -1465,6 +1633,50 @@ private fun LabaRugiBottomSheet(
                         color = KeluarColor,
                         bgColor = KeluarBg
                     )
+                    if (!labaRugiData.bebanPerKategori.isNullOrEmpty()) {
+                        TextButton(
+                            onClick = { showBeban = !showBeban },
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Icon(
+                                if (showBeban) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showBeban) "Sembunyikan Rincian" else "Lihat Rincian Kategori",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        AnimatedVisibility(visible = showBeban) {
+                            Column(
+                                modifier = Modifier.padding(start = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                labaRugiData.bebanPerKategori!!.toSortedMap().forEach { (kategori, nominal) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• $kategori",
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = LaporanKeuanganViewModel.formatRupiah(nominal),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = KeluarColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Divider
                     HorizontalDivider(color = NeutralBorder.copy(alpha = 0.5f))
                     // Laba Rugi
