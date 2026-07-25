@@ -30,16 +30,13 @@ return new class extends Migration
         });
 
         // ── 2. Buat penanggung_jawab_id nullable ────────────────────
-        //    (MySQL: drop FK, modify kolom, re-add FK)
         if (Schema::hasColumn('penugasans', 'penanggung_jawab_id')) {
-            // Drop foreign key constraint
-            $foreignKeys = $this->getForeignKeys('penugasans');
-            foreach ($foreignKeys as $fk) {
-                if (is_array($fk) && isset($fk['columns'][0]) && $fk['columns'][0] === 'penanggung_jawab_id') {
-                    Schema::table('penugasans', function (Blueprint $table) use ($fk) {
-                        $table->dropForeign($fk['name']);
-                    });
-                }
+            // Drop foreign key constraint menggunakan raw SQL
+            $constraints = $this->getForeignKeyConstraints('penugasans', 'penanggung_jawab_id');
+            foreach ($constraints as $constraintName) {
+                Schema::table('penugasans', function (Blueprint $table) use ($constraintName) {
+                    $table->dropForeign($constraintName);
+                });
             }
 
             // Ubah kolom menjadi nullable
@@ -59,27 +56,32 @@ return new class extends Migration
             $templates = DB::table('template_penugasans')->get();
             foreach ($templates as $t) {
                 DB::table('penugasans')->insert([
-                    'judul'             => $t->nama_template,
-                    'deskripsi'         => $t->deskripsi_template,
+                    'judul'               => $t->nama_template,
+                    'deskripsi'           => $t->deskripsi_template,
                     'penanggung_jawab_id' => null,
-                    'divisi_id'         => null,
-                    'tenggat'           => null,
-                    'status'            => 'belum',
-                    'urgency'           => $t->urgency_default ?? 'sedang',
-                    'poin'              => $t->poin_default ?? 0,
-                    'is_template'       => true,
-                    'instansi_id'       => $t->instansi_id,
-                    'created_by'        => $t->created_by,
-                    'created_at'        => $t->created_at ?? now(),
-                    'updated_at'        => $t->updated_at ?? now(),
+                    'divisi_id'           => null,
+                    'tenggat'             => null,
+                    'status'              => 'belum',
+                    'urgency'             => $t->urgency_default ?? 'sedang',
+                    'poin'                => $t->poin_default ?? 0,
+                    'is_template'         => true,
+                    'instansi_id'         => $t->instansi_id,
+                    'created_by'          => $t->created_by,
+                    'created_at'          => $t->created_at ?? now(),
+                    'updated_at'          => $t->updated_at ?? now(),
                 ]);
             }
         }
 
         // ── 4. Drop kolom template_penugasan_id ─────────────────────
         if (Schema::hasColumn('penugasans', 'template_penugasan_id')) {
+            $constraints = $this->getForeignKeyConstraints('penugasans', 'template_penugasan_id');
+            foreach ($constraints as $constraintName) {
+                Schema::table('penugasans', function (Blueprint $table) use ($constraintName) {
+                    $table->dropForeign($constraintName);
+                });
+            }
             Schema::table('penugasans', function (Blueprint $table) {
-                $table->dropForeign(['template_penugasan_id']);
                 $table->dropColumn('template_penugasan_id');
             });
         }
@@ -115,20 +117,19 @@ return new class extends Migration
         });
 
         // Migrate template records back
-        DB::table('penugasans')
-            ->where('is_template', true)
-            ->each(function ($row) {
-                DB::table('template_penugasans')->insert([
-                    'nama_template'     => $row->judul,
-                    'deskripsi_template' => $row->deskripsi,
-                    'urgency_default'   => $row->urgency,
-                    'poin_default'      => $row->poin,
-                    'instansi_id'       => $row->instansi_id,
-                    'created_by'        => $row->created_by,
-                    'created_at'        => $row->created_at,
-                    'updated_at'        => $row->updated_at,
-                ]);
-            });
+        $templates = DB::table('penugasans')->where('is_template', true)->get();
+        foreach ($templates as $row) {
+            DB::table('template_penugasans')->insert([
+                'nama_template'      => $row->judul,
+                'deskripsi_template' => $row->deskripsi,
+                'urgency_default'    => $row->urgency,
+                'poin_default'       => $row->poin,
+                'instansi_id'        => $row->instansi_id,
+                'created_by'         => $row->created_by,
+                'created_at'         => $row->created_at,
+                'updated_at'         => $row->updated_at,
+            ]);
+        }
 
         // Remove template records from penugasans
         DB::table('penugasans')->where('is_template', true)->delete();
@@ -154,13 +155,11 @@ return new class extends Migration
         });
 
         // Make penanggung_jawab_id NOT NULL again
-        $foreignKeys = $this->getForeignKeys('penugasans');
-        foreach ($foreignKeys as $fk) {
-            if (is_array($fk) && isset($fk['columns'][0]) && $fk['columns'][0] === 'penanggung_jawab_id') {
-                Schema::table('penugasans', function (Blueprint $table) use ($fk) {
-                    $table->dropForeign($fk['name']);
-                });
-            }
+        $constraints = $this->getForeignKeyConstraints('penugasans', 'penanggung_jawab_id');
+        foreach ($constraints as $constraintName) {
+            Schema::table('penugasans', function (Blueprint $table) use ($constraintName) {
+                $table->dropForeign($constraintName);
+            });
         }
         DB::statement('ALTER TABLE penugasans MODIFY penanggung_jawab_id CHAR(36) NOT NULL');
         Schema::table('penugasans', function (Blueprint $table) {
@@ -172,20 +171,20 @@ return new class extends Migration
     }
 
     /**
-     * Helper: get foreign keys for a table.
+     * Helper: get foreign key constraint names for a specific column.
      */
-    private function getForeignKeys(string $table): array
+    private function getForeignKeyConstraints(string $table, string $column): array
     {
-        $platform = DB::connection()->getDoctrineSchemaManager()->getDatabasePlatform();
-        $schema = DB::connection()->getDoctrineSchemaManager()->listTableDetails($table);
-        $foreignKeys = [];
-        foreach ($schema->getForeignKeys() as $fk) {
-            $foreignKeys[] = [
-                'name' => $fk->getName(),
-                'columns' => array_map(fn($col) => $col->getColumnName(), $fk->getLocalColumns()),
-                'foreign_columns' => array_map(fn($col) => $col->getColumnName(), $fk->getForeignColumns()),
-            ];
-        }
-        return $foreignKeys;
+        $database = DB::getDatabaseName();
+        $results = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+        ", [$database, $table, $column]);
+
+        return array_column($results, 'CONSTRAINT_NAME');
     }
 };
