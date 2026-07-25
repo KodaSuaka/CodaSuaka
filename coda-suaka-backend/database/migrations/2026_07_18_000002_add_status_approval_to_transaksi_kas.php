@@ -12,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transaksi_kas', function (Blueprint $table) {
-            $table->enum('status_approval', ['pending', 'disetujui', 'ditolak'])
-                ->default('disetujui')
-                ->after('dokumen_transaksi_id');
+            if (!Schema::hasColumn('transaksi_kas', 'status_approval')) {
+                $table->enum('status_approval', ['pending', 'disetujui', 'ditolak'])
+                    ->default('disetujui')
+                    ->after('dokumen_transaksi_id');
+            }
         });
     }
 
@@ -24,7 +26,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transaksi_kas', function (Blueprint $table) {
-            $table->dropColumn('status_approval');
+            if (Schema::hasColumn('transaksi_kas', 'status_approval')) {
+                $table->dropColumn('status_approval');
+            }
         });
     }
 };
