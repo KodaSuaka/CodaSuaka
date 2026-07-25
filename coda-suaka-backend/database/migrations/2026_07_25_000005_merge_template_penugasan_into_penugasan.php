@@ -62,7 +62,7 @@ return new class extends Migration
             }
 
             // Ubah kolom menjadi nullable
-            DB::statement('ALTER TABLE penugasans MODIFY created_by INT NULL');
+            DB::statement('ALTER TABLE penugasans MODIFY created_by BIGINT UNSIGNED NULL');
 
             // Re-add foreign key
             Schema::table('penugasans', function (Blueprint $table) {
@@ -198,7 +198,7 @@ return new class extends Migration
                 $table->dropForeign($constraintName);
             });
         }
-        DB::statement('ALTER TABLE penugasans MODIFY created_by INT NOT NULL');
+        DB::statement('ALTER TABLE penugasans MODIFY created_by BIGINT UNSIGNED NOT NULL');
         Schema::table('penugasans', function (Blueprint $table) {
             $table->foreign('created_by')
                 ->references('id')
