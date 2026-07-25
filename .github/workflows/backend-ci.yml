@@ -2,19 +2,19 @@
 # CodaSuaka Backend CI - Laravel
 # =============================================================================
 # Workflow ini menjalankan testing otomatis untuk backend Laravel
-# Trigger: push ke main/develop, pull request ke main/develop
+# Trigger: push ke main/development, pull request ke main/development
 # =============================================================================
 
 name: Backend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, development]
     paths:
       - 'coda-suaka-backend/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main, development]
     paths:
       - 'coda-suaka-backend/**'
       - '.github/workflows/backend-ci.yml'

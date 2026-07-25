@@ -2,19 +2,19 @@
 # CodaSuaka Frontend CI - Android
 # =============================================================================
 # Workflow ini menjalankan build & testing otomatis untuk Android app
-# Trigger: push ke main/develop, pull request ke main/develop
+# Trigger: push ke main/development, pull request ke main/development
 # =============================================================================
 
 name: Frontend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, development]
     paths:
       - 'coda-suaka-frontend/**'
       - '.github/workflows/frontend-ci.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main, development]
     paths:
       - 'coda-suaka-frontend/**'
       - '.github/workflows/frontend-ci.yml'
