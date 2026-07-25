@@ -173,12 +173,14 @@ fun DashboardScreen(
                     userRole = uiState.userRole,
                     items = listOf(
                         MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
+                        MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
                         MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
                         MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, PurpleLog)
                     ),
                     onItemClick = { label ->
                         when (label) {
                             "Kelola Outlet" -> onNavigateTo("kelola_outlet")
+                            "Penugasan" -> onNavigateTo("penugasan")
                             "Jadwal" -> onNavigateTo("kalender")
                             "Log Absensi" -> onNavigateTo("log_absensi")
                         }

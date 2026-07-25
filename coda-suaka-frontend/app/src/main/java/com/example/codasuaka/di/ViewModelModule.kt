@@ -18,6 +18,7 @@ import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
+import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -96,6 +97,13 @@ val viewModelModule = module {
 
     // Poin Kinerja
     viewModel { PoinKinerjaViewModel(dashboardRepository = get()) }
+
+    // Penugasan
+    viewModel { PenugasanViewModel(
+        penugasanRepository = get(),
+        divisiRepository = get(),
+        karyawanRepository = get()
+    ) }
 
     // Notifikasi
     viewModel { NotificationViewModel(notificationRepository = get()) }

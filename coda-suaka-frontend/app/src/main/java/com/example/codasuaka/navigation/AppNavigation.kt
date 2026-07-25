@@ -37,6 +37,8 @@ import com.example.codasuaka.ui.screen.notifikasi.NotificationScreen
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaScreen
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
+import com.example.codasuaka.ui.screen.penugasan.PenugasanScreen
+import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -65,6 +67,7 @@ object Routes {
     const val APPROVAL_KEUANGAN = "approval_keuangan"
     const val POIN_KINERJA = "poin_kinerja"
     const val NOTIFIKASI = "notifikasi"
+    const val PENUGASAN = "penugasan"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -319,6 +322,15 @@ fun AppNavigation(navController: NavHostController) {
             NotificationScreen(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = notificationViewModel
+            )
+        }
+
+        // ── Penugasan ──
+        composable(Routes.PENUGASAN) {
+            val penugasanViewModel: PenugasanViewModel = koinViewModel()
+            PenugasanScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = penugasanViewModel
             )
         }
 
