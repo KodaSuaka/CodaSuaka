@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  *    php artisan permission:sync              # Interactive (with confirmation)
  *    php artisan permission:sync --dry-run    # Preview only, no DB changes
  *    php artisan permission:sync --force      # Skip confirmation prompt
- *    php artisan permission:sync --verbose    # Show detailed per-role diff
+ *    php artisan permission:sync --detail     # Show detailed per-role diff
  * ══════════════════════════════════════════════════════════════════════════════
  */
 class SyncPermissions extends Command
@@ -34,7 +34,7 @@ class SyncPermissions extends Command
     protected $signature = 'permission:sync
                             {--dry-run   : Tampilkan perubahan tanpa menyimpan ke database}
                             {--force     : Lewati konfirmasi sebelum apply}
-                            {--verbose   : Tampilkan detail diff per role}';
+                            {--detail    : Tampilkan detail diff per role}';
 
     protected $description = 'Sinkronisasi permission dari config/permissions.php ke database role_permissions';
 
@@ -230,8 +230,8 @@ class SyncPermissions extends Command
                 $this->line("     Status: {$d['status']}" . ($d['status'] === 'OK' ? ' (sudah sinkron)' : ''));
             }
 
-            // Verbose mode: show each permission
-            if ($this->option('verbose')) {
+            // Detail mode: show each permission
+            if ($this->option('detail')) {
                 // Show current DB state
                 $dbPerms = [];
                 if ($d['role_id']) {
