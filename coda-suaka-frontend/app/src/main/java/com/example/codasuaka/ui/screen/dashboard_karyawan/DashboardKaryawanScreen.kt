@@ -449,6 +449,8 @@ private fun SectionPresensiToday(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                val today = java.time.LocalDate.now()
+
                 // ── Tanggal ──
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -460,7 +462,6 @@ private fun SectionPresensiToday(
                         tint = Primary,
                         modifier = Modifier.size(18.dp)
                     )
-                    val today = java.time.LocalDate.now()
                     val indonesianMonths = listOf(
                         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
                         "Juli", "Agustus", "September", "Oktober", "November", "Desember"

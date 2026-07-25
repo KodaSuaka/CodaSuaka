@@ -24,7 +24,9 @@ return new class extends Migration
             $table->text('deskripsi_template')->nullable();
             $table->enum('urgency_default', ['urgent', 'sedang', 'rendah'])->default('sedang');
             $table->integer('poin_default')->default(0);
-            $table->foreignId('instansi_id')->constrained('instansis')->cascadeOnDelete();
+            // instansis.id adalah UUID, jadi harus pakai uuid() + FK manual
+            $table->uuid('instansi_id');
+            $table->foreign('instansi_id')->references('id')->on('instansis')->cascadeOnDelete();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
 
