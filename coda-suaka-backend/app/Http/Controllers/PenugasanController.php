@@ -31,8 +31,16 @@ class PenugasanController extends Controller
         ])->select([
             'id', 'judul', 'deskripsi', 'penanggung_jawab_id',
             'divisi_id', 'tenggat', 'status', 'urgency', 'poin',
-            'created_by', 'created_at', 'updated_at',
+            'is_template', 'instansi_id', 'created_by', 'created_at', 'updated_at',
         ]);
+
+        // Default: hanya tugas biasa (bukan template)
+        $showTemplates = $request->boolean('is_template', false);
+        if ($showTemplates) {
+            $query->templates();
+        } else {
+            $query->regularTasks();
+        }
 
         // Owner/Admin lihat semua di instansi, karyawan lihat tugas sendiri
         if ($user->role?->nama_role !== 'Owner') {
@@ -74,6 +82,7 @@ class PenugasanController extends Controller
             'status' => $request->status ?? 'belum',
             'urgency' => $urgency,
             'poin' => penugasan::getPoinForUrgency($urgency),
+            'is_template' => false,
             'created_by' => $request->user()->id,
         ]);
 

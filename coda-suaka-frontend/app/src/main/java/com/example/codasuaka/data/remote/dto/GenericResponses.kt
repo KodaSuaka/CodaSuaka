@@ -386,8 +386,9 @@ data class PenugasanDto(
     @SerializedName("status") val status: String,
     @SerializedName("urgency") val urgency: String?,
     @SerializedName("poin") val poin: Int?,
+    @SerializedName("is_template") val isTemplate: Boolean?,
+    @SerializedName("instansi_id") val instansiId: String?,
     @SerializedName("created_by") val createdBy: Int?,
-    @SerializedName("template_penugasan_id") val templatePenugasanId: Int?,
     @SerializedName("penanggung_jawab") val penanggungJawab: KaryawanDto?,
     @SerializedName("divisi") val divisi: DivisiDto?,
     @SerializedName("created_at") val createdAt: String?,
@@ -682,11 +683,17 @@ data class DetailUrgency(
     @SerializedName("total_poin") val totalPoin: Int
 )
 
-// ─── Template Penugasan ─────────────────────────────────────
+// ─── Template Penugasan (sekarang dari tabel penugasan) ────────
 
 data class TemplatePenugasanListResponse(
     @SerializedName("status") val status: String,
-    @SerializedName("data") val data: List<TemplatePenugasanDto>
+    @SerializedName("data") val data: TemplatePenugasanListData
+)
+
+data class TemplatePenugasanListData(
+    @SerializedName("templates") val templates: List<TemplatePenugasanDto>,
+    @SerializedName("max_template") val maxTemplate: Int,
+    @SerializedName("sisa_slot") val sisaSlot: Int
 )
 
 data class TemplatePenugasanSingleResponse(
@@ -696,11 +703,12 @@ data class TemplatePenugasanSingleResponse(
 
 data class TemplatePenugasanDto(
     @SerializedName("id") val id: Int,
-    @SerializedName("nama_template") val namaTemplate: String,
-    @SerializedName("deskripsi_template") val deskripsiTemplate: String?,
-    @SerializedName("urgency_default") val urgencyDefault: String?,
-    @SerializedName("poin_default") val poinDefault: Int?,
-    @SerializedName("instansi_id") val instansiId: Int?,
+    @SerializedName("judul") val judul: String,
+    @SerializedName("deskripsi") val deskripsi: String?,
+    @SerializedName("urgency") val urgency: String?,
+    @SerializedName("poin") val poin: Int?,
+    @SerializedName("is_template") val isTemplate: Boolean?,
+    @SerializedName("instansi_id") val instansiId: String?,
     @SerializedName("created_by") val createdBy: Int?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?

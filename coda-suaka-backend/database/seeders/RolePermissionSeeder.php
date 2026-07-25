@@ -19,16 +19,20 @@ class RolePermissionSeeder extends Seeder
         $permissionMap = config('roles.permissions', []);
 
         foreach ($permissionMap as $roleName => $permissions) {
-            $role = role::where('nama_role', $roleName)->first();
-            if (!$role) {
-                continue;
-            }
+            // Buat role jika belum ada, atau ambil yang sudah ada
+            $role = role::firstOrCreate(['nama_role' => $roleName]);
 
             foreach ($permissions as $permission) {
-                role_permission::firstOrCreate([
-                    'role_id' => $role->id,
-                    'permission' => $permission,
-                ]);
+                role_permission::updateOrInsert(
+                    [
+                        'role_id' => $role->id,
+                        'permission' => $permission,
+                    ],
+                    [
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
             }
         }
     }

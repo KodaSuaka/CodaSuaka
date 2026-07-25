@@ -70,8 +70,9 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
-        // 4. Tugas stats — single query dengan CASE + subquery
-        $tugasStatsQuery = penugasan::whereIn('created_by', function ($q) use ($instansiId) {
+        // 4. Tugas stats — single query dengan CASE + subquery (exclude template)
+        $tugasStatsQuery = penugasan::where('is_template', false)
+        ->whereIn('created_by', function ($q) use ($instansiId) {
             $q->select('id')->from('users')->where('instansi_id', $instansiId);
         })
         ->selectRaw("
@@ -113,7 +114,8 @@ class DashboardController extends Controller
         // Tugas milik karyawan ini — select kolom yang dibutuhkan
         $tugas = [];
         if ($karyawan) {
-            $tugas = penugasan::where('penanggung_jawab_id', $karyawan->id)
+            $tugas = penugasan::where('is_template', false)
+                ->where('penanggung_jawab_id', $karyawan->id)
                 ->where('status', '!=', 'selesai')
                 ->select(['id', 'judul', 'tenggat', 'status', 'urgency'])
                 ->orderBy('tenggat', 'asc')
@@ -190,7 +192,8 @@ class DashboardController extends Controller
 
         // Ambil semua tugas selesai untuk karyawan ini
         // Hanya select kolom yang dibutuhkan untuk performa optimal
-        $tugasSelesai = \App\Models\penugasan::where('penanggung_jawab_id', $karyawan->id)
+        $tugasSelesai = \App\Models\penugasan::where('is_template', false)
+            ->where('penanggung_jawab_id', $karyawan->id)
             ->where('status', 'selesai')
             ->select(['urgency', 'poin'])
             ->get();

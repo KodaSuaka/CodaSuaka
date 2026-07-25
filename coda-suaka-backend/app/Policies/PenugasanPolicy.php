@@ -14,6 +14,11 @@ class PenugasanPolicy
      */
     private function isSameTenant(User $user, penugasan $penugasan): bool
     {
+        // Template: scope via instansi_id langsung
+        if ($penugasan->is_template) {
+            return $user->instansi_id === $penugasan->instansi_id;
+        }
+
         if ($penugasan->divisi_id !== null) {
             return $user->instansi_id === $penugasan->divisi?->outlet?->instansi_id;
         }

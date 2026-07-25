@@ -198,7 +198,7 @@ class DashboardKaryawanViewModel(
                             isSelesai = tugas.status == "selesai",
                             urgency = tugas.urgency,
                             poin = tugas.poin,
-                            isTugasKhusus = tugas.templatePenugasanId == null
+                            isTugasKhusus = tugas.isTemplate != true
                         )
                     }
                     _uiState.value = _uiState.value.copy(
