@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreinstansiRequest;
+use App\Http\Requests\StoreInstansiRequest;
 use App\Http\Requests\StoreOwnerRequest;
 use App\Http\Requests\UpdateOwnerRequest;
 use App\Http\Requests\UpdateInstansiRequest;
@@ -60,7 +60,7 @@ class SuperAdminController extends Controller
      * POST /api/super-admin/instansis
      * Membuat instansi baru beserta owner-nya.
      */
-    public function storeInstansi(StoreinstansiRequest $request)
+    public function storeInstansi(StoreInstansiRequest $request)
     {
         // Buat instansi
         $instansi = Instansi::create([
@@ -99,7 +99,7 @@ class SuperAdminController extends Controller
      * PUT /api/super-admin/instansis/{instansi}
      * Update data instansi.
      */
-    public function updateInstansi(UpdateInstansiRequest $request, instansi $instansi)
+    public function updateInstansi(UpdateInstansiRequest $request, Instansi $instansi)
     {
         $instansi->update($request->only(['nama_instansi', 'paket_id']));
 
