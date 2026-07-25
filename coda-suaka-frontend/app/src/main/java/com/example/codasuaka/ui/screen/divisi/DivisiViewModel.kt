@@ -2,6 +2,7 @@ package com.example.codasuaka.ui.screen.divisi
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.remote.dto.CreateAnggotaDivisiRequest
 import com.example.codasuaka.data.remote.dto.CreateDivisiRequest
 import com.example.codasuaka.data.remote.dto.DivisiDto
 import com.example.codasuaka.data.remote.dto.OutletDto
