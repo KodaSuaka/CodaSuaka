@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TransaksiKas;
 use App\Models\KategoriTransaksi;
+use App\Services\PermissionService;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -20,6 +21,11 @@ class LaporanController extends Controller
     public function arusKas(Request $request)
     {
         $user = $request->user();
+
+        // Otorisasi: hanya user dengan view:laporan yang bisa mengakses
+        if (!app(PermissionService::class)->userHasPermission($user, 'view:laporan')) {
+            return $this->error('Anda tidak memiliki akses ke laporan keuangan.', 403);
+        }
 
         $request->validate([
             'start_date' => 'nullable|date',
@@ -112,6 +118,12 @@ class LaporanController extends Controller
     public function ringkasanKeuangan(Request $request)
     {
         $user = $request->user();
+
+        // Otorisasi: hanya user dengan view:laporan yang bisa mengakses
+        if (!app(PermissionService::class)->userHasPermission($user, 'view:laporan')) {
+            return $this->error('Anda tidak memiliki akses ke laporan keuangan.', 403);
+        }
+
         $tahun = $request->tahun ?? Carbon::now()->year;
 
         $series = TransaksiKas::where('instansi_id', $user->instansi_id)

@@ -79,11 +79,38 @@ class AuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return $this->error('Email atau Password yang Anda masukkan salah.', 401);
         }
+
+        // Validasi role harus ada
+        if (!$user->role) {
+            return $this->error('Akun Anda belum memiliki role yang valid. Hubungi administrator.', 403);
+        }
+
+        // Bersihkan token lama yang sudah expired atau tidak terpakai
+        // untuk mencegah akumulasi token dan potensi unique constraint violation
+        $user->tokens()
+            ->where('name', 'auth_token')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '<', now());
+            })
+            ->delete();
+
         $profil = karyawan::where('user_id', $user->id)->first();
 
         $permissions = app(PermissionService::class)->getUserPermissions($user);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        try {
+            $token = $user->createToken('auth_token')->plainTextToken;
+        } catch (\Exception $e) {
+            // Jika gagal membuat token (misal unique constraint violation),
+            // bersihkan semua token auth_token lama dan coba lagi
+            $user->tokens()->where('name', 'auth_token')->delete();
+            try {
+                $token = $user->createToken('auth_token')->plainTextToken;
+            } catch (\Exception $eRetry) {
+                return $this->error('Gagal membuat sesi login. Silakan coba lagi.', 500);
+            }
+        }
 
         return $this->success([
             'user' => [

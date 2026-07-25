@@ -123,11 +123,11 @@ class PermissionService
                 'permission' => null, // All logged-in users can see this
             ],
             [
-                'id' => 'tugas_tim',
-                'label' => 'Tugas Tim',
+                'id' => 'tugas_karyawan',
+                'label' => 'Tugas Karyawan',
                 'icon' => 'Assignment',
-                'route' => 'tugas_tim',
-                'permission' => 'manage:penugasan',
+                'route' => 'tugas_karyawan',
+                'permission' => 'view:penugasan',
             ],
             [
                 'id' => 'pengajuan',

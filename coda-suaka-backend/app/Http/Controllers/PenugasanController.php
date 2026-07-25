@@ -18,7 +18,11 @@ class PenugasanController extends Controller
     }
 
     /**
-     * GET /api/penugasans?divisi_id=xxx&status=xxx&penanggung_jawab_id=xxx
+     * GET /api/penugasans?divisi_id=xxx&status=xxx&penanggung_jawab_id=xxx&is_template=xxx
+     *
+     * Semua role (Owner, Manager, Keuangan, Staff) bisa melihat daftar tugas.
+     * Template penugasan selalu terlihat oleh semua user di instansi yang sama.
+     * Tugas biasa: Owner/Admin lihat semua di instansi, karyawan lain lihat tugas sendiri.
      */
     public function index(Request $request)
     {
@@ -28,25 +32,48 @@ class PenugasanController extends Controller
         $query = penugasan::with([
             'penanggungJawab.user' => fn($q) => $q->select(['id', 'name', 'role_id']),
             'divisi' => fn($q) => $q->select(['id', 'nama_divisi']),
+            'pembuat' => fn($q) => $q->select(['id', 'name']),
         ])->select([
             'id', 'judul', 'deskripsi', 'penanggung_jawab_id',
             'divisi_id', 'tenggat', 'status', 'urgency', 'poin',
             'is_template', 'instansi_id', 'created_by', 'created_at', 'updated_at',
         ]);
 
-        // Default: hanya tugas biasa (bukan template)
-        $showTemplates = $request->boolean('is_template', false);
-        if ($showTemplates) {
+        // Filter berdasarkan parameter is_template (opsional)
+        // Default: tampilkan SEMUA (template + tugas biasa)
+        // is_template=true: hanya template
+        // is_template=false: hanya tugas biasa
+        $showTemplates = $request->boolean('is_template', null);
+
+        // Filter berdasarkan role
+        // Owner/Super Admin: lihat semua tugas di instansi (termasuk template + tugas semua karyawan)
+        // Manager/Keuangan/Staff: lihat template (tanpa filter) + tugas biasa yang ditugaskan kepada mereka
+        $roleName = $user->role?->nama_role;
+        $isOwnerOrAdmin = in_array($roleName, ['Owner', 'Super Admin']);
+
+        if ($showTemplates === true) {
+            // Hanya template
             $query->templates();
-        } else {
+        } elseif ($showTemplates === false) {
+            // Hanya tugas biasa
             $query->regularTasks();
         }
+        // else: null → tampilkan semua (template + regular)
 
-        // Owner/Admin lihat semua di instansi, karyawan lihat tugas sendiri
-        if ($user->role?->nama_role !== 'Owner') {
+        if (!$isOwnerOrAdmin) {
             $karyawan = $user->profilKaryawan;
             if ($karyawan) {
-                $query->where('penanggung_jawab_id', $karyawan->id);
+                // Non-Owner: lihat semua template + tugas biasa yang ditugaskan ke mereka
+                $query->where(function ($q) use ($karyawan) {
+                    $q->where('is_template', true)
+                        ->orWhere(function ($tq) use ($karyawan) {
+                            $tq->where('is_template', false)
+                                ->where('penanggung_jawab_id', $karyawan->id);
+                        });
+                });
+            } else {
+                // Jika user tidak punya profil karyawan, hanya lihat template
+                $query->where('is_template', true);
             }
         }
 

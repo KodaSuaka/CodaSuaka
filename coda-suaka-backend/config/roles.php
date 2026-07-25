@@ -32,6 +32,7 @@ return [
             'view:keuangan',
             'manage:keuangan',
             'approve:keuangan',
+            'export:keuangan',
             'view:laporan',
             'manage:laporan',
             'view:audit',
@@ -41,8 +42,10 @@ return [
         'Keuangan' => [
             'view:keuangan',
             'manage:keuangan',
+            'export:keuangan',
             'view:laporan',
             'view:presensi',
+            'view:penugasan',
         ],
 
         'Manager' => [
