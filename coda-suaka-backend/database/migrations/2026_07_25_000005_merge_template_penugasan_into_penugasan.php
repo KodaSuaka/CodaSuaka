@@ -13,9 +13,10 @@ return new class extends Migration
      * Perubahan:
      * 1. Tambah kolom `is_template` (boolean) & `instansi_id` (uuid, nullable) ke penugasans
      * 2. Buat `penanggung_jawab_id` nullable (template tidak punya penanggung jawab)
-     * 3. Migrate data dari template_penugasans → penugasans (sebagai template record)
-     * 4. Drop kolom `template_penugasan_id` dari penugasans
-     * 5. Drop tabel `template_penugasans`
+     * 3. Buat `created_by` nullable (template global tidak punya pembuat)
+     * 4. Migrate data dari template_penugasans → penugasans (sebagai template record)
+     * 5. Drop kolom `template_penugasan_id` dari penugasans
+     * 6. Drop tabel `template_penugasans`
      */
     public function up(): void
     {
@@ -51,7 +52,28 @@ return new class extends Migration
             });
         }
 
-        // ── 3. Migrate data template_penugasans → penugasans ─────────
+        // ── 3. Buat created_by nullable ────────────────────────────
+        if (Schema::hasColumn('penugasans', 'created_by')) {
+            $constraints = $this->getForeignKeyConstraints('penugasans', 'created_by');
+            foreach ($constraints as $constraintName) {
+                Schema::table('penugasans', function (Blueprint $table) use ($constraintName) {
+                    $table->dropForeign($constraintName);
+                });
+            }
+
+            // Ubah kolom menjadi nullable
+            DB::statement('ALTER TABLE penugasans MODIFY created_by INT NULL');
+
+            // Re-add foreign key
+            Schema::table('penugasans', function (Blueprint $table) {
+                $table->foreign('created_by')
+                    ->references('id')
+                    ->on('users')
+                    ->restrictOnDelete();
+            });
+        }
+
+        // ── 4. Migrate data template_penugasans → penugasans ─────────
         if (Schema::hasTable('template_penugasans')) {
             $templates = DB::table('template_penugasans')->get();
             foreach ($templates as $t) {
@@ -73,7 +95,7 @@ return new class extends Migration
             }
         }
 
-        // ── 4. Drop kolom template_penugasan_id ─────────────────────
+        // ── 5. Drop kolom template_penugasan_id ─────────────────────
         if (Schema::hasColumn('penugasans', 'template_penugasan_id')) {
             $constraints = $this->getForeignKeyConstraints('penugasans', 'template_penugasan_id');
             foreach ($constraints as $constraintName) {
@@ -86,7 +108,7 @@ return new class extends Migration
             });
         }
 
-        // ── 5. Add index untuk query template ───────────────────────
+        // ── 6. Add index untuk query template ───────────────────────
         Schema::table('penugasans', function (Blueprint $table) {
             if (!Schema::hasIndex('penugasans', 'idx_penugasans_is_template')) {
                 $table->index('is_template', 'idx_penugasans_is_template');
@@ -96,7 +118,7 @@ return new class extends Migration
             }
         });
 
-        // ── 6. Drop tabel template_penugasans ────────────────────────
+        // ── 7. Drop tabel template_penugasans ────────────────────────
         Schema::dropIfExists('template_penugasans');
     }
 
@@ -167,6 +189,21 @@ return new class extends Migration
                 ->references('id')
                 ->on('karyawans')
                 ->cascadeOnDelete();
+        });
+
+        // Make created_by NOT NULL again
+        $constraints = $this->getForeignKeyConstraints('penugasans', 'created_by');
+        foreach ($constraints as $constraintName) {
+            Schema::table('penugasans', function (Blueprint $table) use ($constraintName) {
+                $table->dropForeign($constraintName);
+            });
+        }
+        DB::statement('ALTER TABLE penugasans MODIFY created_by INT NOT NULL');
+        Schema::table('penugasans', function (Blueprint $table) {
+            $table->foreign('created_by')
+                ->references('id')
+                ->on('users')
+                ->restrictOnDelete();
         });
     }
 
