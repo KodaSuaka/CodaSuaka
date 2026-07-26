@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\penugasan;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class PenugasanPolicy
@@ -49,6 +49,7 @@ class PenugasanPolicy
         if (! $this->isSameTenant($user, $penugasan)) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
@@ -57,6 +58,7 @@ class PenugasanPolicy
         if (! $this->isSameTenant($user, $penugasan)) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 

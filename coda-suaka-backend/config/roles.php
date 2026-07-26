@@ -17,7 +17,7 @@
  */
 
 // Ambil data dari config/permissions.php
-$permissionsConfig = require __DIR__ . '/permissions.php';
+$permissionsConfig = require __DIR__.'/permissions.php';
 
 return [
     /*

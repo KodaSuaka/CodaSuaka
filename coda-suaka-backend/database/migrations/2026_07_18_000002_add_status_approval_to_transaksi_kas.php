@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transaksi_kas', function (Blueprint $table) {
-            if (!Schema::hasColumn('transaksi_kas', 'status_approval')) {
+            if (! Schema::hasColumn('transaksi_kas', 'status_approval')) {
                 $table->enum('status_approval', ['pending', 'disetujui', 'ditolak'])
                     ->default('disetujui')
                     ->after('dokumen_transaksi_id');

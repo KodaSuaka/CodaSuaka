@@ -29,6 +29,7 @@ class DivisiController extends Controller
         }
 
         $divisis = $query->orderBy('nama_divisi')->get();
+
         return $this->success($divisis);
     }
 
@@ -49,6 +50,7 @@ class DivisiController extends Controller
     public function show(Divisi $divisi)
     {
         $divisi->load(['ketuaKaryawan', 'outlet', 'anggota.karyawan.user']);
+
         return $this->success($divisi);
     }
 
@@ -69,6 +71,7 @@ class DivisiController extends Controller
     public function destroy(Divisi $divisi)
     {
         $divisi->delete();
+
         return $this->success(null, 'Divisi berhasil dihapus');
     }
 }

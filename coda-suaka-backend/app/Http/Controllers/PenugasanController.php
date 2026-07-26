@@ -30,9 +30,9 @@ class PenugasanController extends Controller
 
         // Select kolom yang dibutuhkan + eager loading relasi
         $query = penugasan::with([
-            'penanggungJawab.user' => fn($q) => $q->select(['id', 'name', 'role_id']),
-            'divisi' => fn($q) => $q->select(['id', 'nama_divisi']),
-            'pembuat' => fn($q) => $q->select(['id', 'name']),
+            'penanggungJawab.user' => fn ($q) => $q->select(['id', 'name', 'role_id']),
+            'divisi' => fn ($q) => $q->select(['id', 'nama_divisi']),
+            'pembuat' => fn ($q) => $q->select(['id', 'name']),
         ])->select([
             'id', 'judul', 'deskripsi', 'penanggung_jawab_id',
             'divisi_id', 'tenggat', 'status', 'urgency', 'poin',
@@ -60,7 +60,7 @@ class PenugasanController extends Controller
         }
         // else: null → tampilkan semua (template + regular)
 
-        if (!$isOwnerOrAdmin) {
+        if (! $isOwnerOrAdmin) {
             $karyawan = $user->profilKaryawan;
             if ($karyawan) {
                 // Non-Owner: lihat semua template + tugas biasa yang ditugaskan ke mereka
@@ -90,6 +90,7 @@ class PenugasanController extends Controller
         }
 
         $penugasans = $query->orderBy('created_at', 'desc')->get();
+
         return $this->success($penugasans);
     }
 
@@ -125,6 +126,7 @@ class PenugasanController extends Controller
     public function show(penugasan $penugasan)
     {
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
         return $this->success($penugasan);
     }
 
@@ -158,6 +160,7 @@ class PenugasanController extends Controller
     public function destroy(penugasan $penugasan)
     {
         $penugasan->delete();
+
         return $this->success(null, 'Tugas berhasil dihapus');
     }
 }

@@ -61,7 +61,7 @@ class NotificationController extends Controller
         $user = $request->user();
         $notification = $this->notificationService->markAsRead($id, $user->id);
 
-        if (!$notification) {
+        if (! $notification) {
             return $this->error('Notifikasi tidak ditemukan', 404);
         }
 
@@ -89,7 +89,7 @@ class NotificationController extends Controller
         $user = $request->user();
         $deleted = $this->notificationService->delete($id, $user->id);
 
-        if (!$deleted) {
+        if (! $deleted) {
             return $this->error('Notifikasi tidak ditemukan', 404);
         }
 

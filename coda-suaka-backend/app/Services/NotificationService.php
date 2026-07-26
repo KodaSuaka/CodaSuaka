@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class NotificationService
@@ -53,6 +54,7 @@ class NotificationService
                 $this->create($userId, $type, $title, $body, $icon, $color, $relatedId, $relatedType)
             );
         }
+
         return $notifications;
     }
 
@@ -75,13 +77,14 @@ class NotificationService
             $query->whereNotIn('id', $excludeUserIds);
         }
         $userIds = $query->pluck('id')->toArray();
+
         return $this->createForUsers($userIds, $type, $title, $body, $icon, $color, $relatedId, $relatedType);
     }
 
     /**
      * Ambil notifikasi user dengan pagination.
      */
-    public function getUserNotifications(int $userId, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getUserNotifications(int $userId, int $perPage = 20): LengthAwarePaginator
     {
         return Notification::forUser($userId)
             ->orderBy('created_at', 'desc')
@@ -133,6 +136,7 @@ class NotificationService
 
         if ($notification) {
             $notification->delete();
+
             return true;
         }
 
@@ -146,7 +150,9 @@ class NotificationService
     {
         // Kirim ke Manager/Owner di instansi yang sama
         $user = User::find($userId);
-        if (!$user) return;
+        if (! $user) {
+            return;
+        }
 
         $this->createForInstansi(
             $user->instansi_id,
@@ -203,7 +209,7 @@ class NotificationService
         $this->create(
             $userId,
             'presensi',
-            'Presensi ' . ucfirst($jenis),
+            'Presensi '.ucfirst($jenis),
             "Anda telah {$jenis} pada hari ini",
             'AccessTime',
             '#3B82F6',

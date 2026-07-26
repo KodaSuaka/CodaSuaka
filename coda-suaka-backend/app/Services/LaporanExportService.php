@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\TransaksiKas;
 use Barryvdh\DomPDF\Facade\Pdf;
-use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
-use Illuminate\Support\Facades\Storage;
+use OpenSpout\Writer\XLSX\Writer;
 
 class LaporanExportService
 {
@@ -24,6 +22,7 @@ class LaporanExportService
         ];
 
         $pdf = Pdf::loadView('laporan.buku_kas_pdf', $data);
+
         return $pdf->download("buku_kas_$startDate.pdf");
     }
 
@@ -32,7 +31,7 @@ class LaporanExportService
      */
     public function generateBukuKasExcel(array $transaksis, array $grouped, string $startDate, string $endDate)
     {
-        $writer = new Writer();
+        $writer = new Writer;
         $filename = storage_path("app/public/buku_kas_$startDate.xlsx");
 
         $writer->openToFile($filename);
@@ -57,7 +56,7 @@ class LaporanExportService
         $writer->addRow(Row::fromValues(['RINGKASAN PER KATEGORI - PEMASUKAN']));
         $writer->addRow(Row::fromValues(['Kategori', 'Jumlah Transaksi', 'Total Nominal']));
         $grandTotalMasuk = 0;
-        if (!empty($grouped['pemasukan'])) {
+        if (! empty($grouped['pemasukan'])) {
             foreach ($grouped['pemasukan'] as $kategori => $items) {
                 $total = array_sum(array_column($items, 'nominal'));
                 $grandTotalMasuk += $total;
@@ -79,7 +78,7 @@ class LaporanExportService
         $writer->addRow(Row::fromValues(['RINGKASAN PER KATEGORI - PENGELUARAN']));
         $writer->addRow(Row::fromValues(['Kategori', 'Jumlah Transaksi', 'Total Nominal']));
         $grandTotalKeluar = 0;
-        if (!empty($grouped['pengeluaran'])) {
+        if (! empty($grouped['pengeluaran'])) {
             foreach ($grouped['pengeluaran'] as $kategori => $items) {
                 $total = array_sum(array_column($items, 'nominal'));
                 $grandTotalKeluar += $total;
@@ -97,6 +96,7 @@ class LaporanExportService
         ]));
 
         $writer->close();
+
         return response()->download($filename)->deleteFileAfterSend(true);
     }
 
@@ -120,6 +120,7 @@ class LaporanExportService
         ];
 
         $pdf = Pdf::loadView('laporan.laba_rugi_pdf', $pdfData);
+
         return $pdf->download("laba_rugi_$startDate.pdf");
     }
 
@@ -137,6 +138,7 @@ class LaporanExportService
         ];
 
         $pdf = Pdf::loadView('laporan.arus_kas_pdf', $pdfData);
+
         return $pdf->download("arus_kas_$startDate.pdf");
     }
 
@@ -145,7 +147,7 @@ class LaporanExportService
      */
     public function generateArusKasExcel(array $data, string $startDate, string $endDate)
     {
-        $writer = new Writer();
+        $writer = new Writer;
         $filename = storage_path("app/public/arus_kas_$startDate.xlsx");
 
         $writer->openToFile($filename);
@@ -179,6 +181,7 @@ class LaporanExportService
             number_format($data['saldo_akhir'] ?? 0, 0, ',', '.')]));
 
         $writer->close();
+
         return response()->download($filename)->deleteFileAfterSend(true);
     }
 }

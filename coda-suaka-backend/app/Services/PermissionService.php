@@ -26,7 +26,7 @@ class PermissionService
      */
     public function userHasPermission(User $user, string $permission): bool
     {
-        $cacheKey = 'user_' . $user->id . ':permission_' . $permission;
+        $cacheKey = 'user_'.$user->id.':permission_'.$permission;
 
         if (array_key_exists($cacheKey, $this->permissionCache)) {
             return $this->permissionCache[$cacheKey];
@@ -34,6 +34,7 @@ class PermissionService
 
         if ($user->role === null) {
             $this->permissionCache[$cacheKey] = false;
+
             return false;
         }
 
@@ -47,6 +48,7 @@ class PermissionService
         }
 
         $this->permissionCache[$cacheKey] = $result;
+
         return $result;
     }
 
@@ -60,6 +62,7 @@ class PermissionService
                 return true;
             }
         }
+
         return false;
     }
 
@@ -69,7 +72,7 @@ class PermissionService
      */
     public function getUserPermissions(User $user): Collection
     {
-        $cacheKey = 'user_' . $user->id;
+        $cacheKey = 'user_'.$user->id;
 
         if (array_key_exists($cacheKey, $this->userPermissionsCache)) {
             return $this->userPermissionsCache[$cacheKey];
@@ -77,11 +80,13 @@ class PermissionService
 
         if ($user->role === null) {
             $this->userPermissionsCache[$cacheKey] = collect();
+
             return collect();
         }
 
         $permissions = $user->role->permissions->pluck('permission');
         $this->userPermissionsCache[$cacheKey] = $permissions;
+
         return $permissions;
     }
 
@@ -151,6 +156,7 @@ class PermissionService
             if ($item['permission'] === null) {
                 return true;
             }
+
             return in_array($item['permission'], $permissions, true);
         });
 

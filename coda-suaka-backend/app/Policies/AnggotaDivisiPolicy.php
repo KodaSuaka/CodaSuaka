@@ -28,6 +28,7 @@ class AnggotaDivisiPolicy
         if ($user->instansi_id !== $anggotaDivisi->divisi?->outlet?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
@@ -36,6 +37,7 @@ class AnggotaDivisiPolicy
         if ($user->instansi_id !== $anggotaDivisi->divisi?->outlet?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 

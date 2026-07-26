@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreattandenceRequest extends FormRequest
@@ -26,7 +25,7 @@ class StoreattandenceRequest extends FormRequest
                         return; // nullable, izinkan null
                     }
                     // Cek format: angka decimal, koma, angka decimal
-                    if (!preg_match('/^-?\d+\.?\d*,-?\d+\.?\d*$/', $value)) {
+                    if (! preg_match('/^-?\d+\.?\d*,-?\d+\.?\d*$/', $value)) {
                         $fail('Format lokasi tidak valid. Gunakan format: "latitude,longitude" (contoh: "-6.2088,106.8456")');
                     }
                 },

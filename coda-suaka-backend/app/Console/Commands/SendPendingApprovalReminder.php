@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
@@ -47,14 +48,14 @@ class SendPendingApprovalReminder extends Command
             foreach ($approvers as $approverId) {
                 // Cek apakah sudah ada notifikasi pending yang sama dalam 24 jam terakhir
                 // untuk mencegah spam notifikasi
-                $alreadyNotified = \App\Models\Notification::where('user_id', $approverId)
+                $alreadyNotified = Notification::where('user_id', $approverId)
                     ->where('type', 'keuangan_pending_reminder')
                     ->where('related_id', $transaksi->id)
                     ->where('related_type', 'App\\Models\\TransaksiKas')
                     ->where('created_at', '>=', now()->subDay())
                     ->exists();
 
-                if (!$alreadyNotified) {
+                if (! $alreadyNotified) {
                     $notificationService->create(
                         $approverId,
                         'keuangan_pending_reminder',
@@ -71,6 +72,7 @@ class SendPendingApprovalReminder extends Command
         }
 
         $this->info("Berhasil mengirim {$count} notifikasi pengingat approval.");
+
         return Command::SUCCESS;
     }
 }

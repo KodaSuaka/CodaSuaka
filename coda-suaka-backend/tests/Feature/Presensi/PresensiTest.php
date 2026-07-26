@@ -2,14 +2,11 @@
 
 namespace Tests\Feature\Presensi;
 
-use App\Models\User;
 use App\Models\Instansi;
 use App\Models\karyawan;
 use App\Models\role;
-use App\Models\outlet;
-use App\Models\attandence;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class PresensiTest extends TestCase
@@ -17,6 +14,7 @@ class PresensiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Instansi $instansi;
 
     protected function setUp(): void

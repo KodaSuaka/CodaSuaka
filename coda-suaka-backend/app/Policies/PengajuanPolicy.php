@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\pengajuan;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class PengajuanPolicy
@@ -55,7 +55,7 @@ class PengajuanPolicy
     public function approve(User $user, pengajuan $pengajuan): bool
     {
         // Must have manage:pengajuan permission AND be in the same tenant
-        if (!app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
+        if (! app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
             return false;
         }
 
@@ -65,7 +65,7 @@ class PengajuanPolicy
     public function reject(User $user, pengajuan $pengajuan): bool
     {
         // Must have manage:pengajuan permission AND be in the same tenant
-        if (!app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
+        if (! app(PermissionService::class)->userHasPermission($user, 'manage:pengajuan')) {
             return false;
         }
 

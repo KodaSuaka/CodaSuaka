@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\karyawan;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class KaryawanPolicy
@@ -29,6 +29,7 @@ class KaryawanPolicy
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
@@ -38,10 +39,11 @@ class KaryawanPolicy
         if ($karyawan->user_id === $user->id) {
             return false;
         }
-        
+
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 

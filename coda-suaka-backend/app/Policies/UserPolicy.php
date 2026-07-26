@@ -28,6 +28,7 @@ class UserPolicy
         if ($user->instansi_id !== $model->instansi_id) {
             return false;
         }
+
         // Users can update themselves, or users with manage:karyawan permission
         return $user->id === $model->id || app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
@@ -37,6 +38,7 @@ class UserPolicy
         if ($user->instansi_id !== $model->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 

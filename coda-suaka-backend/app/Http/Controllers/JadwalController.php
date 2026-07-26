@@ -30,7 +30,7 @@ class JadwalController extends Controller
 
         if ($request->has('bulan') && $request->has('tahun')) {
             $query->whereMonth('tanggal', $request->bulan)
-                  ->whereYear('tanggal', $request->tahun);
+                ->whereYear('tanggal', $request->tahun);
         }
 
         if ($request->has('tanggal')) {
@@ -38,6 +38,7 @@ class JadwalController extends Controller
         }
 
         $jadwals = $query->orderBy('tanggal', 'asc')->get();
+
         return $this->success($jadwals);
     }
 
@@ -66,6 +67,7 @@ class JadwalController extends Controller
     public function show(jadwal $jadwal)
     {
         $jadwal->load(['outlet', 'pembuat']);
+
         return $this->success($jadwal);
     }
 
@@ -86,6 +88,7 @@ class JadwalController extends Controller
     public function destroy(jadwal $jadwal)
     {
         $jadwal->delete();
+
         return $this->success(null, 'Event berhasil dihapus');
     }
 }

@@ -32,9 +32,9 @@ class StoreDivisiRequest extends FormRequest
             'ketua_karyawan_id' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !karyawan::whereHas('user', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
+                    if ($value && ! karyawan::whereHas('user', function ($q) use ($user) {
+                        $q->where('instansi_id', $user->instansi_id);
+                    })->where('id', $value)->exists()) {
                         $fail('Karyawan tidak ditemukan di instansi Anda');
                     }
                 },

@@ -36,9 +36,9 @@ class jadwal extends Model
                 // karena created_by adalah foreign key yang NOT NULL
                 $q->orWhere(function ($subQ) use ($user) {
                     $subQ->whereNull('outlet_id')
-                         ->whereHas('pembuat', function (Builder $q) use ($user) {
-                             $q->where('instansi_id', $user->instansi_id);
-                         });
+                        ->whereHas('pembuat', function (Builder $q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        });
                 });
             });
         }));

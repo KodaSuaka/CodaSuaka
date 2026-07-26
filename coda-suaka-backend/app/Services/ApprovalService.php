@@ -2,18 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use App\Models\TransaksiKas;
 use App\Models\ApprovalLog;
+use App\Models\TransaksiKas;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ApprovalService
 {
     /**
      * Cek apakah transaksi perlu melalui workflow approval.
-     *
-     * @param TransaksiKas $transaksi
-     * @return bool
      */
     public function perluApproval(TransaksiKas $transaksi): bool
     {
@@ -23,10 +21,6 @@ class ApprovalService
     /**
      * Ajukan transaksi untuk approval.
      * Otomatis mengubah status_approval transaksi menjadi 'pending'.
-     *
-     * @param TransaksiKas $transaksi
-     * @param User $pengaju
-     * @return ApprovalLog
      */
     public function ajukanApproval(TransaksiKas $transaksi, User $pengaju): ApprovalLog
     {
@@ -46,11 +40,6 @@ class ApprovalService
 
     /**
      * Setujui transaksi yang diajukan.
-     *
-     * @param ApprovalLog $log
-     * @param User $pemeriksa
-     * @param string|null $catatan
-     * @return void
      */
     public function setujui(ApprovalLog $log, User $pemeriksa, ?string $catatan = null): void
     {
@@ -67,11 +56,6 @@ class ApprovalService
 
     /**
      * Tolak transaksi yang diajukan.
-     *
-     * @param ApprovalLog $log
-     * @param User $pemeriksa
-     * @param string $catatan
-     * @return void
      */
     public function tolak(ApprovalLog $log, User $pemeriksa, string $catatan): void
     {
@@ -88,23 +72,19 @@ class ApprovalService
 
     /**
      * Dapatkan daftar transaksi yang perlu approval (pending) untuk suatu instansi.
-     *
-     * @param User $user
-     * @param array $filters
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getPendingApprovals(User $user, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getPendingApprovals(User $user, array $filters = []): LengthAwarePaginator
     {
         return ApprovalLog::with([
-                'transaksiKas' => fn($q) => $q->select([
-                    'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
-                    'keterangan', 'status_approval', 'created_by', 'outlet_id',
-                ]),
-                'transaksiKas.kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori']),
-                'transaksiKas.outlet' => fn($q) => $q->select(['id', 'nama_outlet']),
-                'transaksiKas.createdByUser' => fn($q) => $q->select(['id', 'name']),
-                'pengaju' => fn($q) => $q->select(['id', 'name']),
-            ])
+            'transaksiKas' => fn ($q) => $q->select([
+                'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
+                'keterangan', 'status_approval', 'created_by', 'outlet_id',
+            ]),
+            'transaksiKas.kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori']),
+            'transaksiKas.outlet' => fn ($q) => $q->select(['id', 'nama_outlet']),
+            'transaksiKas.createdByUser' => fn ($q) => $q->select(['id', 'name']),
+            'pengaju' => fn ($q) => $q->select(['id', 'name']),
+        ])
             ->select([
                 'id', 'transaksi_kas_id', 'diajukan_oleh', 'disetujui_oleh',
                 'status', 'catatan', 'tanggal_diajukan', 'created_at',
@@ -112,13 +92,13 @@ class ApprovalService
             ->whereHas('transaksiKas', function ($q) use ($user, $filters) {
                 $q->where('instansi_id', $user->instansi_id);
 
-                if (!empty($filters['outlet_id'])) {
+                if (! empty($filters['outlet_id'])) {
                     $q->where('outlet_id', $filters['outlet_id']);
                 }
-                if (!empty($filters['start_date'])) {
+                if (! empty($filters['start_date'])) {
                     $q->whereDate('tanggal', '>=', $filters['start_date']);
                 }
-                if (!empty($filters['end_date'])) {
+                if (! empty($filters['end_date'])) {
                     $q->whereDate('tanggal', '<=', $filters['end_date']);
                 }
             })
@@ -129,24 +109,20 @@ class ApprovalService
 
     /**
      * Dapatkan riwayat approval (semua status) untuk suatu instansi.
-     *
-     * @param User $user
-     * @param array $filters
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getRiwayatApproval(User $user, array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getRiwayatApproval(User $user, array $filters = []): LengthAwarePaginator
     {
         $query = ApprovalLog::with([
-                'transaksiKas' => fn($q) => $q->select([
-                    'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
-                    'keterangan', 'status_approval', 'created_by', 'outlet_id',
-                ]),
-                'transaksiKas.kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori']),
-                'transaksiKas.outlet' => fn($q) => $q->select(['id', 'nama_outlet']),
-                'transaksiKas.createdByUser' => fn($q) => $q->select(['id', 'name']),
-                'pengaju' => fn($q) => $q->select(['id', 'name']),
-                'pemeriksa' => fn($q) => $q->select(['id', 'name']),
-            ])
+            'transaksiKas' => fn ($q) => $q->select([
+                'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
+                'keterangan', 'status_approval', 'created_by', 'outlet_id',
+            ]),
+            'transaksiKas.kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori']),
+            'transaksiKas.outlet' => fn ($q) => $q->select(['id', 'nama_outlet']),
+            'transaksiKas.createdByUser' => fn ($q) => $q->select(['id', 'name']),
+            'pengaju' => fn ($q) => $q->select(['id', 'name']),
+            'pemeriksa' => fn ($q) => $q->select(['id', 'name']),
+        ])
             ->select([
                 'id', 'transaksi_kas_id', 'diajukan_oleh', 'disetujui_oleh',
                 'status', 'catatan', 'tanggal_diajukan', 'tanggal_diproses',
@@ -155,19 +131,19 @@ class ApprovalService
             ->whereHas('transaksiKas', function ($q) use ($user, $filters) {
                 $q->where('instansi_id', $user->instansi_id);
 
-                if (!empty($filters['outlet_id'])) {
+                if (! empty($filters['outlet_id'])) {
                     $q->where('outlet_id', $filters['outlet_id']);
                 }
-                if (!empty($filters['start_date'])) {
+                if (! empty($filters['start_date'])) {
                     $q->whereDate('tanggal', '>=', $filters['start_date']);
                 }
-                if (!empty($filters['end_date'])) {
+                if (! empty($filters['end_date'])) {
                     $q->whereDate('tanggal', '<=', $filters['end_date']);
                 }
             });
 
         // Filter by status
-        if (!empty($filters['status']) && in_array($filters['status'], ['pending', 'disetujui', 'ditolak'])) {
+        if (! empty($filters['status']) && in_array($filters['status'], ['pending', 'disetujui', 'ditolak'])) {
             $query->where('status', $filters['status']);
         }
 

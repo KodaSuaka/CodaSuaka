@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\jadwal;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class JadwalPolicy
@@ -44,6 +44,7 @@ class JadwalPolicy
         if (! $this->isSameTenant($user, $jadwal)) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
     }
 
@@ -52,6 +53,7 @@ class JadwalPolicy
         if (! $this->isSameTenant($user, $jadwal)) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:jadwal');
     }
 

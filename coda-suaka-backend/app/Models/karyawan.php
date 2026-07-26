@@ -33,9 +33,9 @@ class karyawan extends Model
                 // karena user_id adalah foreign key yang NOT NULL di migration
                 $q->orWhere(function ($subQ) use ($user) {
                     $subQ->whereNull('outlet_id')
-                         ->whereHas('user', function (Builder $q) use ($user) {
-                             $q->where('instansi_id', $user->instansi_id);
-                         });
+                        ->whereHas('user', function (Builder $q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        });
                 });
             });
         }));

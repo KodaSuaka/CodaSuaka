@@ -5,10 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTransaksiKasRequest;
 use App\Http\Requests\UpdateTransaksiKasRequest;
 use App\Models\TransaksiKas;
-use App\Traits\ApiResponse;
 use App\Services\ApprovalService;
 use App\Services\AuditService;
-use Carbon\Carbon;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class TransaksiKasController extends Controller
@@ -16,6 +15,7 @@ class TransaksiKasController extends Controller
     use ApiResponse;
 
     protected ApprovalService $approvalService;
+
     protected AuditService $auditService;
 
     public function __construct(ApprovalService $approvalService, AuditService $auditService)
@@ -35,9 +35,9 @@ class TransaksiKasController extends Controller
 
         // Select kolom yang dibutuhkan + eager loading relasi
         $query = TransaksiKas::with([
-            'kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori', 'tipe']),
-            'outlet' => fn($q) => $q->select(['id', 'nama_outlet']),
-            'createdByUser' => fn($q) => $q->select(['id', 'name']),
+            'kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori', 'tipe']),
+            'outlet' => fn ($q) => $q->select(['id', 'nama_outlet']),
+            'createdByUser' => fn ($q) => $q->select(['id', 'name']),
         ])->select([
             'id', 'instansi_id', 'tanggal', 'tipe', 'nominal',
             'kategori_transaksi_id', 'outlet_id', 'metode_pembayaran',
@@ -150,6 +150,7 @@ class TransaksiKasController extends Controller
             'approvalLogs.pengaju',
             'approvalLogs.pemeriksa',
         ]);
+
         return $this->success($transaksi_kas);
     }
 
@@ -206,6 +207,7 @@ class TransaksiKasController extends Controller
 
         // Jika transaksi sudah disetujui dan tidak dari dokumen, tetap bisa dihapus dengan permission delete:keuangan
         $transaksi_kas->delete();
+
         return $this->success(null, 'Entri kas berhasil dihapus');
     }
 
@@ -257,8 +259,8 @@ class TransaksiKasController extends Controller
         $user = $request->user();
 
         $query = TransaksiKas::with([
-                'kategoriTransaksi' => fn($q) => $q->select(['id', 'nama_kategori', 'termasuk_hpp']),
-            ])
+            'kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori', 'termasuk_hpp']),
+        ])
             ->select(['id', 'tipe', 'nominal', 'kategori_transaksi_id', 'tanggal'])
             ->where('instansi_id', $user->instansi_id);
 
@@ -282,12 +284,12 @@ class TransaksiKasController extends Controller
 
         $totalHpp = (float) (clone $query)
             ->where('tipe', 'keluar')
-            ->whereHas('kategoriTransaksi', fn($q) => $q->where('termasuk_hpp', true))
+            ->whereHas('kategoriTransaksi', fn ($q) => $q->where('termasuk_hpp', true))
             ->sum('nominal');
 
         $totalBeban = (float) (clone $query)
             ->where('tipe', 'keluar')
-            ->whereHas('kategoriTransaksi', fn($q) => $q->where('termasuk_hpp', false))
+            ->whereHas('kategoriTransaksi', fn ($q) => $q->where('termasuk_hpp', false))
             ->sum('nominal');
 
         $labaRugi = $totalPendapatan - $totalHpp - $totalBeban;
@@ -302,13 +304,13 @@ class TransaksiKasController extends Controller
         }
 
         $hppPerKategori = [];
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $hppPerKategori[$kategori] = ($hppPerKategori[$kategori] ?? 0) + (float) $t->nominal;
         }
 
         $bebanPerKategori = [];
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => !$t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => ! $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $bebanPerKategori[$kategori] = ($bebanPerKategori[$kategori] ?? 0) + (float) $t->nominal;
         }

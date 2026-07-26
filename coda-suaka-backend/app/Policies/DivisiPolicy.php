@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Divisi;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class DivisiPolicy
@@ -28,6 +28,7 @@ class DivisiPolicy
         if ($user->instansi_id !== $divisi->outlet?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 
@@ -36,6 +37,7 @@ class DivisiPolicy
         if ($user->instansi_id !== $divisi->outlet?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:divisi');
     }
 

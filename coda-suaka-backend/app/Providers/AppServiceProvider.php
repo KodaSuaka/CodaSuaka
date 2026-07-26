@@ -2,38 +2,40 @@
 
 namespace App\Providers;
 
-use App\Models\User;
-use App\Models\role;
-use App\Models\outlet;
-use App\Models\karyawan;
-use App\Models\pengajuan;
-use App\Models\Divisi;
-use App\Models\jadwal;
-use App\Models\penugasan;
 use App\Models\AnggotaDivisi;
 use App\Models\attandence;
-use App\Models\transaksi_paket;
+use App\Models\Divisi;
 use App\Models\Instansi;
-use App\Models\paket;
+use App\Models\jadwal;
+use App\Models\karyawan;
 use App\Models\KategoriTransaksi;
+use App\Models\outlet;
+use App\Models\paket;
+use App\Models\pengajuan;
+use App\Models\penugasan;
+use App\Models\transaksi_paket;
 use App\Models\TransaksiKas;
-use App\Policies\OutletPolicy;
-use App\Policies\KaryawanPolicy;
-use App\Policies\DivisiPolicy;
-use App\Policies\JadwalPolicy;
-use App\Policies\PenugasanPolicy;
+use App\Models\User;
 use App\Policies\AnggotaDivisiPolicy;
 use App\Policies\AttandencePolicy;
-use App\Policies\TransaksiPaketPolicy;
+use App\Policies\DivisiPolicy;
 use App\Policies\InstansiPolicy;
-use App\Policies\UserPolicy;
-use App\Policies\PaketPolicy;
+use App\Policies\JadwalPolicy;
+use App\Policies\KaryawanPolicy;
 use App\Policies\KategoriTransaksiPolicy;
+use App\Policies\OutletPolicy;
+use App\Policies\PaketPolicy;
+use App\Policies\PengajuanPolicy;
+use App\Policies\PenugasanPolicy;
 use App\Policies\TransaksiKasPolicy;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Http\Request;
+use App\Policies\TransaksiPaketPolicy;
+use App\Policies\UserPolicy;
+use App\Services\PermissionService;
+use Carbon\Carbon;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -69,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
 
         // ─── Set locale Carbon ke Indonesia ─────────────────────────
         // Agar now()->isoFormat('DD MMMM YYYY') menghasilkan "17 Juli 2026"
-        \Carbon\Carbon::setLocale('id');
+        Carbon::setLocale('id');
 
         // ─── Register Policies ─────────────────────────────────────
         Gate::policy(outlet::class, OutletPolicy::class);
@@ -77,7 +79,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Divisi::class, DivisiPolicy::class);
         Gate::policy(jadwal::class, JadwalPolicy::class);
         Gate::policy(penugasan::class, PenugasanPolicy::class);
-        Gate::policy(pengajuan::class, \App\Policies\PengajuanPolicy::class);
+        Gate::policy(pengajuan::class, PengajuanPolicy::class);
         Gate::policy(AnggotaDivisi::class, AnggotaDivisiPolicy::class);
         Gate::policy(attandence::class, AttandencePolicy::class);
         Gate::policy(transaksi_paket::class, TransaksiPaketPolicy::class);
@@ -96,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Manage roles & permissions — uses granular permission check
         Gate::define('manage-roles', function (User $user) {
-            return $user->role?->nama_role === 'Owner' || app(\App\Services\PermissionService::class)->userHasPermission($user, 'manage:role_permissions');
+            return $user->role?->nama_role === 'Owner' || app(PermissionService::class)->userHasPermission($user, 'manage:role_permissions');
         });
 
         // Access a specific instansi's data (tenant-scoped)
@@ -108,17 +110,17 @@ class AppServiceProvider extends ServiceProvider
 
         // Export keuangan (PDF/Excel)
         Gate::define('export-keuangan', function (User $user) {
-            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'export:keuangan');
+            return app(PermissionService::class)->userHasPermission($user, 'export:keuangan');
         });
 
         // Delete keuangan (penghapusan transaksi/kategori)
         Gate::define('delete-keuangan', function (User $user) {
-            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'delete:keuangan');
+            return app(PermissionService::class)->userHasPermission($user, 'delete:keuangan');
         });
 
         // Approve keuangan (persetujuan transaksi)
         Gate::define('approve-keuangan', function (User $user) {
-            return app(\App\Services\PermissionService::class)->userHasPermission($user, 'approve:keuangan');
+            return app(PermissionService::class)->userHasPermission($user, 'approve:keuangan');
         });
     }
 }

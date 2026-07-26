@@ -20,10 +20,10 @@ class PermissionMiddleware
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated.'
+                'message' => 'Unauthenticated.',
             ], 401);
         }
 
@@ -38,7 +38,7 @@ class PermissionMiddleware
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Unauthorized. Anda tidak memiliki izin untuk mengakses endpoint ini.'
+            'message' => 'Unauthorized. Anda tidak memiliki izin untuk mengakses endpoint ini.',
         ], 403);
     }
 }

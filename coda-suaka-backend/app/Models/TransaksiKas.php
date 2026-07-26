@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Models\Scopes\TenantScope;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class TransaksiKas extends Model
 {
@@ -77,7 +77,7 @@ class TransaksiKas extends Model
      */
     public function approvalLogs()
     {
-        return $this->hasMany(\App\Models\ApprovalLog::class, 'transaksi_kas_id');
+        return $this->hasMany(ApprovalLog::class, 'transaksi_kas_id');
     }
 
     /**
@@ -86,13 +86,13 @@ class TransaksiKas extends Model
     public function needsApproval(): bool
     {
         $config = config('keuangan.approval');
-        if (!$config['enabled']) {
+        if (! $config['enabled']) {
             return false;
         }
 
         // Cek tipe
         $tipePerluApproval = $config['tipe_perlu_approval'];
-        if (!in_array($this->tipe, (array) $tipePerluApproval)) {
+        if (! in_array($this->tipe, (array) $tipePerluApproval)) {
             return false;
         }
 

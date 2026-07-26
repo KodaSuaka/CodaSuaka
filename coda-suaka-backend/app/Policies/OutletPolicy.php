@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\outlet;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class OutletPolicy
@@ -28,6 +28,7 @@ class OutletPolicy
         if ($user->instansi_id !== $outlet->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:outlets');
     }
 
@@ -36,6 +37,7 @@ class OutletPolicy
         if ($user->instansi_id !== $outlet->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:outlets');
     }
 

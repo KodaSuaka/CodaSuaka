@@ -16,9 +16,11 @@ use App\Models\pengajuan;
 use App\Models\penugasan;
 use App\Models\role;
 use App\Models\role_permission;
+use App\Models\transaksi_paket;
 use App\Models\TransaksiKas;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -41,7 +43,7 @@ use Illuminate\Support\Str;
  */
 class DummyDataSeeder extends Seeder
 {
-    use \Illuminate\Database\Console\Seeds\WithoutModelEvents;
+    use WithoutModelEvents;
 
     private string $defaultPassword;
 
@@ -166,22 +168,22 @@ class DummyDataSeeder extends Seeder
         $this->command?->info('  AKUN UNTUK LOGIN (Password: password)');
         $this->command?->info('═══════════════════════════════════════');
         $this->command?->info('');
-        $this->command?->info('--- Instansi 1: ' . $instansi1->nama_instansi . ' ---');
-        $this->command?->info("  Owner    : owner1@berkahmart.com");
-        $this->command?->info("  Manager  : manager1@berkahmart.com");
-        $this->command?->info("  Keuangan : keuangan1@berkahmart.com");
-        $this->command?->info("  Staff    : staff1@berkahmart.com");
-        $this->command?->info("  Karyawan : karyawan1@berkahmart.com");
+        $this->command?->info('--- Instansi 1: '.$instansi1->nama_instansi.' ---');
+        $this->command?->info('  Owner    : owner1@berkahmart.com');
+        $this->command?->info('  Manager  : manager1@berkahmart.com');
+        $this->command?->info('  Keuangan : keuangan1@berkahmart.com');
+        $this->command?->info('  Staff    : staff1@berkahmart.com');
+        $this->command?->info('  Karyawan : karyawan1@berkahmart.com');
         $this->command?->info('');
-        $this->command?->info('--- Instansi 2: ' . $instansi2->nama_instansi . ' ---');
-        $this->command?->info("  Owner    : owner2@kopinusantara.com");
-        $this->command?->info("  Manager  : manager2@kopinusantara.com");
-        $this->command?->info("  Keuangan : keuangan2@kopinusantara.com");
-        $this->command?->info("  Staff    : staff2@kopinusantara.com");
-        $this->command?->info("  Karyawan : karyawan2@kopinusantara.com");
+        $this->command?->info('--- Instansi 2: '.$instansi2->nama_instansi.' ---');
+        $this->command?->info('  Owner    : owner2@kopinusantara.com');
+        $this->command?->info('  Manager  : manager2@kopinusantara.com');
+        $this->command?->info('  Keuangan : keuangan2@kopinusantara.com');
+        $this->command?->info('  Staff    : staff2@kopinusantara.com');
+        $this->command?->info('  Karyawan : karyawan2@kopinusantara.com');
         $this->command?->info('');
         $this->command?->info('--- Super Admin ---');
-        $this->command?->info("  Email    : admin@codasuaka.com");
+        $this->command?->info('  Email    : admin@codasuaka.com');
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -240,7 +242,7 @@ class DummyDataSeeder extends Seeder
 
     private function createTransaksiPaket(Instansi $instansi, paket $paket): void
     {
-        \App\Models\transaksi_paket::firstOrCreate(
+        transaksi_paket::firstOrCreate(
             [
                 'instansi_id' => $instansi->id,
                 'paket_id' => $paket->id,
@@ -324,7 +326,7 @@ class DummyDataSeeder extends Seeder
                 ['user_id' => $user->id],
                 [
                     'nama_lengkap' => $user->name,
-                    'kontak' => '0812' . rand(10000000, 99999999),
+                    'kontak' => '0812'.rand(10000000, 99999999),
                     'alamat' => $this->getRandomAddress(),
                     'foto_profil' => null,
                     'sisa_cuti' => rand(6, 12),
@@ -363,7 +365,7 @@ class DummyDataSeeder extends Seeder
                 ['user_id' => $user->id],
                 [
                     'nama_lengkap' => $nama,
-                    'kontak' => '0812' . rand(10000000, 99999999),
+                    'kontak' => '0812'.rand(10000000, 99999999),
                     'alamat' => $this->getRandomAddress(),
                     'foto_profil' => null,
                     'sisa_cuti' => rand(6, 12),
@@ -383,7 +385,7 @@ class DummyDataSeeder extends Seeder
             'manager' => 'Rina Susanti (Manager)',
             'keuangan' => 'Dewi Lestari (Keuangan)',
             'staff' => 'Andi Pratama (Staff)',
-            default => 'User ' . $role,
+            default => 'User '.$role,
         };
     }
 
@@ -483,7 +485,9 @@ class DummyDataSeeder extends Seeder
                                 ['peran' => $karyawanCount === 0 ? 'ketua' : 'anggota']
                             );
                             $karyawanCount++;
-                            if ($karyawanCount >= 2) break;
+                            if ($karyawanCount >= 2) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -616,11 +620,15 @@ class DummyDataSeeder extends Seeder
             // Presensi untuk semua karyawan
             for ($i = 0; $i < 5; $i++) {
                 $key = "karyawan_{$i}";
-                if (!isset($users[$key])) continue;
+                if (! isset($users[$key])) {
+                    continue;
+                }
 
                 // Random: 80% hadir, 10% terlambat, 10% tidak hadir
                 $rand = rand(1, 100);
-                if ($rand <= 10) continue; // Tidak hadir
+                if ($rand <= 10) {
+                    continue;
+                } // Tidak hadir
 
                 $jamCheckin = match (true) {
                     $rand <= 30 => $this->randomTime('07:00', '07:29'), // Checkin awal
@@ -689,7 +697,9 @@ class DummyDataSeeder extends Seeder
                 $anggotaIds = AnggotaDivisi::where('divisi_id', $divisi->id)->pluck('karyawan_id');
 
                 foreach ($tugasData as $i => $tugas) {
-                    if ($anggotaIds->isEmpty()) continue;
+                    if ($anggotaIds->isEmpty()) {
+                        continue;
+                    }
 
                     $penanggungId = $anggotaIds[$i % $anggotaIds->count()];
                     $karyawan = karyawan::find($penanggungId);
@@ -789,7 +799,9 @@ class DummyDataSeeder extends Seeder
 
         for ($i = 0; $i < 5; $i++) {
             $key = "karyawan_{$i}";
-            if (!isset($users[$key])) continue;
+            if (! isset($users[$key])) {
+                continue;
+            }
 
             $pengajuan = $pengajuanData[$i % count($pengajuanData)];
 
@@ -825,7 +837,9 @@ class DummyDataSeeder extends Seeder
             $senderKey = $msg['sender_key'] ?? $msg['sender'];
             $receiverKey = $msg['receiver_key'] ?? $msg['receiver'];
 
-            if (!isset($users[$senderKey]) || !isset($users[$receiverKey])) continue;
+            if (! isset($users[$senderKey]) || ! isset($users[$receiverKey])) {
+                continue;
+            }
 
             Chat::create([
                 'pengirim_id' => $users[$senderKey]->id,
@@ -861,6 +875,7 @@ class DummyDataSeeder extends Seeder
             'Jl. Melawai No. 20, Jakarta Selatan',
             'Jl. Pondok Indah No. 3, Jakarta Selatan',
         ];
+
         return $addresses[array_rand($addresses)];
     }
 
@@ -868,6 +883,7 @@ class DummyDataSeeder extends Seeder
     {
         $shuffled = $this->namaKaryawan;
         shuffle($shuffled);
+
         return array_slice($shuffled, 0, $count);
     }
 }

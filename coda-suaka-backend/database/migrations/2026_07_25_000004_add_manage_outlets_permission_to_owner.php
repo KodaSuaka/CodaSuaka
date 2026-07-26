@@ -17,7 +17,7 @@ return new class extends Migration
     {
         $ownerRoleId = DB::table('roles')->where('nama_role', 'Owner')->value('id');
 
-        if (!$ownerRoleId) {
+        if (! $ownerRoleId) {
             return;
         }
 
@@ -41,7 +41,7 @@ return new class extends Migration
     {
         $ownerRoleId = DB::table('roles')->where('nama_role', 'Owner')->value('id');
 
-        if (!$ownerRoleId) {
+        if (! $ownerRoleId) {
             return;
         }
 

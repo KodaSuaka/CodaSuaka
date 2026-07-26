@@ -22,10 +22,10 @@ return new class extends Migration
     {
         // ── 1. Tambah kolom baru ke penugasans ──────────────────────
         Schema::table('penugasans', function (Blueprint $table) {
-            if (!Schema::hasColumn('penugasans', 'is_template')) {
+            if (! Schema::hasColumn('penugasans', 'is_template')) {
                 $table->boolean('is_template')->default(false)->after('created_by');
             }
-            if (!Schema::hasColumn('penugasans', 'instansi_id')) {
+            if (! Schema::hasColumn('penugasans', 'instansi_id')) {
                 $table->uuid('instansi_id')->nullable()->after('is_template');
             }
         });
@@ -79,19 +79,19 @@ return new class extends Migration
             $templates = DB::table('template_penugasans')->get();
             foreach ($templates as $t) {
                 DB::table('penugasans')->insert([
-                    'judul'               => $t->nama_template,
-                    'deskripsi'           => $t->deskripsi_template,
+                    'judul' => $t->nama_template,
+                    'deskripsi' => $t->deskripsi_template,
                     'penanggung_jawab_id' => null,
-                    'divisi_id'           => null,
-                    'tenggat'             => null,
-                    'status'              => 'belum',
-                    'urgency'             => $t->urgency_default ?? 'sedang',
-                    'poin'                => $t->poin_default ?? 0,
-                    'is_template'         => true,
-                    'instansi_id'         => $t->instansi_id,
-                    'created_by'          => $t->created_by,
-                    'created_at'          => $t->created_at ?? now(),
-                    'updated_at'          => $t->updated_at ?? now(),
+                    'divisi_id' => null,
+                    'tenggat' => null,
+                    'status' => 'belum',
+                    'urgency' => $t->urgency_default ?? 'sedang',
+                    'poin' => $t->poin_default ?? 0,
+                    'is_template' => true,
+                    'instansi_id' => $t->instansi_id,
+                    'created_by' => $t->created_by,
+                    'created_at' => $t->created_at ?? now(),
+                    'updated_at' => $t->updated_at ?? now(),
                 ]);
             }
         }
@@ -111,10 +111,10 @@ return new class extends Migration
 
         // ── 6. Add index untuk query template ───────────────────────
         Schema::table('penugasans', function (Blueprint $table) {
-            if (!Schema::hasIndex('penugasans', 'idx_penugasans_is_template')) {
+            if (! Schema::hasIndex('penugasans', 'idx_penugasans_is_template')) {
                 $table->index('is_template', 'idx_penugasans_is_template');
             }
-            if (!Schema::hasIndex('penugasans', 'idx_penugasans_instansi_id')) {
+            if (! Schema::hasIndex('penugasans', 'idx_penugasans_instansi_id')) {
                 $table->index('instansi_id', 'idx_penugasans_instansi_id');
             }
         });
@@ -143,14 +143,14 @@ return new class extends Migration
         $templates = DB::table('penugasans')->where('is_template', true)->get();
         foreach ($templates as $row) {
             DB::table('template_penugasans')->insert([
-                'nama_template'      => $row->judul,
+                'nama_template' => $row->judul,
                 'deskripsi_template' => $row->deskripsi,
-                'urgency_default'    => $row->urgency,
-                'poin_default'       => $row->poin,
-                'instansi_id'        => $row->instansi_id,
-                'created_by'         => $row->created_by,
-                'created_at'         => $row->created_at,
-                'updated_at'         => $row->updated_at,
+                'urgency_default' => $row->urgency,
+                'poin_default' => $row->poin,
+                'instansi_id' => $row->instansi_id,
+                'created_by' => $row->created_by,
+                'created_at' => $row->created_at,
+                'updated_at' => $row->updated_at,
             ]);
         }
 
@@ -219,14 +219,14 @@ return new class extends Migration
         }
 
         $database = DB::getDatabaseName();
-        $results = DB::select("
+        $results = DB::select('
             SELECT CONSTRAINT_NAME
             FROM information_schema.KEY_COLUMN_USAGE
             WHERE TABLE_SCHEMA = ?
               AND TABLE_NAME = ?
               AND COLUMN_NAME = ?
               AND REFERENCED_TABLE_NAME IS NOT NULL
-        ", [$database, $table, $column]);
+        ', [$database, $table, $column]);
 
         return array_column($results, 'CONSTRAINT_NAME');
     }

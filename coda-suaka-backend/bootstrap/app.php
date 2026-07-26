@@ -1,8 +1,19 @@
 <?php
 
+use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\RoleMiddleware;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,18 +24,18 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
-            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Always return JSON for API routes on error
-        $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request) {
+        $exceptions->shouldRenderJsonWhen(function (Request $request) {
             return $request->is('api/*') || $request->expectsJson();
         });
 
         // Handle validation errors
-        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (ValidationException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
                     'status' => 'error',
@@ -35,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle model not found
-        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (ModelNotFoundException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
                     'status' => 'error',
@@ -45,7 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle authentication exceptions
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
                     'status' => 'error',
@@ -55,10 +66,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle all other exceptions for API routes
-        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 // ── Forbidden / Authorization ──────────────────────────────
-                if ($e instanceof \Illuminate\Auth\Access\AuthorizationException || $e instanceof \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException) {
+                if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
                     return response()->json([
                         'status' => 'error',
                         'message' => 'Anda tidak memiliki akses (Forbidden).',
@@ -68,7 +79,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 // ── HTTP exceptions (404, 429, dll) ───────────────────────
-                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                if ($e instanceof HttpExceptionInterface) {
                     $statusCode = $e->getStatusCode();
                     $message = $e->getMessage() ?: match ($statusCode) {
                         404 => 'Resource tidak ditemukan.',
@@ -87,8 +98,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
                     // Di non-debug mode, tetap kirimkan referensi error
                     // agar frontend bisa menampilkan informasi yang berguna
-                    if (!config('app.debug') && $statusCode >= 500) {
-                        $errorRef = 'ERR-' . strtoupper(substr(md5(microtime()), 0, 8));
+                    if (! config('app.debug') && $statusCode >= 500) {
+                        $errorRef = 'ERR-'.strtoupper(substr(md5(microtime()), 0, 8));
                         $response['error_ref'] = $errorRef;
                         logger()->warning("Error ref: {$errorRef} — {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}");
                     }
@@ -97,14 +108,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 // ── Database query errors ─────────────────────────────────
-                if ($e instanceof \Illuminate\Database\QueryException) {
-                    $errorRef = 'DB-ERR-' . strtoupper(substr(md5(microtime()), 0, 8));
+                if ($e instanceof QueryException) {
+                    $errorRef = 'DB-ERR-'.strtoupper(substr(md5(microtime()), 0, 8));
                     logger()->error("{$errorRef} — {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}");
 
                     return response()->json([
                         'status' => 'error',
                         'message' => config('app.debug')
-                            ? 'Database error: ' . $e->getMessage()
+                            ? 'Database error: '.$e->getMessage()
                             : 'Terjadi kesalahan database. Silakan coba lagi.',
                         'code' => 'DB_ERROR',
                         'error_ref' => $errorRef,
@@ -113,15 +124,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 // ── Fallback untuk semua error lain ───────────────────────
-                if (! $e instanceof \Illuminate\Validation\ValidationException
-                    && ! $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
-                    && ! $e instanceof \Illuminate\Auth\AuthenticationException) {
-                    $statusCode = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException
+                if (! $e instanceof ValidationException
+                    && ! $e instanceof ModelNotFoundException
+                    && ! $e instanceof AuthenticationException) {
+                    $statusCode = $e instanceof HttpException
                         ? $e->getStatusCode()
                         : 500;
 
                     // Selalu log error untuk traceability di production
-                    $errorRef = 'SRV-ERR-' . strtoupper(substr(md5(microtime()), 0, 8));
+                    $errorRef = 'SRV-ERR-'.strtoupper(substr(md5(microtime()), 0, 8));
                     logger()->error("{$errorRef} — {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}");
 
                     $response = [
@@ -134,7 +145,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     ];
 
                     // Di production, kirim error_ref agar user bisa melapor
-                    if (!config('app.debug')) {
+                    if (! config('app.debug')) {
                         $response['error_ref'] = $errorRef;
                     }
 

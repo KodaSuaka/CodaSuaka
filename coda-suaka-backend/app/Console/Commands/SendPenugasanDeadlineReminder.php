@@ -44,7 +44,7 @@ class SendPenugasanDeadlineReminder extends Command
 
         foreach ($penugasans as $penugasan) {
             $user = $penugasan->penanggungJawab?->user;
-            if (!$user) {
+            if (! $user) {
                 continue;
             }
 
@@ -65,6 +65,7 @@ class SendPenugasanDeadlineReminder extends Command
         }
 
         $this->info("Berhasil mengirim {$count} notifikasi pengingat tenggat penugasan.");
+
         return Command::SUCCESS;
     }
 }

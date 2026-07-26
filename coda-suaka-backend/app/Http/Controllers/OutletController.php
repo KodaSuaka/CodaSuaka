@@ -57,6 +57,7 @@ class OutletController extends Controller
         if ($outlet->instansi_id !== $request->user()->instansi_id) {
             return $this->error('Forbidden', 403);
         }
+
         return $this->success($outlet);
     }
 
@@ -83,6 +84,7 @@ class OutletController extends Controller
             return $this->error('Forbidden', 403);
         }
         $outlet->delete();
+
         return $this->success(null, 'Outlet berhasil dihapus');
     }
 }

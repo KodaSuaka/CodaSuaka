@@ -15,10 +15,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('penugasans', function (Blueprint $table) {
-            if (!Schema::hasColumn('penugasans', 'urgency')) {
+            if (! Schema::hasColumn('penugasans', 'urgency')) {
                 $table->enum('urgency', ['urgent', 'sedang', 'rendah'])->default('sedang')->after('status');
             }
-            if (!Schema::hasColumn('penugasans', 'poin')) {
+            if (! Schema::hasColumn('penugasans', 'poin')) {
                 $table->integer('poin')->default(0)->after('urgency');
             }
         });

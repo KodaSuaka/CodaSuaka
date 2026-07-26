@@ -59,20 +59,20 @@ class TemplatePenugasanController extends Controller
         })->count();
 
         if ($count >= self::MAX_TEMPLATE) {
-            return $this->error('Batas maksimal ' . self::MAX_TEMPLATE . ' template telah tercapai', 400);
+            return $this->error('Batas maksimal '.self::MAX_TEMPLATE.' template telah tercapai', 400);
         }
 
         $urgency = $request->urgency_default ?? 'sedang';
 
         $template = penugasan::create([
-            'judul'         => $request->nama_template,
-            'deskripsi'     => $request->deskripsi_template,
-            'urgency'       => $urgency,
-            'poin'          => penugasan::getPoinForUrgency($urgency),
-            'status'        => 'belum',
-            'is_template'   => true,
-            'instansi_id'   => $user->instansi_id,
-            'created_by'    => $user->id,
+            'judul' => $request->nama_template,
+            'deskripsi' => $request->deskripsi_template,
+            'urgency' => $urgency,
+            'poin' => penugasan::getPoinForUrgency($urgency),
+            'status' => 'belum',
+            'is_template' => true,
+            'instansi_id' => $user->instansi_id,
+            'created_by' => $user->id,
         ]);
 
         return $this->success($template, 'Template berhasil ditambahkan', 201);
@@ -119,6 +119,7 @@ class TemplatePenugasanController extends Controller
     public function destroy(penugasan $templatePenugasan)
     {
         $templatePenugasan->delete();
+
         return $this->success(null, 'Template berhasil dihapus');
     }
 }

@@ -23,10 +23,10 @@ return new class extends Migration
         // ─── users ───────────────────────────────────────────────
         if (Schema::hasTable('users')) {
             Schema::table('users', function (Blueprint $table) {
-                if (!Schema::hasIndex('users', 'idx_users_instansi_id')) {
+                if (! Schema::hasIndex('users', 'idx_users_instansi_id')) {
                     $table->index('instansi_id', 'idx_users_instansi_id');
                 }
-                if (!Schema::hasIndex('users', 'idx_users_role_id')) {
+                if (! Schema::hasIndex('users', 'idx_users_role_id')) {
                     $table->index('role_id', 'idx_users_role_id');
                 }
             });
@@ -35,16 +35,16 @@ return new class extends Migration
         // ─── penugasans ──────────────────────────────────────────
         if (Schema::hasTable('penugasans')) {
             Schema::table('penugasans', function (Blueprint $table) {
-                if (!Schema::hasIndex('penugasans', 'idx_penugasans_created_by')) {
+                if (! Schema::hasIndex('penugasans', 'idx_penugasans_created_by')) {
                     $table->index('created_by', 'idx_penugasans_created_by');
                 }
-                if (!Schema::hasIndex('penugasans', 'idx_penugasans_status')) {
+                if (! Schema::hasIndex('penugasans', 'idx_penugasans_status')) {
                     $table->index('status', 'idx_penugasans_status');
                 }
-                if (!Schema::hasIndex('penugasans', 'idx_penugasans_penanggung_jawab_id')) {
+                if (! Schema::hasIndex('penugasans', 'idx_penugasans_penanggung_jawab_id')) {
                     $table->index('penanggung_jawab_id', 'idx_penugasans_penanggung_jawab_id');
                 }
-                if (!Schema::hasIndex('penugasans', 'idx_penugasans_created_by_status')) {
+                if (! Schema::hasIndex('penugasans', 'idx_penugasans_created_by_status')) {
                     $table->index(['created_by', 'status'], 'idx_penugasans_created_by_status');
                 }
             });
@@ -53,13 +53,13 @@ return new class extends Migration
         // ─── pengajuans ──────────────────────────────────────────
         if (Schema::hasTable('pengajuans')) {
             Schema::table('pengajuans', function (Blueprint $table) {
-                if (!Schema::hasIndex('pengajuans', 'idx_pengajuans_user_id')) {
+                if (! Schema::hasIndex('pengajuans', 'idx_pengajuans_user_id')) {
                     $table->index('user_id', 'idx_pengajuans_user_id');
                 }
-                if (!Schema::hasIndex('pengajuans', 'idx_pengajuans_status')) {
+                if (! Schema::hasIndex('pengajuans', 'idx_pengajuans_status')) {
                     $table->index('status', 'idx_pengajuans_status');
                 }
-                if (!Schema::hasIndex('pengajuans', 'idx_pengajuans_user_id_status')) {
+                if (! Schema::hasIndex('pengajuans', 'idx_pengajuans_user_id_status')) {
                     $table->index(['user_id', 'status'], 'idx_pengajuans_user_id_status');
                 }
             });
@@ -68,10 +68,10 @@ return new class extends Migration
         // ─── karyawans ───────────────────────────────────────────
         if (Schema::hasTable('karyawans')) {
             Schema::table('karyawans', function (Blueprint $table) {
-                if (!Schema::hasIndex('karyawans', 'idx_karyawans_user_id')) {
+                if (! Schema::hasIndex('karyawans', 'idx_karyawans_user_id')) {
                     $table->index('user_id', 'idx_karyawans_user_id');
                 }
-                if (!Schema::hasIndex('karyawans', 'idx_karyawans_outlet_id')) {
+                if (! Schema::hasIndex('karyawans', 'idx_karyawans_outlet_id')) {
                     $table->index('outlet_id', 'idx_karyawans_outlet_id');
                 }
             });
@@ -80,7 +80,7 @@ return new class extends Migration
         // ─── divisis ─────────────────────────────────────────────
         if (Schema::hasTable('divisis')) {
             Schema::table('divisis', function (Blueprint $table) {
-                if (!Schema::hasIndex('divisis', 'idx_divisis_outlet_id')) {
+                if (! Schema::hasIndex('divisis', 'idx_divisis_outlet_id')) {
                     $table->index('outlet_id', 'idx_divisis_outlet_id');
                 }
             });
@@ -89,13 +89,13 @@ return new class extends Migration
         // ─── jadwals ─────────────────────────────────────────────
         if (Schema::hasTable('jadwals')) {
             Schema::table('jadwals', function (Blueprint $table) {
-                if (!Schema::hasIndex('jadwals', 'idx_jadwals_outlet_id')) {
+                if (! Schema::hasIndex('jadwals', 'idx_jadwals_outlet_id')) {
                     $table->index('outlet_id', 'idx_jadwals_outlet_id');
                 }
-                if (!Schema::hasIndex('jadwals', 'idx_jadwals_tanggal')) {
+                if (! Schema::hasIndex('jadwals', 'idx_jadwals_tanggal')) {
                     $table->index('tanggal', 'idx_jadwals_tanggal');
                 }
-                if (!Schema::hasIndex('jadwals', 'idx_jadwals_outlet_tanggal')) {
+                if (! Schema::hasIndex('jadwals', 'idx_jadwals_outlet_tanggal')) {
                     $table->index(['outlet_id', 'tanggal'], 'idx_jadwals_outlet_tanggal');
                 }
             });
@@ -104,10 +104,10 @@ return new class extends Migration
         // ─── chats ───────────────────────────────────────────────
         if (Schema::hasTable('chats')) {
             Schema::table('chats', function (Blueprint $table) {
-                if (!Schema::hasIndex('chats', 'idx_chats_pengirim_id')) {
+                if (! Schema::hasIndex('chats', 'idx_chats_pengirim_id')) {
                     $table->index('pengirim_id', 'idx_chats_pengirim_id');
                 }
-                if (!Schema::hasIndex('chats', 'idx_chats_penerima_id')) {
+                if (! Schema::hasIndex('chats', 'idx_chats_penerima_id')) {
                     $table->index('penerima_id', 'idx_chats_penerima_id');
                 }
             });
@@ -116,10 +116,10 @@ return new class extends Migration
         // ─── transaksi_kas ───────────────────────────────────────
         if (Schema::hasTable('transaksi_kas')) {
             Schema::table('transaksi_kas', function (Blueprint $table) {
-                if (!Schema::hasIndex('transaksi_kas', 'idx_transaksi_kas_tipe')) {
+                if (! Schema::hasIndex('transaksi_kas', 'idx_transaksi_kas_tipe')) {
                     $table->index('tipe', 'idx_transaksi_kas_tipe');
                 }
-                if (!Schema::hasIndex('transaksi_kas', 'idx_transaksi_kas_instansi_tipe_tanggal')) {
+                if (! Schema::hasIndex('transaksi_kas', 'idx_transaksi_kas_instansi_tipe_tanggal')) {
                     $table->index(['instansi_id', 'tipe', 'tanggal'], 'idx_transaksi_kas_instansi_tipe_tanggal');
                 }
             });

@@ -15,7 +15,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('penugasans', function (Blueprint $table) {
-            if (!Schema::hasColumn('penugasans', 'template_penugasan_id')) {
+            if (! Schema::hasColumn('penugasans', 'template_penugasan_id')) {
                 $table->foreignId('template_penugasan_id')
                     ->nullable()
                     ->after('created_by')

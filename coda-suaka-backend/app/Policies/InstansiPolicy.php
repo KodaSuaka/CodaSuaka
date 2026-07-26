@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Instansi;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class InstansiPolicy
@@ -25,7 +25,10 @@ class InstansiPolicy
 
     public function update(User $user, Instansi $instansi): bool
     {
-        if ($user->instansi_id !== $instansi->id) return false;
+        if ($user->instansi_id !== $instansi->id) {
+            return false;
+        }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:instansi');
     }
 

@@ -41,7 +41,7 @@ class TenantScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         // Skip scope when no authenticated user (e.g., CLI commands, login)
-        if (!Auth::hasUser()) {
+        if (! Auth::hasUser()) {
             return;
         }
 

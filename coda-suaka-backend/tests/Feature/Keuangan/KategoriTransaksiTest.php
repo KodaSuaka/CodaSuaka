@@ -2,11 +2,10 @@
 
 namespace Tests\Feature\Keuangan;
 
-use App\Models\User;
 use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\role;
-use Database\Factories\KategoriTransaksiFactory;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,6 +14,7 @@ class KategoriTransaksiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Instansi $instansi;
 
     protected function setUp(): void

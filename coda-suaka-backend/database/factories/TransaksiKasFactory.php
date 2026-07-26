@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Models\TransaksiKas;
-use App\Models\User;
 use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\outlet;
+use App\Models\TransaksiKas;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -26,7 +26,7 @@ class InstansiController extends Controller
             ->where('id', $request->user()->instansi_id)
             ->first();
 
-        if (!$instansi) {
+        if (! $instansi) {
             return $this->error('Instansi tidak ditemukan', 404);
         }
 
@@ -42,6 +42,7 @@ class InstansiController extends Controller
         $instansi = Instansi::findOrFail($request->user()->instansi_id);
 
         $instansi->update($request->only(['nama_instansi']));
+
         return $this->success($instansi, 'Instansi berhasil diperbarui');
     }
 }

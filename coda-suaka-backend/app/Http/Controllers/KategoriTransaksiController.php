@@ -110,6 +110,7 @@ class KategoriTransaksiController extends Controller
         }
 
         $kategori_transaksi->delete();
+
         return $this->success(null, 'Kategori transaksi berhasil dihapus');
     }
 }

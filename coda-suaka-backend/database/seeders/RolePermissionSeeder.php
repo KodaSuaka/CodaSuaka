@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\role;
 use App\Models\role_permission;
+use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
 
         if (empty($config['roles'])) {
             $this->command->warn('⚠️  config/permissions.php kosong. Tidak ada permission yang di-seed.');
+
             return;
         }
 
@@ -39,14 +40,14 @@ class RolePermissionSeeder extends Seeder
             // Filter: hanya permission yang valid di registry
             $validPermissions = array_filter(
                 $permissions,
-                fn($p) => $this->isPermissionInRegistry($p, $registry)
+                fn ($p) => $this->isPermissionInRegistry($p, $registry)
             );
 
             // 1. Tambahkan semua permission yang ada di config
             foreach ($validPermissions as $permission) {
                 role_permission::updateOrInsert(
                     [
-                        'role_id'    => $role->id,
+                        'role_id' => $role->id,
                         'permission' => $permission,
                     ],
                     [
@@ -65,7 +66,7 @@ class RolePermissionSeeder extends Seeder
             $totalRemoved += $removed;
         }
 
-        $this->command->info("✅ Permission seeding selesai:");
+        $this->command->info('✅ Permission seeding selesai:');
         $this->command->info("   ➕ {$totalAdded} permission ditambahkan/diupdate");
         $this->command->info("   ➖ {$totalRemoved} permission dihapus (stale)");
     }
@@ -80,6 +81,7 @@ class RolePermissionSeeder extends Seeder
                 return true;
             }
         }
+
         return false;
     }
 }

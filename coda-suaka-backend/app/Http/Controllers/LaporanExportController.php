@@ -30,7 +30,7 @@ class LaporanExportController extends Controller
         $transaksis = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id))
+            ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id))
             ->orderBy('tanggal')
             ->get()
             ->toArray();
@@ -54,7 +54,7 @@ class LaporanExportController extends Controller
         $transaksis = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id))
+            ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id))
             ->orderBy('tanggal')
             ->get()
             ->map(function ($t) {
@@ -140,7 +140,7 @@ class LaporanExportController extends Controller
         $query = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId));
+            ->when($outletId, fn ($q) => $q->where('outlet_id', $outletId));
 
         $transaksis = (clone $query)->get();
 
@@ -156,7 +156,7 @@ class LaporanExportController extends Controller
         // Breakdown HPP per kategori (keluar, termasuk_hpp = true)
         $hppPerKategori = [];
         $totalHpp = 0;
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $hppPerKategori[$kategori] = ($hppPerKategori[$kategori] ?? 0) + (float) $t->nominal;
             $totalHpp += (float) $t->nominal;
@@ -165,7 +165,7 @@ class LaporanExportController extends Controller
         // Breakdown beban per kategori (keluar, operasional, bukan HPP)
         $bebanPerKategori = [];
         $totalBeban = 0;
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => !$t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => ! $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $bebanPerKategori[$kategori] = ($bebanPerKategori[$kategori] ?? 0) + (float) $t->nominal;
             $totalBeban += (float) $t->nominal;
@@ -192,7 +192,7 @@ class LaporanExportController extends Controller
         $transaksis = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+            ->when($outletId, fn ($q) => $q->where('outlet_id', $outletId))
             ->get();
 
         $arusKasOperasi = ['masuk' => 0, 'keluar' => 0];
@@ -227,7 +227,7 @@ class LaporanExportController extends Controller
         // Hitung saldo awal
         $saldoAwal = TransaksiKas::where('instansi_id', $user->instansi_id)
             ->where('tanggal', '<', $startDate)
-            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+            ->when($outletId, fn ($q) => $q->where('outlet_id', $outletId))
             ->selectRaw("COALESCE(SUM(CASE WHEN tipe = 'masuk' THEN nominal ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN tipe = 'keluar' THEN nominal ELSE 0 END), 0) as saldo")
             ->value('saldo') ?? 0;
 

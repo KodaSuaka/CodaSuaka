@@ -61,6 +61,7 @@ class TransaksiPaketController extends Controller
     public function show(transaksi_paket $transaksi_paket)
     {
         $transaksi_paket->load(['instansi', 'paket']);
+
         return $this->success($transaksi_paket);
     }
 

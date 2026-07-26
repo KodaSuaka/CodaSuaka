@@ -42,8 +42,8 @@ return [
         'presensi' => [
             'label' => 'Presensi / Absensi',
             'permissions' => [
-                'view:presensi'     => 'Melihat data presensi/absensi karyawan',
-                'manage:presensi'   => 'Mengelola (create/edit/delete) data presensi',
+                'view:presensi' => 'Melihat data presensi/absensi karyawan',
+                'manage:presensi' => 'Mengelola (create/edit/delete) data presensi',
             ],
         ],
 
@@ -51,8 +51,8 @@ return [
         'pengajuan' => [
             'label' => 'Pengajuan (Cuti/Izin/Sakit)',
             'permissions' => [
-                'view:pengajuan'    => 'Melihat daftar pengajuan',
-                'manage:pengajuan'  => 'Mengelola & menyetujui/menolak pengajuan',
+                'view:pengajuan' => 'Melihat daftar pengajuan',
+                'manage:pengajuan' => 'Mengelola & menyetujui/menolak pengajuan',
             ],
         ],
 
@@ -60,8 +60,8 @@ return [
         'divisi' => [
             'label' => 'Divisi / Organisasi',
             'permissions' => [
-                'view:divisi'       => 'Melihat data divisi',
-                'manage:divisi'     => 'Mengelola divisi & anggota divisi',
+                'view:divisi' => 'Melihat data divisi',
+                'manage:divisi' => 'Mengelola divisi & anggota divisi',
             ],
         ],
 
@@ -69,8 +69,8 @@ return [
         'penugasan' => [
             'label' => 'Penugasan / Tugas Karyawan',
             'permissions' => [
-                'view:penugasan'    => 'Melihat daftar penugasan & template',
-                'manage:penugasan'  => 'Membuat, mengedit, menghapus penugasan & template',
+                'view:penugasan' => 'Melihat daftar penugasan & template',
+                'manage:penugasan' => 'Membuat, mengedit, menghapus penugasan & template',
             ],
         ],
 
@@ -78,8 +78,8 @@ return [
         'jadwal' => [
             'label' => 'Jadwal / Kalender',
             'permissions' => [
-                'view:jadwal'       => 'Melihat jadwal kerja',
-                'manage:jadwal'     => 'Mengelola jadwal kerja',
+                'view:jadwal' => 'Melihat jadwal kerja',
+                'manage:jadwal' => 'Mengelola jadwal kerja',
             ],
         ],
 
@@ -87,8 +87,8 @@ return [
         'karyawan' => [
             'label' => 'Karyawan / HRD',
             'permissions' => [
-                'view:karyawan'     => 'Melihat data karyawan',
-                'manage:karyawan'   => 'Mengelola data karyawan (tambah/edit/hapus)',
+                'view:karyawan' => 'Melihat data karyawan',
+                'manage:karyawan' => 'Mengelola data karyawan (tambah/edit/hapus)',
             ],
         ],
 
@@ -96,8 +96,8 @@ return [
         'outlets' => [
             'label' => 'Outlet / Lokasi',
             'permissions' => [
-                'view:outlets'      => 'Melihat daftar outlet',
-                'manage:outlets'    => 'Mengelola outlet (tambah/edit/hapus)',
+                'view:outlets' => 'Melihat daftar outlet',
+                'manage:outlets' => 'Mengelola outlet (tambah/edit/hapus)',
             ],
         ],
 
@@ -105,11 +105,11 @@ return [
         'keuangan' => [
             'label' => 'Keuangan / Transaksi Kas',
             'permissions' => [
-                'view:keuangan'     => 'Melihat data keuangan & transaksi kas',
-                'manage:keuangan'   => 'Mengelola transaksi kas (tambah/edit/hapus)',
-                'delete:keuangan'   => 'Menghapus transaksi kas & kategori',
-                'export:keuangan'   => 'Mengekspor laporan keuangan (PDF/Excel)',
-                'approve:keuangan'  => 'Menyetujui/menolak transaksi keuangan', // [FITUR ADVANCE]
+                'view:keuangan' => 'Melihat data keuangan & transaksi kas',
+                'manage:keuangan' => 'Mengelola transaksi kas (tambah/edit/hapus)',
+                'delete:keuangan' => 'Menghapus transaksi kas & kategori',
+                'export:keuangan' => 'Mengekspor laporan keuangan (PDF/Excel)',
+                'approve:keuangan' => 'Menyetujui/menolak transaksi keuangan', // [FITUR ADVANCE]
             ],
         ],
 
@@ -117,8 +117,8 @@ return [
         'laporan' => [
             'label' => 'Laporan',
             'permissions' => [
-                'view:laporan'      => 'Melihat laporan arus kas & ringkasan keuangan',
-                'manage:laporan'    => 'Mengelola & generate laporan',
+                'view:laporan' => 'Melihat laporan arus kas & ringkasan keuangan',
+                'manage:laporan' => 'Mengelola & generate laporan',
             ],
         ],
 
@@ -126,8 +126,8 @@ return [
         'audit' => [
             'label' => 'Audit Log', // [FITUR ADVANCE]
             'permissions' => [
-                'view:audit'        => 'Melihat log aktivitas sistem',
-                'manage:audit'      => 'Mengelola log aktivitas sistem',
+                'view:audit' => 'Melihat log aktivitas sistem',
+                'manage:audit' => 'Mengelola log aktivitas sistem',
             ],
         ],
 
@@ -143,8 +143,8 @@ return [
         'paket' => [
             'label' => 'Paket & Transaksi Paket',
             'permissions' => [
-                'view:paket'        => 'Melihat daftar paket',
-                'manage:paket'      => 'Mengelola paket & transaksi paket',
+                'view:paket' => 'Melihat daftar paket',
+                'manage:paket' => 'Mengelola paket & transaksi paket',
             ],
         ],
 
@@ -152,7 +152,7 @@ return [
         'instansi' => [
             'label' => 'Instansi / Perusahaan',
             'permissions' => [
-                'manage:instansi'   => 'Mengelola data instansi/perusahaan',
+                'manage:instansi' => 'Mengelola data instansi/perusahaan',
             ],
         ],
 

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\User;
 use App\Models\Instansi;
 use App\Models\role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -14,6 +14,7 @@ class LoginTest extends TestCase
     use RefreshDatabase;
 
     private Instansi $instansi;
+
     private role $role;
 
     protected function setUp(): void

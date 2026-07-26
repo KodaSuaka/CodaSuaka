@@ -54,6 +54,7 @@ class SyncPermissions extends Command
 
         if (empty($config['registry']) || empty($config['roles'])) {
             $this->error('❌ config/permissions.php kosong atau tidak valid.');
+
             return self::FAILURE;
         }
 
@@ -62,7 +63,7 @@ class SyncPermissions extends Command
 
         // Validate: cek semua permission di roles ada di registry
         $invalidPerms = $this->validateRoles($config['roles']);
-        if (!empty($invalidPerms)) {
+        if (! empty($invalidPerms)) {
             foreach ($invalidPerms as $roleName => $perms) {
                 $this->warn("  ⚠️  Role \"{$roleName}\" punya permission tidak dikenal:");
                 foreach ($perms as $perm) {
@@ -82,6 +83,7 @@ class SyncPermissions extends Command
 
         if ($this->isDiffEmpty()) {
             $this->info('✅ Database sudah sinkron dengan config. Tidak ada perubahan.');
+
             return self::SUCCESS;
         }
 
@@ -90,13 +92,15 @@ class SyncPermissions extends Command
             $this->newLine();
             $this->info('🔍 Mode DRY-RUN — Tidak ada perubahan yang disimpan.');
             $this->line('   Jalankan tanpa --dry-run untuk apply perubahan.');
+
             return self::SUCCESS;
         }
 
         // Confirmation
-        if (!$this->option('force')) {
-            if (!$this->confirm('Apply perubahan ke database?')) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('Apply perubahan ke database?')) {
                 $this->info('Dibatalkan oleh user.');
+
                 return self::SUCCESS;
             }
         }
@@ -114,7 +118,7 @@ class SyncPermissions extends Command
             if (isset($module['permissions'])) {
                 foreach ($module['permissions'] as $permId => $description) {
                     $this->registryPermissions[$permId] = [
-                        'module'     => $module['label'] ?? 'Unknown',
+                        'module' => $module['label'] ?? 'Unknown',
                         'permission' => $permId,
                         'description' => $description,
                     ];
@@ -133,7 +137,7 @@ class SyncPermissions extends Command
 
         foreach ($roles as $roleName => $permissions) {
             foreach ($permissions as $perm) {
-                if (!isset($this->registryPermissions[$perm])) {
+                if (! isset($this->registryPermissions[$perm])) {
                     $invalid[$roleName][] = $perm;
                 }
             }
@@ -149,20 +153,21 @@ class SyncPermissions extends Command
     {
         foreach ($roles as $roleName => $configPermissions) {
             // Filter out invalid permissions
-            $validPermissions = array_filter($configPermissions, fn($p) => isset($this->registryPermissions[$p]));
+            $validPermissions = array_filter($configPermissions, fn ($p) => isset($this->registryPermissions[$p]));
             $validPermissions = array_values($validPermissions);
 
             // Get existing DB permissions for this role
             $role = role::where('nama_role', $roleName)->first();
 
-            if (!$role) {
+            if (! $role) {
                 // Role belum ada di DB — semua permission perlu ditambah
                 $this->diff[$roleName] = [
                     'role_id' => null,
-                    'add'     => $validPermissions,
-                    'remove'  => [],
-                    'status'  => 'NEW_ROLE',
+                    'add' => $validPermissions,
+                    'remove' => [],
+                    'status' => 'NEW_ROLE',
                 ];
+
                 continue;
             }
 
@@ -175,9 +180,9 @@ class SyncPermissions extends Command
 
             $this->diff[$roleName] = [
                 'role_id' => $role->id,
-                'add'     => array_values($toAdd),
-                'remove'  => array_values($toRemove),
-                'status'  => (!empty($toAdd) || !empty($toRemove)) ? 'CHANGED' : 'OK',
+                'add' => array_values($toAdd),
+                'remove' => array_values($toRemove),
+                'status' => (! empty($toAdd) || ! empty($toRemove)) ? 'CHANGED' : 'OK',
             ];
         }
     }
@@ -188,10 +193,11 @@ class SyncPermissions extends Command
     private function isDiffEmpty(): bool
     {
         foreach ($this->diff as $d) {
-            if (!empty($d['add']) || !empty($d['remove'])) {
+            if (! empty($d['add']) || ! empty($d['remove'])) {
                 return false;
             }
         }
+
         return true;
     }
 
@@ -211,10 +217,10 @@ class SyncPermissions extends Command
 
         foreach ($this->diff as $roleName => $d) {
             $statusIcon = match ($d['status']) {
-                'NEW_ROLE'  => '🆕',
-                'CHANGED'   => '🔄',
-                'OK'        => '✅',
-                default     => '❓',
+                'NEW_ROLE' => '🆕',
+                'CHANGED' => '🔄',
+                'OK' => '✅',
+                default => '❓',
             };
 
             $addCount = count($d['add']);
@@ -227,7 +233,7 @@ class SyncPermissions extends Command
             if ($d['status'] === 'NEW_ROLE') {
                 $this->line("     Status: Role baru (akan dibuat + {$addCount} permission ditambahkan)");
             } else {
-                $this->line("     Status: {$d['status']}" . ($d['status'] === 'OK' ? ' (sudah sinkron)' : ''));
+                $this->line("     Status: {$d['status']}".($d['status'] === 'OK' ? ' (sudah sinkron)' : ''));
             }
 
             // Detail mode: show each permission
@@ -238,10 +244,10 @@ class SyncPermissions extends Command
                     $dbPerms = role_permission::where('role_id', $d['role_id'])
                         ->pluck('permission')->toArray();
                 }
-                if (!empty($dbPerms)) {
-                    $this->line("     DB saat ini (" . count($dbPerms) . "): " . implode(', ', $dbPerms));
+                if (! empty($dbPerms)) {
+                    $this->line('     DB saat ini ('.count($dbPerms).'): '.implode(', ', $dbPerms));
                 } else {
-                    $this->line("     DB saat ini: (kosong)");
+                    $this->line('     DB saat ini: (kosong)');
                 }
 
                 $configPerms = $this->diff[$roleName]['add'] === null
@@ -250,18 +256,18 @@ class SyncPermissions extends Command
                         (config('permissions.roles')[$roleName] ?? []),
                         $this->diff[$roleName]['add']
                     ));
-                $configPerms = array_unique(array_filter($configPerms, fn($p) => isset($this->registryPermissions[$p])));
-                $this->line("     Config目标 (" . count($configPerms) . "): " . implode(', ', $configPerms));
+                $configPerms = array_unique(array_filter($configPerms, fn ($p) => isset($this->registryPermissions[$p])));
+                $this->line('     Config目标 ('.count($configPerms).'): '.implode(', ', $configPerms));
             }
 
             if ($addCount > 0) {
-                $this->line("     ➕ Ditambahkan ({$addCount}): " . implode(', ', $d['add']));
+                $this->line("     ➕ Ditambahkan ({$addCount}): ".implode(', ', $d['add']));
             }
             if ($removeCount > 0) {
-                $this->line("     ➖ Dihapus   ({$removeCount}): " . implode(', ', $d['remove']));
+                $this->line("     ➖ Dihapus   ({$removeCount}): ".implode(', ', $d['remove']));
             }
             if ($addCount === 0 && $removeCount === 0) {
-                $this->line("     (tidak ada perubahan)");
+                $this->line('     (tidak ada perubahan)');
             }
 
             $this->newLine();
@@ -307,7 +313,7 @@ class SyncPermissions extends Command
                 }
 
                 // Remove old permissions
-                if (!empty($d['remove'])) {
+                if (! empty($d['remove'])) {
                     role_permission::where('role_id', $role->id)
                         ->whereIn('permission', $d['remove'])
                         ->delete();
@@ -319,10 +325,10 @@ class SyncPermissions extends Command
 
             $this->newLine();
             $this->info('═══════════════════════════════════════════════════════════════');
-            $this->info("  ✅ SYNC BERHASIL!");
+            $this->info('  ✅ SYNC BERHASIL!');
             $this->info("     ➕ {$totalAdded} permission ditambahkan");
             $this->info("     ➖ {$totalRemoved} permission dihapus");
-            $this->info("     📋 " . count($this->diff) . " role diproses");
+            $this->info('     📋 '.count($this->diff).' role diproses');
             $this->info('═══════════════════════════════════════════════════════════════');
             $this->newLine();
 
@@ -331,7 +337,8 @@ class SyncPermissions extends Command
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            $this->error('❌ Gagal sync: ' . $e->getMessage());
+            $this->error('❌ Gagal sync: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }

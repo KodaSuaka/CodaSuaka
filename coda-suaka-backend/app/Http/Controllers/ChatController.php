@@ -36,23 +36,23 @@ class ChatController extends Controller
         // Ambil last message untuk setiap pasangan chat dalam satu query
         $contactIds = $users->pluck('id')->toArray();
         $lastMessages = [];
-        if (!empty($contactIds)) {
+        if (! empty($contactIds)) {
             // Get latest message per contact pair using a subquery approach
             $rawLastMessages = Chat::where(function ($q) use ($user, $contactIds) {
                 $q->whereIn('pengirim_id', $contactIds)->where('penerima_id', $user->id);
             })->orWhere(function ($q) use ($user, $contactIds) {
                 $q->whereIn('penerima_id', $contactIds)->where('pengirim_id', $user->id);
             })->orderBy('created_at', 'desc')->get()
-            ->groupBy(function ($chat) use ($user) {
-                return $chat->pengirim_id === $user->id ? $chat->penerima_id : $chat->pengirim_id;
-            })->map(fn($msgs) => $msgs->first());
+                ->groupBy(function ($chat) use ($user) {
+                    return $chat->pengirim_id === $user->id ? $chat->penerima_id : $chat->pengirim_id;
+                })->map(fn ($msgs) => $msgs->first());
 
             foreach ($rawLastMessages as $contactId => $message) {
                 $lastMessages[$contactId] = $message;
             }
         }
 
-        $contacts = $users->map(function ($kontak) use ($user, $lastMessages) {
+        $contacts = $users->map(function ($kontak) use ($lastMessages) {
             $lastMessage = $lastMessages[$kontak->id] ?? null;
 
             return [
@@ -99,10 +99,10 @@ class ChatController extends Controller
         // Ambil pesan antara kedua user
         $messages = Chat::where(function ($q) use ($currentUser, $user) {
             $q->where('pengirim_id', $currentUser->id)
-              ->where('penerima_id', $user->id);
+                ->where('penerima_id', $user->id);
         })->orWhere(function ($q) use ($currentUser, $user) {
             $q->where('pengirim_id', $user->id)
-              ->where('penerima_id', $currentUser->id);
+                ->where('penerima_id', $currentUser->id);
         })->orderBy('created_at', 'asc')->get();
 
         // Tandai semua pesan dari user tersebut sebagai sudah dibaca
@@ -136,7 +136,7 @@ class ChatController extends Controller
         $currentUser = $request->user();
         $penerima = User::find($request->penerima_id);
 
-        if (!$penerima) {
+        if (! $penerima) {
             return $this->error('Penerima tidak ditemukan.', 404);
         }
 

@@ -1,31 +1,31 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AnggotaDivisiController;
+use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\AttandenceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OutletController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\RolePermissionController;
-use App\Http\Controllers\KaryawanController;
-use App\Http\Controllers\DivisiController;
-use App\Http\Controllers\AnggotaDivisiController;
-use App\Http\Controllers\AttandenceController;
-use App\Http\Controllers\PengajuanController;
-use App\Http\Controllers\JadwalController;
-use App\Http\Controllers\PenugasanController;
-use App\Http\Controllers\PaketController;
-use App\Http\Controllers\TransaksiPaketController;
-use App\Http\Controllers\InstansiController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\DivisiController;
+use App\Http\Controllers\InstansiController;
+use App\Http\Controllers\JadwalController;
+use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriTransaksiController;
-use App\Http\Controllers\TransaksiKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanExportController;
-use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OutletController;
+use App\Http\Controllers\PaketController;
+use App\Http\Controllers\PengajuanController;
+use App\Http\Controllers\PenugasanController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\TemplatePenugasanController;
+use App\Http\Controllers\TransaksiKasController;
+use App\Http\Controllers\TransaksiPaketController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,7 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return response()->json([
             'status' => 'success',
-            'data' => $request->user()->load(['role', 'profilKaryawan', 'outlet'])
+            'data' => $request->user()->load(['role', 'profilKaryawan', 'outlet']),
         ]);
     });
 

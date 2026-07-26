@@ -57,7 +57,7 @@ class KaryawanController extends Controller
             ->with(['user.role', 'outlet'])
             ->first();
 
-        if (!$karyawan) {
+        if (! $karyawan) {
             return $this->error('Profil karyawan tidak ditemukan', 404);
         }
 
@@ -109,6 +109,7 @@ class KaryawanController extends Controller
     public function show(karyawan $karyawan)
     {
         $karyawan->load(['user.role', 'outlet', 'divisi', 'anggotaDivisis']);
+
         return $this->success($karyawan);
     }
 
@@ -118,7 +119,7 @@ class KaryawanController extends Controller
     public function update(UpdatekaryawanRequest $request, karyawan $karyawan)
     {
         $karyawan->update($request->only([
-            'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil'
+            'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil',
         ]));
 
         $karyawan->load(['user.role', 'outlet']);

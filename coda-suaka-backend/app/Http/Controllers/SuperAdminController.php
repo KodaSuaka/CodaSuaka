@@ -4,15 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreInstansiRequest;
 use App\Http\Requests\StoreOwnerRequest;
-use App\Http\Requests\UpdateOwnerRequest;
-use App\Http\Requests\UpdateInstansiRequest;
 use App\Http\Requests\StorepaketRequest;
+use App\Http\Requests\UpdateInstansiRequest;
+use App\Http\Requests\UpdateOwnerRequest;
 use App\Http\Requests\UpdatepaketRequest;
-use App\Models\User;
 use App\Models\Instansi;
-use App\Models\paket;
 use App\Models\karyawan;
+use App\Models\paket;
 use App\Models\role;
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,9 +21,7 @@ class SuperAdminController extends Controller
 {
     use ApiResponse;
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // ══════════════════════════════════════════════════════════════
     //  CRUD INSTANSI
@@ -36,8 +34,8 @@ class SuperAdminController extends Controller
     public function indexInstansi()
     {
         $instansis = Instansi::with(['paket', 'users' => function ($q) {
-            $q->whereHas('role', fn($r) => $r->where('nama_role', 'Owner'))
-              ->with('profilKaryawan');
+            $q->whereHas('role', fn ($r) => $r->where('nama_role', 'Owner'))
+                ->with('profilKaryawan');
         }])->withCount('outlets')->orderBy('created_at', 'desc')->get();
 
         return $this->success($instansis);
@@ -47,7 +45,7 @@ class SuperAdminController extends Controller
      * GET /api/super-admin/instansis/{instansi}
      * Detail satu instansi.
      */
-    public function showInstansi(instansi $instansi)
+    public function showInstansi(Instansi $instansi)
     {
         $instansi->load(['paket', 'users' => function ($q) {
             $q->with('profilKaryawan');
@@ -70,7 +68,7 @@ class SuperAdminController extends Controller
 
         // Buat owner
         $roleOwner = role::where('nama_role', 'Owner')->first();
-        if (!$roleOwner) {
+        if (! $roleOwner) {
             return $this->error('Role Owner belum tersedia', 500);
         }
 
@@ -90,7 +88,7 @@ class SuperAdminController extends Controller
             'foto_profil' => null,
         ]);
 
-        $instansi->load(['paket', 'users' => fn($q) => $q->with('profilKaryawan')]);
+        $instansi->load(['paket', 'users' => fn ($q) => $q->with('profilKaryawan')]);
 
         return $this->success($instansi, 'Instansi dan Owner berhasil dibuat', 201);
     }
@@ -112,7 +110,7 @@ class SuperAdminController extends Controller
      * DELETE /api/super-admin/instansis/{instansi}
      * Hapus instansi (soft — hapus semua data terkait).
      */
-    public function destroyInstansi(instansi $instansi)
+    public function destroyInstansi(Instansi $instansi)
     {
         // Hapus semua user terkait
         $instansi->users()->delete();
@@ -134,7 +132,7 @@ class SuperAdminController extends Controller
      */
     public function indexOwner(Request $request)
     {
-        $query = User::whereHas('role', fn($q) => $q->where('nama_role', 'Owner'))
+        $query = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Owner'))
             ->with(['instansi', 'profilKaryawan']);
 
         if ($request->instansi_id) {
@@ -152,7 +150,7 @@ class SuperAdminController extends Controller
      */
     public function showOwner(User $user)
     {
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
+        if (! $user->role || $user->role->nama_role !== 'Owner') {
             return $this->error('User bukan seorang Owner', 404);
         }
 
@@ -168,7 +166,7 @@ class SuperAdminController extends Controller
     public function storeOwner(StoreOwnerRequest $request)
     {
         $roleOwner = role::where('nama_role', 'Owner')->first();
-        if (!$roleOwner) {
+        if (! $roleOwner) {
             return $this->error('Role Owner belum tersedia', 500);
         }
 
@@ -199,7 +197,7 @@ class SuperAdminController extends Controller
      */
     public function updateOwner(UpdateOwnerRequest $request, User $user)
     {
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
+        if (! $user->role || $user->role->nama_role !== 'Owner') {
             return $this->error('User bukan seorang Owner', 404);
         }
 
@@ -213,7 +211,7 @@ class SuperAdminController extends Controller
         // Update nama_lengkap di profil karyawan jika name diubah
         if ($request->filled('name')) {
             karyawan::where('user_id', $user->id)->update([
-                'nama_lengkap' => $request->name
+                'nama_lengkap' => $request->name,
             ]);
         }
 
@@ -228,7 +226,7 @@ class SuperAdminController extends Controller
      */
     public function destroyOwner(User $user)
     {
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
+        if (! $user->role || $user->role->nama_role !== 'Owner') {
             return $this->error('User bukan seorang Owner', 404);
         }
 
@@ -310,10 +308,10 @@ class SuperAdminController extends Controller
     public function dashboard()
     {
         $totalInstansi = Instansi::count();
-        $totalOwner = User::whereHas('role', fn($q) => $q->where('nama_role', 'Owner'))->count();
+        $totalOwner = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Owner'))->count();
         $totalPaket = paket::count();
         $totalPaketAktif = paket::where('is_active', true)->count();
-        $totalKaryawan = User::whereHas('role', fn($q) => $q->where('nama_role', 'Karyawan'))->count();
+        $totalKaryawan = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Karyawan'))->count();
 
         return $this->success([
             'total_instansi' => $totalInstansi,

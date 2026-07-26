@@ -29,9 +29,9 @@ class Divisi extends Model
                 // Karena tidak ada created_by di divisi, fallback via ketua_karyawan_id → user
                 $q->orWhere(function ($subQ) use ($user) {
                     $subQ->whereNull('outlet_id')
-                         ->whereHas('ketuaKaryawan.user', function (Builder $q) use ($user) {
-                             $q->where('instansi_id', $user->instansi_id);
-                         });
+                        ->whereHas('ketuaKaryawan.user', function (Builder $q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        });
                 });
             });
         }));

@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\TransaksiKas;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +25,7 @@ class UpdateTransaksiKasRequest extends FormRequest
                 'required',
                 'numeric',
                 'min:0',
-                'max:' . TransaksiKas::NOMINAL_MAX,
+                'max:'.TransaksiKas::NOMINAL_MAX,
             ],
             'kategori_transaksi_id' => [
                 'nullable',

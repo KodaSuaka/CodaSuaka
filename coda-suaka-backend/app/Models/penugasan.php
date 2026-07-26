@@ -67,10 +67,10 @@ class penugasan extends Model
                 // Regular tugas tanpa divisi: scope via pembuat (created_by → user.instansi_id)
                 $q->orWhere(function ($subQ) use ($user) {
                     $subQ->where('is_template', false)
-                         ->whereNull('divisi_id')
-                         ->whereHas('pembuat', function (Builder $q) use ($user) {
-                             $q->where('instansi_id', $user->instansi_id);
-                         });
+                        ->whereNull('divisi_id')
+                        ->whereHas('pembuat', function (Builder $q) use ($user) {
+                            $q->where('instansi_id', $user->instansi_id);
+                        });
                 });
             });
         }));

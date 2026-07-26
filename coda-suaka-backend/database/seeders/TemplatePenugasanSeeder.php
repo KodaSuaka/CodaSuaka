@@ -86,23 +86,24 @@ class TemplatePenugasanSeeder extends Seeder
 
         if (empty($templatesToCreate)) {
             $this->command?->info('Template penugasan global sudah lengkap (10 template).');
+
             return;
         }
 
         foreach ($templatesToCreate as $template) {
             penugasan::create([
-                'judul'         => $template['judul'],
-                'deskripsi'     => $template['deskripsi'],
-                'urgency'       => $template['urgency'],
-                'poin'          => $template['poin'],
-                'status'        => 'belum',
-                'is_template'   => true,
-                'instansi_id'   => null,
-                'created_by'    => null,
+                'judul' => $template['judul'],
+                'deskripsi' => $template['deskripsi'],
+                'urgency' => $template['urgency'],
+                'poin' => $template['poin'],
+                'status' => 'belum',
+                'is_template' => true,
+                'instansi_id' => null,
+                'created_by' => null,
             ]);
         }
 
-        $this->command?->info("Berhasil membuat " . count($templatesToCreate) . " template penugasan global.");
+        $this->command?->info('Berhasil membuat '.count($templatesToCreate).' template penugasan global.');
     }
 
     /**
@@ -118,14 +119,14 @@ class TemplatePenugasanSeeder extends Seeder
         $count = 0;
         foreach ($globalTemplates as $template) {
             penugasan::create([
-                'judul'         => $template->judul,
-                'deskripsi'     => $template->deskripsi,
-                'urgency'       => $template->urgency,
-                'poin'          => $template->poin,
-                'status'        => 'belum',
-                'is_template'   => true,
-                'instansi_id'   => $instansiId,
-                'created_by'    => $createdBy,
+                'judul' => $template->judul,
+                'deskripsi' => $template->deskripsi,
+                'urgency' => $template->urgency,
+                'poin' => $template->poin,
+                'status' => 'belum',
+                'is_template' => true,
+                'instansi_id' => $instansiId,
+                'created_by' => $createdBy,
             ]);
             $count++;
         }

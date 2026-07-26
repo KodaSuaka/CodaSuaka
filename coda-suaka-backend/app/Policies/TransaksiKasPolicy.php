@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\TransaksiKas;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class TransaksiKasPolicy
@@ -18,6 +18,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'view:keuangan');
     }
 
@@ -31,6 +32,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:keuangan');
     }
 
@@ -39,6 +41,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'delete:keuangan');
     }
 
@@ -58,6 +61,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'approve:keuangan');
     }
 
