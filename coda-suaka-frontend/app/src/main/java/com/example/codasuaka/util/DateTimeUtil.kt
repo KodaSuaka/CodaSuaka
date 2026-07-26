@@ -16,17 +16,23 @@ object DateTimeUtil {
     /**
      * Mengonversi ISO String (UTC) ke Format Terbaca (Lokal).
      * Contoh: "2026-07-25T17:00:00Z" -> "26 Juli 2026" (WIB)
+     * Mendukung format ISO datetime lengkap dan date-only (yyyy-MM-dd).
      */
     fun formatIsoToLocal(isoString: String?, pattern: String = "dd MMM yyyy"): String {
         if (isoString.isNullOrBlank()) return "-"
+        val formatter = DateTimeFormatter.ofPattern(pattern, Locale.forLanguageTag("id-ID"))
+        // Coba parse sebagai ISO datetime lengkap
         return try {
             val instant = Instant.parse(isoString)
-            val formatter = DateTimeFormatter.ofPattern(pattern, Locale.forLanguageTag("id-ID"))
-                .withZone(localZoneId)
-            formatter.format(instant)
+            formatter.withZone(localZoneId).format(instant)
         } catch (_: Exception) {
-            // Fallback jika bukan format ISO yang valid
-            isoString.take(10)
+            // Fallback: coba parse sebagai date-only (yyyy-MM-dd)
+            try {
+                val ld = LocalDate.parse(isoString.take(10))
+                ld.format(formatter)
+            } catch (_: Exception) {
+                isoString.take(10)
+            }
         }
     }
 

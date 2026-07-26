@@ -2,6 +2,7 @@ package com.example.codasuaka.ui.screen.penugasan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.data.remote.dto.CreatePenugasanRequest
 import com.example.codasuaka.data.remote.dto.DivisiDto
 import com.example.codasuaka.data.remote.dto.KaryawanDto
@@ -24,6 +25,8 @@ data class PenugasanUiState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val showCreateDialog: Boolean = false,
+    // Permission
+    val canManagePenugasan: Boolean = false,
     // Filter
     val filterStatus: String? = null,
     // Form fields
@@ -38,14 +41,24 @@ data class PenugasanUiState(
 class PenugasanViewModel(
     private val penugasanRepository: PenugasanRepository,
     private val divisiRepository: DivisiRepository,
-    private val karyawanRepository: KaryawanRepository
+    private val karyawanRepository: KaryawanRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PenugasanUiState())
     val uiState: StateFlow<PenugasanUiState> = _uiState.asStateFlow()
 
     init {
+        loadUserRole()
         loadData()
+    }
+
+    private fun loadUserRole() {
+        viewModelScope.launch {
+            val role = tokenManager.getUserRole()
+            val canManage = role in listOf("Owner", "Manager")
+            _uiState.update { it.copy(canManagePenugasan = canManage) }
+        }
     }
 
     fun loadData() {

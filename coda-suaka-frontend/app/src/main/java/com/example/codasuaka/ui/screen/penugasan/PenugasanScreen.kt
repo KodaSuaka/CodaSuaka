@@ -88,13 +88,15 @@ fun PenugasanScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { viewModel.showCreateDialog() },
-                    containerColor = Primary,
-                    contentColor = Color.White,
-                    shape = CircleShape
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Tambah Tugas")
+                if (uiState.canManagePenugasan) {
+                    FloatingActionButton(
+                        onClick = { viewModel.showCreateDialog() },
+                        containerColor = Primary,
+                        contentColor = Color.White,
+                        shape = CircleShape
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Tambah Tugas")
+                    }
                 }
             },
             containerColor = Tertiary
@@ -165,6 +167,7 @@ fun PenugasanScreen(
                         items(uiState.penugasans, key = { it.id }) { penugasan ->
                             PenugasanCard(
                                 penugasan = penugasan,
+                                canManage = uiState.canManagePenugasan,
                                 onDelete = { viewModel.deletePenugasan(penugasan.id) }
                             )
                         }
@@ -259,6 +262,7 @@ private fun FilterChipRow(
 @Composable
 private fun PenugasanCard(
     penugasan: PenugasanDto,
+    canManage: Boolean = false,
     onDelete: () -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -348,8 +352,8 @@ private fun PenugasanCard(
                     }
                 }
 
-                // Delete Button — sembunyikan untuk template
-                if (penugasan.isTemplate != true) {
+                // Delete Button — sembunyikan untuk template & non-manager
+                if (canManage && penugasan.isTemplate != true) {
                     IconButton(
                         onClick = { showDeleteConfirm = true },
                         modifier = Modifier

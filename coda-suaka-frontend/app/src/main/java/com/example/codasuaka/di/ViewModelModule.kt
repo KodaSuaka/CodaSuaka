@@ -103,7 +103,8 @@ val viewModelModule = module {
     viewModel { PenugasanViewModel(
         penugasanRepository = get(),
         divisiRepository = get(),
-        karyawanRepository = get()
+        karyawanRepository = get(),
+        tokenManager = get()
     ) }
 
     // Notifikasi

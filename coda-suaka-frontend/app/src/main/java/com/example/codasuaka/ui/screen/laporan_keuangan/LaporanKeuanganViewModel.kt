@@ -310,9 +310,9 @@ class LaporanKeuanganViewModel(
             return
         }
 
-        // Validasi tanggal
+        // Validasi tanggal — handle format yyyy-MM-dd dan ISO datetime lengkap
         try {
-            val tanggal = LocalDate.parse(state.formTanggal, DateTimeFormatter.ISO_LOCAL_DATE)
+            val tanggal = com.example.codasuaka.util.DateTimeUtil.toLocalLocalDate(state.formTanggal)
             if (tanggal.isAfter(LocalDate.now())) {
                 _uiState.value = _uiState.value.copy(submitError = "Tanggal tidak boleh melebihi hari ini")
                 return

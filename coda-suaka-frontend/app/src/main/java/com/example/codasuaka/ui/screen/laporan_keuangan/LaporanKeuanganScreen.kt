@@ -1228,8 +1228,14 @@ private fun FormTransaksiDialog(
                 var showDatePicker by remember { mutableStateOf(false) }
                 var showYearPicker by remember { mutableStateOf(false) }
                 
+                // Format tanggal untuk tampilan: "30 Juni 2026, 17:00 WIB"
+                val displayTanggal = remember(formTanggal) {
+                    com.example.codasuaka.util.DateTimeUtil.formatIsoToLocal(
+                        formTanggal, "dd MMMM yyyy, HH:mm"
+                    )
+                }
                 CustomTextField(
-                    value = formTanggal,
+                    value = displayTanggal,
                     onValueChange = {},
                     readOnly = true,
                     enabled = false,
@@ -1255,11 +1261,19 @@ private fun FormTransaksiDialog(
                             onDismissRequest = { showDatePicker = false },
                             confirmButton = {
                                 TextButton(onClick = {
-                                    datePickerState.selectedDateMillis?.let {
-                                        val ld = Instant.ofEpochMilli(it)
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        val newDate = Instant.ofEpochMilli(millis)
                                             .atZone(ZoneId.of("UTC"))
                                             .toLocalDate()
-                                        onFieldChanged(null, null, null, ld.toString(), null, null)
+                                        // Pertahankan waktu dari formTanggal yang sudah ada
+                                        val newTanggal = try {
+                                            val existingInstant = java.time.Instant.parse(formTanggal)
+                                            val existingTime = existingInstant.atZone(ZoneId.of("UTC")).toLocalTime()
+                                            newDate.atTime(existingTime).toString()
+                                        } catch (_: Exception) {
+                                            newDate.toString()
+                                        }
+                                        onFieldChanged(null, null, null, newTanggal, null, null)
                                     }
                                     showDatePicker = false
                                 }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
