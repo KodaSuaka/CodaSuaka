@@ -35,11 +35,7 @@ gradle/android/FakeDependency.jar
 *.aab
 *.apks
 /app/release/
-/app/build/outputs/apk/release/
-/app/build/outputs/bundle/release/
-/app/build/outputs/apk/debug/
-/app/build/outputs/bundle/debug/
-/app/build/outputs/mapping/
+/app/build/
 
 # Signing Keys & Keystore (RAHASIA - JANGAN DI-COMMIT!)
 *.jks

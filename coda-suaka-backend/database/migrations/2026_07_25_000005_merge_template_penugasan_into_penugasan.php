@@ -31,7 +31,8 @@ return new class extends Migration
         });
 
         // ── 2. Buat penanggung_jawab_id nullable ────────────────────
-        if (Schema::hasColumn('penugasans', 'penanggung_jawab_id')) {
+        // MODIFY column hanya didukung MySQL — skip di SQLite
+        if (DB::getDriverName() === 'mysql' && Schema::hasColumn('penugasans', 'penanggung_jawab_id')) {
             // Drop foreign key constraint menggunakan raw SQL
             $constraints = $this->getForeignKeyConstraints('penugasans', 'penanggung_jawab_id');
             foreach ($constraints as $constraintName) {
@@ -53,7 +54,7 @@ return new class extends Migration
         }
 
         // ── 3. Buat created_by nullable ────────────────────────────
-        if (Schema::hasColumn('penugasans', 'created_by')) {
+        if (DB::getDriverName() === 'mysql' && Schema::hasColumn('penugasans', 'created_by')) {
             $constraints = $this->getForeignKeyConstraints('penugasans', 'created_by');
             foreach ($constraints as $constraintName) {
                 Schema::table('penugasans', function (Blueprint $table) use ($constraintName) {
@@ -212,6 +213,11 @@ return new class extends Migration
      */
     private function getForeignKeyConstraints(string $table, string $column): array
     {
+        // Hanya support MySQL — information_schema tidak tersedia di SQLite
+        if (DB::getDriverName() !== 'mysql') {
+            return [];
+        }
+
         $database = DB::getDatabaseName();
         $results = DB::select("
             SELECT CONSTRAINT_NAME

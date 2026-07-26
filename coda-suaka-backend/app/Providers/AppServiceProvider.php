@@ -30,8 +30,11 @@ use App\Policies\UserPolicy;
 use App\Policies\PaketPolicy;
 use App\Policies\KategoriTransaksiPolicy;
 use App\Policies\TransaksiKasPolicy;
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,6 +51,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ─── Rate Limiting ──────────────────────────────────────────
+        // H2: Rate limit untuk login — maks 5 percobaan per menit per IP
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        // H2: Rate limit untuk register super admin — maks 3 per menit per IP
+        RateLimiter::for('register-super-admin', function (Request $request) {
+            return Limit::perMinute(3)->by($request->ip());
+        });
+
+        // Rate limit untuk register umum — maks 5 per menit per IP
+        RateLimiter::for('register', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
         // ─── Set locale Carbon ke Indonesia ─────────────────────────
         // Agar now()->isoFormat('DD MMMM YYYY') menghasilkan "17 Juli 2026"
         \Carbon\Carbon::setLocale('id');

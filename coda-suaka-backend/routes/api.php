@@ -36,10 +36,10 @@ use App\Http\Controllers\TemplatePenugasanController;
 |--------------------------------------------------------------------------
 */
 
-// ─── Public Routes (tanpa auth) ─────────────────────────────────
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/register-super-admin', [AuthController::class, 'registerSuperAdmin']);
-Route::post('/login', [AuthController::class, 'login']);
+// ─── Public Routes (tanpa auth + rate limiting) ────────────────
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/register-super-admin', [AuthController::class, 'registerSuperAdmin'])->middleware('throttle:register-super-admin');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 // ─── Protected Routes (memerlukan token Sanctum) ──────────────
 Route::middleware('auth:sanctum')->group(function () {
