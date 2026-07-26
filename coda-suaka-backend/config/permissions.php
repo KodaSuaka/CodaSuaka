@@ -282,6 +282,20 @@ return [
             // Jadwal
             'view:jadwal',
         ],
+
+        'Karyawan' => [
+            // Presensi (lihat data sendiri)
+            'view:presensi',
+
+            // Penugasan (lihat tugas sendiri + template)
+            'view:penugasan',
+
+            // Jadwal
+            'view:jadwal',
+
+            // Pengajuan (lihat pengajuan sendiri)
+            'view:pengajuan',
+        ],
     ],
 
 ];

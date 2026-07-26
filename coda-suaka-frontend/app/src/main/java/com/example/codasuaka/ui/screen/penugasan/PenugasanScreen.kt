@@ -304,6 +304,21 @@ private fun PenugasanCard(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Template Badge
+                        if (penugasan.isTemplate == true) {
+                            Surface(
+                                color = Primary.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = "📋 Template",
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Primary
+                                )
+                            }
+                        }
                         // Urgency Badge
                         Surface(
                             color = urgencyColor.copy(alpha = 0.12f),
@@ -333,19 +348,21 @@ private fun PenugasanCard(
                     }
                 }
 
-                // Delete Button (Pojok Kanan Atas)
-                IconButton(
-                    onClick = { showDeleteConfirm = true },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(Error.copy(alpha = 0.1f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Hapus",
-                        tint = Error,
-                        modifier = Modifier.size(18.dp)
-                    )
+                // Delete Button — sembunyikan untuk template
+                if (penugasan.isTemplate != true) {
+                    IconButton(
+                        onClick = { showDeleteConfirm = true },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(Error.copy(alpha = 0.1f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Hapus",
+                            tint = Error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 

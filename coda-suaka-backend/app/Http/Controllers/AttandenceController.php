@@ -131,6 +131,11 @@ class AttandenceController extends Controller
         // Standar waktu checkout: 16:30 waktu lokal instansi
         $jamCheckoutStandard = Carbon::today($tz)->setTime(16, 30, 0);
 
+        // Blokir checkout sebelum waktu standar (16:30)
+        if ($jamSekarang->lt($jamCheckoutStandard)) {
+            return $this->error('Belum waktunya checkout. Checkout hanya bisa dilakukan pada jam 16:30 atau setelahnya.', 422);
+        }
+
         // Tentukan status_keterangan berdasarkan waktu checkout
         $statusKeterangan = $this->tentukanStatusCheckout($jamSekarang, $jamCheckoutStandard);
 
@@ -175,9 +180,26 @@ class AttandenceController extends Controller
             ->where('tanggal', $today)
             ->first();
 
+        // Waktu standar checkin (07:30) dan checkout (16:30)
+        $jamCheckinStandar = Carbon::today($tz)->setTime(7, 30, 0)->toTimeString();
+        $jamCheckoutStandar = Carbon::today($tz)->setTime(16, 30, 0)->toTimeString();
+
+        $sudahCheckin = $presensi && $presensi->jam_checkin ? true : false;
+        $sudahCheckout = $presensi && $presensi->jam_checkout ? true : false;
+
+        // Jam checkin: tampilkan waktu aktual jika sudah checkin, default 07:30 jika belum
+        $jamCheckin = $sudahCheckin ? $presensi->jam_checkin : $jamCheckinStandar;
+
+        // Jam checkout: tampilkan waktu aktual jika sudah checkout, default 16:30 jika belum
+        $jamCheckout = $sudahCheckout ? $presensi->jam_checkout : ($sudahCheckin ? $jamCheckoutStandar : null);
+
         return $this->success([
-            'sudah_checkin' => $presensi && $presensi->jam_checkin ? true : false,
-            'sudah_checkout' => $presensi && $presensi->jam_checkout ? true : false,
+            'sudah_checkin' => $sudahCheckin,
+            'sudah_checkout' => $sudahCheckout,
+            'jam_checkin' => $jamCheckin,
+            'jam_checkout' => $jamCheckout,
+            'jam_checkin_standar' => $jamCheckinStandar,
+            'jam_checkout_standar' => $jamCheckoutStandar,
             'presensi' => $presensi,
         ]);
     }

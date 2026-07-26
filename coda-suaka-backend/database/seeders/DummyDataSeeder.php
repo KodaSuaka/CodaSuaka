@@ -84,6 +84,10 @@ class DummyDataSeeder extends Seeder
         $this->command?->info('🏢 Membuat instansi/bisnis...');
         $instansi1 = $this->createInstansi('Toko Berkah Mart', $paketPro->id, 'Asia/Jakarta');
         $instansi2 = $this->createInstansi('Kopi Nusantara', $paketBasic->id, 'Asia/Makassar');
+        
+        // Batas karyawan per paket (termasuk role users: owner, manager, keuangan, staff)
+        $maxKaryawanInstansi1 = $paketPro->max_karyawan_per_outlet;    // Pro: 50
+        $maxKaryawanInstansi2 = $paketBasic->max_karyawan_per_outlet;  // Basic: 5
 
         // ─── 3. Buat Transaksi Paket (langganan aktif) ───────────
         $this->command?->info('💳 Membuat transaksi paket...');
@@ -95,13 +99,13 @@ class DummyDataSeeder extends Seeder
         $roles = $this->ensureRoles();
         $this->ensureRolePermissions();
 
-        // ─── 5. Buat Users & Karyawan Instansi 1 ─────────────────
-        $this->command?->info('👤 Membuat user & karyawan Instansi 1...');
-        $users1 = $this->createUsersForInstansi($instansi1, $roles, 1);
+        // ─── 5. Buat Users & Karyawan Instansi 1 (Pro) ──────────
+        $this->command?->info('👤 Membuat user & karyawan Instansi 1 (Pro, max '.$maxKaryawanInstansi1.' karyawan)...');
+        $users1 = $this->createUsersForInstansi($instansi1, $roles, 1, $maxKaryawanInstansi1);
 
-        // ─── 6. Buat Users & Karyawan Instansi 2 ─────────────────
-        $this->command?->info('👤 Membuat user & karyawan Instansi 2...');
-        $users2 = $this->createUsersForInstansi($instansi2, $roles, 2);
+        // ─── 6. Buat Users & Karyawan Instansi 2 (Basic) ────────
+        $this->command?->info('👤 Membuat user & karyawan Instansi 2 (Basic, max '.$maxKaryawanInstansi2.' karyawan)...');
+        $users2 = $this->createUsersForInstansi($instansi2, $roles, 2, $maxKaryawanInstansi2);
 
         // ─── 7. Buat Outlet ──────────────────────────────────────
         $this->command?->info('🏪 Membuat outlet...');
@@ -164,26 +168,26 @@ class DummyDataSeeder extends Seeder
 
         $this->command?->info('✅ Semua data dummy berhasil dibuat!');
         $this->command?->info('');
-        $this->command?->info('═══════════════════════════════════════');
-        $this->command?->info('  AKUN UNTUK LOGIN (Password: password)');
-        $this->command?->info('═══════════════════════════════════════');
+        $this->command?->info('═══════════════════════════════════════════════════════');
+        $this->command?->info('  AKUN UNTUK LOGIN (Password: password untuk semua)');
+        $this->command?->info('═══════════════════════════════════════════════════════');
         $this->command?->info('');
-        $this->command?->info('--- Instansi 1: '.$instansi1->nama_instansi.' ---');
+        $this->command?->info('--- Instansi 1: '.$instansi1->nama_instansi.' (Paket Pro, max '.$maxKaryawanInstansi1.' karyawan) ---');
         $this->command?->info('  Owner    : owner1@berkahmart.com');
         $this->command?->info('  Manager  : manager1@berkahmart.com');
         $this->command?->info('  Keuangan : keuangan1@berkahmart.com');
         $this->command?->info('  Staff    : staff1@berkahmart.com');
-        $this->command?->info('  Karyawan : karyawan1@berkahmart.com');
+        $this->command?->info('  Karyawan : karyawan1_0@berkahmart.com s/d karyawan1_4@berkahmart.com');
         $this->command?->info('');
-        $this->command?->info('--- Instansi 2: '.$instansi2->nama_instansi.' ---');
+        $this->command?->info('--- Instansi 2: '.$instansi2->nama_instansi.' (Paket Basic, max '.$maxKaryawanInstansi2.' karyawan) ---');
         $this->command?->info('  Owner    : owner2@kopinusantara.com');
         $this->command?->info('  Manager  : manager2@kopinusantara.com');
         $this->command?->info('  Keuangan : keuangan2@kopinusantara.com');
         $this->command?->info('  Staff    : staff2@kopinusantara.com');
-        $this->command?->info('  Karyawan : karyawan2@kopinusantara.com');
+        $this->command?->info('  Karyawan : karyawan2_0@kopinusantara.com');
         $this->command?->info('');
-        $this->command?->info('--- Super Admin ---');
-        $this->command?->info('  Email    : admin@codasuaka.com');
+        $this->command?->info('--- Super Admin (register manual) ---');
+        $this->command?->info('  POST /api/auth/register-super-admin');
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -200,7 +204,7 @@ class DummyDataSeeder extends Seeder
                 'fitur' => json_encode(['Dashboard', 'Presensi', 'Penugasan Dasar', 'Laporan Harian']),
                 'durasi_hari' => 30,
                 'max_outlet' => 2,
-                'max_karyawan_per_outlet' => 10,
+                'max_karyawan_per_outlet' => 5,
                 'is_active' => true,
             ]
         );
@@ -289,19 +293,23 @@ class DummyDataSeeder extends Seeder
     //  USERS & KARYAWAN
     // ═══════════════════════════════════════════════════════════
 
-    private function createUsersForInstansi(Instansi $instansi, array $roles, int $instansiNum): array
+    private function createUsersForInstansi(Instansi $instansi, array $roles, int $instansiNum, int $maxKaryawan = 50): array
     {
         $suffix = $instansiNum;
         $domain = $instansiNum === 1 ? 'berkahmart.com' : 'kopinusantara.com';
         $users = [];
 
-        // Role mapping: owner, manager, keuangan, staff, karyawan (3 staff biasa)
+        // Role mapping: owner, manager, keuangan, staff — ini 4 user wajib
         $roleMapping = [
             'owner' => 'Owner',
             'manager' => 'Manager',
             'keuangan' => 'Keuangan',
             'staff' => 'Staff',
         ];
+
+        // Hitung sisa slot karyawan setelah role users
+        $karyawanBiasaCount = max(0, $maxKaryawan - count($roleMapping));
+        $this->command?->info("   → Membuat ".count($roleMapping)." role users + {$karyawanBiasaCount} karyawan biasa (max {$maxKaryawan})");
 
         foreach ($roleMapping as $key => $roleName) {
             $namaParts = explode(' ', $this->namaKaryawan[array_rand($this->namaKaryawan)]);
@@ -336,14 +344,17 @@ class DummyDataSeeder extends Seeder
             $users[$key] = $user;
         }
 
-        // Buat 5 karyawan biasa tambahan
-        $karyawanNames = [
+        // Buat karyawan biasa sesuai batas paket
+        $semuaKaryawanNames = [
             'Ahmad Rizky Pratama',
             'Siti Nurhaliza',
             'Budi Santoso',
             'Dewi Kartika Sari',
             'Fajar Nugroho',
         ];
+
+        // Ambil hanya sesuai slot yang tersisa
+        $karyawanNames = array_slice($semuaKaryawanNames, 0, $karyawanBiasaCount);
 
         foreach ($karyawanNames as $i => $nama) {
             $namaLower = strtolower(str_replace(' ', '.', $nama));

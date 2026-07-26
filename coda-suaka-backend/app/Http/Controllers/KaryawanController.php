@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatekaryawanRequest;
 use App\Models\karyawan;
 use App\Models\User;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -72,6 +73,23 @@ class KaryawanController extends Controller
     {
         $user = $request->user();
         $instansiId = $user->instansi_id;
+
+        // Cek batas karyawan berdasarkan paket langganan
+        $instansi = $user->instansi;
+        if ($instansi && $instansi->paket) {
+            $maxKaryawan = (int) $instansi->paket->max_karyawan_per_outlet;
+            $currentCount = karyawan::whereHas('user', function ($q) use ($instansiId) {
+                $q->where('instansi_id', $instansiId);
+            })->count();
+
+            if ($currentCount >= $maxKaryawan) {
+                return $this->error(
+                    "Batas maksimal karyawan untuk paket {$instansi->paket->nama_paket} adalah {$maxKaryawan} karyawan. "
+                    . "Saat ini sudah ada {$currentCount} karyawan.",
+                    422
+                );
+            }
+        }
 
         $result = DB::transaction(function () use ($request, $instansiId) {
             // Buat user account

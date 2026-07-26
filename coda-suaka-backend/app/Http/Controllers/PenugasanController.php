@@ -43,22 +43,23 @@ class PenugasanController extends Controller
         // Default: tampilkan SEMUA (template + tugas biasa)
         // is_template=true: hanya template
         // is_template=false: hanya tugas biasa
-        $showTemplates = $request->boolean('is_template', null);
+        // NOTE: Jangan pakai $request->boolean() langsung karena filter_var(null)
+        // mengembalikan false (bukan null), sehingga regularTasks() akan dipanggil
+        // saat parameter tidak dikirim. Gunakan $request->has() dulu untuk mengecek.
+        if ($request->has('is_template')) {
+            if ($request->boolean('is_template')) {
+                $query->templates();
+            } else {
+                $query->regularTasks();
+            }
+        }
+        // else: tidak ada parameter is_template → tampilkan semua (template + regular)
 
         // Filter berdasarkan role
         // Owner/Super Admin: lihat semua tugas di instansi (termasuk template + tugas semua karyawan)
         // Manager/Keuangan/Staff: lihat template (tanpa filter) + tugas biasa yang ditugaskan kepada mereka
         $roleName = $user->role?->nama_role;
         $isOwnerOrAdmin = in_array($roleName, ['Owner', 'Super Admin']);
-
-        if ($showTemplates === true) {
-            // Hanya template
-            $query->templates();
-        } elseif ($showTemplates === false) {
-            // Hanya tugas biasa
-            $query->regularTasks();
-        }
-        // else: null → tampilkan semua (template + regular)
 
         if (! $isOwnerOrAdmin) {
             $karyawan = $user->profilKaryawan;

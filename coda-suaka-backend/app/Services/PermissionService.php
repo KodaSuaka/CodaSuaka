@@ -132,7 +132,7 @@ class PermissionService
                 'id' => 'tugas_karyawan',
                 'label' => 'Tugas Karyawan',
                 'icon' => 'Assignment',
-                'route' => 'tugas_karyawan',
+                'route' => 'penugasan',
                 'permission' => 'view:penugasan',
             ],
             [

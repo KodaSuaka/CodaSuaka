@@ -95,9 +95,11 @@ class PresensiTest extends TestCase
                 'lokasi' => '-6.2088,106.8456',
             ]);
 
-        // Act — checkout
+        // Act — travel ke jam 17:00 waktu instansi (setelah jam standar 16:30)
+        $this->travel(now('Asia/Jakarta')->setTime(17, 0, 0));
         $response = $this->actingAs($this->user)
             ->postJson('/api/presensis/checkout');
+        $this->travelBack();
 
         // Assert
         $response->assertStatus(200)
@@ -119,6 +121,27 @@ class PresensiTest extends TestCase
             ]);
     }
 
+    public function test_checkout_gagal_sebelum_jam_16_30()
+    {
+        // Arrange — checkin dulu
+        $this->actingAs($this->user)
+            ->postJson('/api/presensis/checkin', [
+                'lokasi' => '-6.2088,106.8456',
+            ]);
+
+        // Act — travel ke jam 15:00 waktu instansi (sebelum jam standar 16:30)
+        $this->travel(now('Asia/Jakarta')->setTime(15, 0, 0));
+        $response = $this->actingAs($this->user)
+            ->postJson('/api/presensis/checkout');
+        $this->travelBack();
+
+        // Assert — harus ditolak karena belum waktunya
+        $response->assertStatus(422)
+            ->assertJson([
+                'status' => 'error',
+            ]);
+    }
+
     public function test_user_dapat_melihat_presensi_hari_ini()
     {
         // Arrange — checkin
@@ -131,10 +154,40 @@ class PresensiTest extends TestCase
         $response = $this->actingAs($this->user)
             ->getJson('/api/presensis/today');
 
-        // Assert
+        // Assert — response harus berisi field standar waktu
         $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'sudah_checkin',
+                    'sudah_checkout',
+                    'jam_checkin',
+                    'jam_checkout',
+                    'jam_checkin_standar',
+                    'jam_checkout_standar',
+                    'presensi',
+                ],
+            ]);
+    }
+
+    public function test_today_mengembalikan_waktu_standar_jika_belum_checkin()
+    {
+        // Act — tanpa checkin
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/presensis/today');
+
+        // Assert — jam_checkin harus default 07:30, jam_checkout null (belum checkin)
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'data' => [
+                    'sudah_checkin' => false,
+                    'sudah_checkout' => false,
+                    'jam_checkin_standar' => '07:30:00',
+                    'jam_checkout_standar' => '16:30:00',
+                ],
             ]);
     }
 

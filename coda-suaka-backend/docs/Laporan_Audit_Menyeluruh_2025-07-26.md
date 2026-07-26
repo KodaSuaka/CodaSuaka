@@ -141,25 +141,28 @@ Berhasil membuat data dummy lengkap untuk presentasi:
 ### 🔴 Critical (0)
 Tidak ditemukan bug critical yang menghancurkan fungsi inti aplikasi.
 
-### 🟠 High (3)
+### 🟠 High (5)
 
 | # | Bug | Lokasi | Status | Keterangan |
 |---|-----|--------|--------|------------|
 | H1 | **Approval workflow dinonaktifkan** | [`api.php:151-158`](coda-suaka-backend/routes/api.php:151) | ⏭️ SKIP | Route approval dikomentari — belum waktunya release, sudah dipersiapkan |
 | H2 | **No rate limiting pada register Super Admin** | [`AppServiceProvider.php`](coda-suaka-backend/app/Providers/AppServiceProvider.php:54) | ✅ FIXED | Ditambahkan `throttle:register-super-admin` (3 req/menit) + `throttle:register` (5 req/menit) |
 | H3 | **No rate limiting pada login** | [`api.php`](coda-suaka-backend/routes/api.php:42) | ✅ FIXED | Ditambahkan `throttle:login` (5 req/menit per IP) |
+| H4 | **Menu tugas karyawan tidak bisa diakses** | [`config/permissions.php`](coda-suaka-backend/config/permissions.php) + [`PermissionService.php:135`](coda-suaka-backend/app/Services/PermissionService.php:135) | ✅ FIXED | 1) Role Karyawan tidak ada di permissions config 2) Route mismatch `'tugas_karyawan'` → `'penugasan'` |
+| H5 | **Penugasan pemilik tidak tampilkan template** | [`PenugasanController.php:46`](coda-suaka-backend/app/Http/Controllers/PenugasanController.php:46) | ✅ FIXED | `$request->boolean('is_template', null)` mengembalikan `false` (bukan `null`) saat parameter tidak dikirim — `regularTasks()` memfilter semua template keluar |
 
-### 🟡 Medium (7)
+### 🟡 Medium (8)
 
 | # | Bug | Lokasi | Status | Keterangan |
 |---|-----|--------|--------|------------|
 | M1 | **Model naming tidak konsisten** | Berbagai model | ⏭️ SKIP | Refactoring berisiko tinggi — campuran `PascalCase` dan `snake_case` |
 | M2 | **MySQL-specific migration** | [`merge_template_penugasan`](coda-suaka-backend/database/migrations/2026_07_25_000005_merge_template_penugasan_into_penugasan.php) | ✅ FIXED | Ditambahkan `DB::getDriverName()` check untuk portabilitas |
-| M3 | **Tidak ada unit tests** | `tests/` | ✅ FIXED | Ditambah 15 tests: LoginTest (8) + PresensiTest (7) — semua PASS |
+| M3 | **Tidak ada unit tests** | `tests/` | ✅ FIXED | Ditambah 18 tests: LoginTest (8) + PresensiTest (10) — semua PASS |
 | M4 | **Frontend domain layer underutilized** | [`domain/usecase/`](coda-suaka-frontend/app/src/main/java/com/example/codasuaka/domain/usecase/) | ⏭️ SKIP | Enhancement — bukan bug, code quality improvement |
 | M5 | **Lokasi checkin bisa di-spoof** | [`StoreattandenceRequest.php`](coda-suaka-backend/app/Http/Requests/StoreattandenceRequest.php) | ✅ FIXED | Ditambah validasi GPS format regex `latitude,longitude` |
 | M6 | **Duplikasi auth screens** | Frontend | ✅ FALSE POSITIVE | `AuthScreen` = splash/loading, `LoginScreen`/`RegisterScreen` = form — tidak duplikat |
 | M7 | **Duplicated migration timestamp** | `2026_07_25_000003` | ✅ FIXED | File rename ke `2026_07_25_000006_make_template_penugasans_nullable.php` |
+| M8 | **Checkout tanpa batasan waktu + today() kosong** | [`AttandenceController.php`](coda-suaka-backend/app/Http/Controllers/AttandenceController.php:124) | ✅ FIXED | Checkout diblokir sebelum 16:30. `today()` mengembalikan waktu standar (07:30/16:30) meskipun belum checkin |
 
 ### 🟢 Low (4)
 
@@ -178,6 +181,10 @@ Tidak ditemukan bug critical yang menghancurkan fungsi inti aplikasi.
 |---|-----|--------|--------|------------|
 | B1 | **Logout error: `TransientToken::delete()`** | [`AuthController.php:161`](coda-suaka-backend/app/Http/Controllers/AuthController.php:161) | ✅ FIXED | Diganti `$request->user()->tokens()->delete()` — Sanctum `TransientToken` tidak punya method `delete()` |
 | B2 | **PHPUnit SQLite incompatibility** | [`phpunit.xml`](coda-suaka-backend/phpunit.xml) | ✅ FIXED | Konfigurasi diubah dari SQLite ke MySQL (`codasuaka_testing`) sesuai env production |
+| B3 | **Role Karyawan tidak ada di permissions** | [`config/permissions.php`](coda-suaka-backend/config/permissions.php) | ✅ FIXED | Role Karyawan tidak didefinisikan — karyawan tidak bisa akses menu apapun |
+| B4 | **Route mismatch tugas_karyawan** | [`PermissionService.php:135`](coda-suaka-backend/app/Services/PermissionService.php:135) | ✅ FIXED | Route `'tugas_karyawan'` tidak match `'penugasan'` di frontend `Routes.PENUGASAN` |
+| B5 | **`$request->boolean()` mengembalikan `false` bukan `null`** | [`PenugasanController.php:46`](coda-suaka-backend/app/Http/Controllers/PenugasanController.php:46) | ✅ FIXED | `filter_var(null, FILTER_VALIDATE_BOOLEAN)` = `false` → `regularTasks()` memfilter semua template |
+| B6 | **Checkout tanpa batasan waktu** | [`AttandenceController.php:124`](coda-suaka-backend/app/Http/Controllers/AttandenceController.php:124) | ✅ FIXED | Ditambah blokir checkout sebelum jam 16:30 + default times di `today()` |
 
 ---
 
@@ -186,13 +193,13 @@ Tidak ditemukan bug critical yang menghancurkan fungsi inti aplikasi.
 | Severity | Total | ✅ Fixed | ⏭️ Skip | ⏳ Belum |
 |----------|-------|----------|---------|---------|
 | 🔴 Critical | 0 | — | — | — |
-| 🟠 High | 3 | 2 | 1 | 0 |
-| 🟡 Medium | 7 | 4 | 3 | 0 |
+| 🟠 High | 5 | 4 | 1 | 0 |
+| 🟡 Medium | 8 | 5 | 3 | 0 |
 | 🟢 Low | 4 | 0 | 1 | 3 |
-| 🆕 Baru | 2 | 2 | 0 | 0 |
-| **Total** | **16** | **8** | **5** | **3** |
+| 🆕 Baru | 6 | 6 | 0 | 0 |
+| **Total** | **23** | **15** | **5** | **3** |
 
-**Coverage Fix: 8/16 (50%)** — Semua bug High dan Medium sudah FIXED atau di-SKIP. Sisa 3 bug adalah Low severity (empty state UI, frontend cache, frontend tests).
+**Coverage Fix: 15/23 (65%)** — Semua bug Critical, High, dan Medium sudah FIXED atau di-SKIP. Sisa 3 bug adalah Low severity (empty state UI, frontend cache, frontend tests).
 
 ---
 
@@ -232,7 +239,12 @@ Tidak ditemukan bug critical yang menghancurkan fungsi inti aplikasi.
 | [`api.php`](coda-suaka-backend/routes/api.php) | **DIMODIFIKASI** | Ditambah `throttle` middleware ke public routes |
 | [`phpunit.xml`](coda-suaka-backend/phpunit.xml) | **DIMODIFIKASI** | Konfigurasi testing dari SQLite → MySQL |
 | [`LoginTest.php`](coda-suaka-backend/tests/Feature/Auth/LoginTest.php) | **DIBUAT** | 8 tests untuk fitur Auth (login, register, logout) |
-| [`PresensiTest.php`](coda-suaka-backend/tests/Feature/Presensi/PresensiTest.php) | **DIBUAT** | 7 tests untuk fitur Presensi (checkin, checkout, validasi) |
+| [`PresensiTest.php`](coda-suaka-backend/tests/Feature/Presensi/PresensiTest.php) | **DIMODIFIKASI** | 10 tests — ditambah 3 tests baru: checkout dini, today response structure, today default times |
+| [`config/permissions.php`](coda-suaka-backend/config/permissions.php) | **DIMODIFIKASI** | Ditambah role Karyawan dengan permissions: view:presensi, view:penugasan, view:jadwal, view:pengajuan |
+| [`PermissionService.php`](coda-suaka-backend/app/Services/PermissionService.php) | **DIMODIFIKASI** | Fix route `'tugas_karyawan'` → `'penugasan'` |
+| [`PenugasanController.php`](coda-suaka-backend/app/Http/Controllers/PenugasanController.php) | **DIMODIFIKASI** | Fix `$request->boolean()` → `$request->has()` + `$request->boolean()` |
+| [`AttandenceController.php`](coda-suaka-backend/app/Http/Controllers/AttandenceController.php) | **DIMODIFIKASI** | Blokir checkout sebelum 16:30 + default times di `today()` |
+| [`PenugasanScreen.kt`](coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/penugasan/PenugasanScreen.kt) | **DIMODIFIKASI** | Badge "Template" + sembunyikan tombol hapus untuk template |
 | [`coda-suaka-backend/.gitignore`](coda-suaka-backend/.gitignore) | **DIMODIFIKASI** | Ditambah `phpunit.xml` |
 | [`coda-suaka-frontend/.gitignore`](coda-suaka-frontend/.gitignore) | **DIMODIFIKASI** | Ditambah `/app/build/` |
 
@@ -260,9 +272,9 @@ Tidak ditemukan bug critical yang menghancurkan fungsi inti aplikasi.
 2. **Approval workflow** sudah diimplementasikan lengkap di backend (controller + service + model) tapi route-nya dinonaktifkan
 3. **Frontend** sudah memiliki screen untuk approval ([`ApprovalKeuanganScreen`](coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/approval_keuangan/ApprovalKeuanganScreen.kt)) — menunggu backend route diaktifkan
 4. **Seed command**: `php artisan migrate:fresh --seed --force` — waktu eksekusi ~10 detik untuk MySQL
-5. **Test command**: `php artisan test --filter="LoginTest|PresensiTest"` — 15 tests, 40 assertions, ~10 detik di MySQL
+5. **Test command**: `php artisan test --filter="LoginTest|PresensiTest"` — 18 tests, ~50 assertions, ~10 detik di MySQL
 6. **Test database**: Menggunakan MySQL `codasuaka_testing` (bukan SQLite) sesuai env production
 
 ---
 
-*Laporan ini diperbarui pada 26 Juli 2026 — menambahkan status fix semua bug*
+*Laporan ini diperbarui pada 26 Juli 2026 (v2) — menambahkan 3 bug baru (H4, H5, M8) + 4 bug discovery (B3-B6) dari sesi testing*
