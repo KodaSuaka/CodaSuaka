@@ -35,6 +35,7 @@ import com.example.codasuaka.data.remote.dto.ArusKasData
 import com.example.codasuaka.data.remote.dto.ArusKasDetail
 import com.example.codasuaka.data.remote.dto.KategoriTransaksiDto
 import com.example.codasuaka.data.remote.dto.TransaksiKasDto
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
@@ -93,7 +94,7 @@ fun LaporanKeuanganScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {

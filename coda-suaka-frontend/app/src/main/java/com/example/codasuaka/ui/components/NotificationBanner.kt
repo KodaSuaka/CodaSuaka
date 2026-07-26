@@ -25,6 +25,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -188,7 +190,35 @@ fun NotificationBannerStatic(
 }
 
 @Composable
-private fun NotificationContent(
+fun CodaSuakaSnackbarHost(
+    hostState: SnackbarHostState,
+    modifier: Modifier = Modifier
+) {
+    SnackbarHost(
+        hostState = hostState,
+        modifier = modifier.padding(16.dp)
+    ) { data ->
+        val message = data.visuals.message
+        // Deteksi tipe secara sederhana dari isi pesan (bisa ditingkatkan nanti)
+        val type = when {
+            message.contains("berhasil", ignoreCase = true) || message.contains("sukses", ignoreCase = true) -> 
+                ErrorMessageMapper.NotificationType.SUCCESS
+            message.contains("gagal", ignoreCase = true) || message.contains("kesalahan", ignoreCase = true) || message.contains("error", ignoreCase = true) -> 
+                ErrorMessageMapper.NotificationType.ERROR
+            else -> ErrorMessageMapper.NotificationType.INFO
+        }
+
+        NotificationContent(
+            message = message,
+            type = type,
+            title = null,
+            onDismiss = { data.dismiss() }
+        )
+    }
+}
+
+@Composable
+fun NotificationContent(
     message: String,
     type: ErrorMessageMapper.NotificationType,
     title: String?,
@@ -199,25 +229,25 @@ private fun NotificationContent(
         ErrorMessageMapper.NotificationType.ERROR -> NotificationColors(
             container = ErrorLight,
             content = Error,
-            border = Error,
+            border = Error.copy(alpha = 0.2f),
             icon = Icons.Filled.Error
         )
         ErrorMessageMapper.NotificationType.SUCCESS -> NotificationColors(
             container = SuccessLight,
             content = Success,
-            border = Success,
+            border = Success.copy(alpha = 0.2f),
             icon = Icons.Filled.CheckCircle
         )
         ErrorMessageMapper.NotificationType.WARNING -> NotificationColors(
             container = WarningBg,
             content = WarningColor,
-            border = WarningColor,
+            border = WarningColor.copy(alpha = 0.2f),
             icon = Icons.Filled.Warning
         )
         ErrorMessageMapper.NotificationType.INFO -> NotificationColors(
             container = InfoBg,
             content = InfoColor,
-            border = InfoColor,
+            border = InfoColor.copy(alpha = 0.2f),
             icon = Icons.Filled.Info
         )
     }
@@ -226,10 +256,10 @@ private fun NotificationContent(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        border = CardDefaults.outlinedCardBorder().takeIf { false }, // gunakan shadow
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier

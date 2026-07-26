@@ -41,6 +41,8 @@ import com.example.codasuaka.ui.screen.penugasan.PenugasanScreen
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalScreen
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
+import com.example.codasuaka.ui.screen.kasir.KasirScreen
+import com.example.codasuaka.ui.screen.kasir.KasirViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -70,6 +72,7 @@ object Routes {
     const val POIN_KINERJA = "poin_kinerja"
     const val PENUGASAN = "penugasan"
     const val JAM_OPERASIONAL = "jam_operasional"
+    const val KASIR = "kasir"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -346,6 +349,15 @@ fun AppNavigation(navController: NavHostController) {
             JamOperasionalScreen(
                 onBack = { safePopBackStack() },
                 viewModel = jamOperasionalViewModel
+            )
+        }
+
+        // ── Kasir ──
+        composable(Routes.KASIR) {
+            val kasirViewModel: KasirViewModel = koinViewModel()
+            KasirScreen(
+                onBack = { safePopBackStack() },
+                viewModel = kasirViewModel
             )
         }
 

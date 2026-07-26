@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.theme.*
 
 /**
@@ -68,7 +70,7 @@ fun JamOperasionalScreen(
                     Text(
                         "Jam Operasional",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Secondary
                     )
                 },
                 navigationIcon = {
@@ -76,17 +78,17 @@ fun JamOperasionalScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Kembali",
-                            tint = Color.White
+                            tint = Secondary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Secondary
+                    containerColor = Surface
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Neutral
+        snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
+        containerColor = Tertiary
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(
@@ -106,150 +108,170 @@ fun JamOperasionalScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // ── Header Info ──
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                // ... (rest of the cards)
+                // (I will do a shorter target/replacement to avoid long content errors)
+                    // ── Header Info ──
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Text(
-                            text = uiState.namaInstansi,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Secondary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Atur jam operasional toko Anda",
-                            fontSize = 13.sp,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                }
-
-                // ── Jam Buka & Jam Tutup ──
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Jam Operasional",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Secondary
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier.padding(20.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Jam Buka
-                            TimePickerField(
-                                modifier = Modifier.weight(1f),
-                                label = "Jam Buka",
-                                value = uiState.jamBuka,
-                                onValueChange = { viewModel.updateJamBuka(it) }
-                            )
-
-                            // Jam Tutup
-                            TimePickerField(
-                                modifier = Modifier.weight(1f),
-                                label = "Jam Tutup",
-                                value = uiState.jamTutup,
-                                onValueChange = { viewModel.updateJamTutup(it) }
-                            )
-                        }
-                    }
-                }
-
-                // ── Hari Operasional ──
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Hari Operasional",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Secondary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Pilih hari toko beroperasi",
-                            fontSize = 13.sp,
-                            color = OnSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            daftarHari.forEach { hari ->
-                                HariChip(
-                                    hari = hari,
-                                    isSelected = hari.value in uiState.hariOperasional,
-                                    onClick = { viewModel.toggleHari(hari.value) }
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(Primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.AccessTime, null, tint = Primary, modifier = Modifier.size(26.dp))
+                            }
+                            Column {
+                                Text(
+                                    text = uiState.namaInstansi,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Secondary
+                                )
+                                Text(
+                                    text = "Pengaturan waktu operasional toko",
+                                    fontSize = 13.sp,
+                                    color = OnSurfaceVariant
                                 )
                             }
                         }
                     }
-                }
 
-                // ── Tombol Simpan ──
-                Button(
-                    onClick = { viewModel.saveJamOperasional() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Secondary,
-                        contentColor = Color.White
-                    ),
-                    enabled = !uiState.isSaving
-                ) {
-                    if (uiState.isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            Icons.Default.Save,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Simpan",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                    // ── Jam Buka & Jam Tutup ──
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
+                        ) {
+                            Text(
+                                text = "Waktu Operasional",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Secondary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                // Jam Buka
+                                TimePickerField(
+                                    modifier = Modifier.weight(1f),
+                                    label = "Jam Buka",
+                                    value = uiState.jamBuka,
+                                    onValueChange = { viewModel.updateJamBuka(it) }
+                                )
+
+                                // Jam Tutup
+                                TimePickerField(
+                                    modifier = Modifier.weight(1f),
+                                    label = "Jam Tutup",
+                                    value = uiState.jamTutup,
+                                    onValueChange = { viewModel.updateJamTutup(it) }
+                                )
+                            }
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    // ── Hari Operasional ──
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
+                        ) {
+                            Text(
+                                text = "Hari Aktif",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Secondary
+                            )
+                            Text(
+                                text = "Tentukan hari kerja instansi",
+                                fontSize = 12.sp,
+                                color = OnSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                daftarHari.forEach { hari ->
+                                    HariChip(
+                                        modifier = Modifier.weight(1f),
+                                        hari = hari,
+                                        isSelected = hari.value in uiState.hariOperasional,
+                                        onClick = { viewModel.toggleHari(hari.value) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // ── Tombol Simpan ──
+                    Button(
+                        onClick = { viewModel.saveJamOperasional() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Primary,
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                        enabled = !uiState.isSaving
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 3.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                "Simpan Pengaturan",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
-}
+
 
 // ─── Time Picker Field ────────────────────────────────────────
 
@@ -314,34 +336,44 @@ private fun TimePickerField(
             is24Hour = true
         )
 
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = {
-                Text(
-                    text = label,
-                    fontWeight = FontWeight.Bold,
-                    color = Secondary
-                )
-            },
-            text = {
-                TimeInput(state = timePickerState)
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val h = timePickerState.hour.toString().padStart(2, '0')
-                    val m = timePickerState.minute.toString().padStart(2, '0')
-                    onValueChange("$h:$m")
-                    showTimePicker = false
-                }) {
-                    Text("OK", fontWeight = FontWeight.Bold, color = Secondary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text("Batal", color = OnSurfaceVariant)
-                }
-            }
-        )
+        MaterialTheme(
+            colorScheme = lightColorScheme(
+                surface = Color.White,
+                onSurface = OnSurface,
+                primary = Primary,
+                secondary = Secondary
+            )
+        ) {
+            AlertDialog(
+                onDismissRequest = { showTimePicker = false },
+                title = {
+                    Text(
+                        text = label,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
+                    )
+                },
+                text = {
+                    TimeInput(state = timePickerState)
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val h = timePickerState.hour.toString().padStart(2, '0')
+                        val m = timePickerState.minute.toString().padStart(2, '0')
+                        onValueChange("$h:$m")
+                        showTimePicker = false
+                    }) {
+                        Text("OK", fontWeight = FontWeight.Bold, color = Primary)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showTimePicker = false }) {
+                        Text("Batal", color = OnSurfaceVariant)
+                    }
+                },
+                containerColor = Color.White
+            )
+        }
     }
 }
 
@@ -349,27 +381,28 @@ private fun TimePickerField(
 
 @Composable
 private fun HariChip(
+    modifier: Modifier = Modifier,
     hari: HariInfo,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) Secondary else Color.Transparent
-    val textColor = if (isSelected) Color.White else OnSurfaceVariant
-    val borderColor = if (isSelected) Secondary else NeutralBorder
+    val backgroundColor = if (isSelected) Primary else Neutral.copy(alpha = 0.5f)
+    val textColor = if (isSelected) Color.White else Secondary
+    val borderColor = if (isSelected) Primary else Color.Transparent
 
     Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(10.dp))
+        modifier = modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(10.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = hari.singkat,
-            fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
             color = textColor,
             textAlign = TextAlign.Center
         )

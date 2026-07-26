@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.components.NotificationBannerStatic
@@ -61,6 +62,15 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // ── Handle errors via Snackbar ──
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     // ── Tangani drawer via ViewModel ──
     LaunchedEffect(uiState.isDrawerOpen) {
@@ -144,11 +154,12 @@ fun DashboardScreen(
                             0 -> { /* already on dashboard */ }
                             1 -> onNavigateTo("riwayat_kehadiran")
                             2 -> onNavigateTo("contact_list")
-                            3 -> onNavigateTo("divisi")
+                            3 -> onNavigateTo("kasir")
                         }
                     }
                 )
-            }
+            },
+            snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) }
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -170,13 +181,7 @@ fun DashboardScreen(
                 }
 
                 // ── Error Message (User-Friendly Notification) ──
-                if (uiState.errorMessage != null) {
-                    NotificationBannerStatic(
-                        message = uiState.errorMessage ?: "",
-                        mapFromServer = true,
-                        onDismiss = { viewModel.clearError() }
-                    )
-                }
+                // Moved to SnackbarHost
 
                 // ══════════════════════════════════════════════
                 // SECTION ATAS — Omset
@@ -218,14 +223,12 @@ fun DashboardScreen(
                     userRole = uiState.userRole,
                     items = listOf(
                         MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
-                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus),
-                        MenuItem("Jam Operasional", Icons.Default.AccessTime, OrangeManage, allowedRoles = listOf("Owner"))
+                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
                     ),
                     onItemClick = { label ->
                         when (label) {
                             "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
                             "Status Karyawan" -> onNavigateTo("status_karyawan")
-                            "Jam Operasional" -> onNavigateTo("jam_operasional")
                         }
                     }
                 )
@@ -655,7 +658,7 @@ private fun BottomNavigationBar(
             Triple(Icons.Default.Home, "Beranda", 0),
             Triple(Icons.AutoMirrored.Filled.Assignment, "Kehadiran", 1),
             Triple(Icons.Default.ChatBubble, "Pesan", 2),
-            Triple(Icons.Default.Groups, "Divisi", 3)
+            Triple(Icons.Default.ShoppingCart, "Kasir", 3)
         )
 
         items.forEach { (icon, label, index) ->
@@ -782,11 +785,20 @@ private fun DrawerContent(
         )
 
         DrawerItem(
-            icon = Icons.Default.Schedule,
-            label = "Kalender",
+            icon = Icons.Default.AccessTime,
+            label = "Jam Operasional",
             onClick = {
                 onCloseDrawer()
-                onNavigateTo("kalender")
+                onNavigateTo("jam_operasional")
+            }
+        )
+
+        DrawerItem(
+            icon = Icons.Default.Groups,
+            label = "Divisi",
+            onClick = {
+                onCloseDrawer()
+                onNavigateTo("divisi")
             }
         )
 

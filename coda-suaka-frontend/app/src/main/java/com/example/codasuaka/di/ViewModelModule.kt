@@ -20,6 +20,7 @@ import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
+import com.example.codasuaka.ui.screen.kasir.KasirViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -111,6 +112,9 @@ val viewModelModule = module {
 
     // Jam Operasional
     viewModel { JamOperasionalViewModel(apiService = get()) }
+
+    // Kasir
+    viewModel { KasirViewModel() }
 
     // Notifikasi
     viewModel { NotificationViewModel(notificationRepository = get()) }

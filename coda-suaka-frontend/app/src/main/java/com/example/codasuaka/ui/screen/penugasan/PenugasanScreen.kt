@@ -165,21 +165,19 @@ fun PenugasanScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(uiState.penugasans, key = { it.id }) { penugasan ->
-                            PenugasanCard(
-                                penugasan = penugasan,
-                                canManage = uiState.canManagePenugasan,
-                                onDelete = { viewModel.deletePenugasan(penugasan.id) },
-                                onCardClick = { viewModel.showPenugasanDetail(penugasan) }
-                            )
-                        }
+                        PenugasanCard(
+                            penugasan = penugasan,
+                            onCardClick = { viewModel.showPenugasanDetail(penugasan) }
+                        )
+                    }
                     }
                 }
             }
         }
 
-        // ── Create Dialog ──
+        // ── Create/Edit Dialog ──
         if (uiState.showCreateDialog) {
-            CreatePenugasanDialog(
+            AssignmentFormDialog(
                 uiState = uiState,
                 onDismiss = { viewModel.dismissCreateDialog() },
                 onJudulChange = { viewModel.updateFormJudul(it) },
@@ -188,7 +186,7 @@ fun PenugasanScreen(
                 onDivisiChange = { viewModel.updateFormDivisiId(it) },
                 onTenggatChange = { viewModel.updateFormTenggat(it) },
                 onUrgencyChange = { viewModel.updateFormUrgency(it) },
-                onCreate = { viewModel.createPenugasan() }
+                onSave = { viewModel.createOrUpdatePenugasan() }
             )
         }
 
@@ -276,11 +274,8 @@ private fun FilterChipRow(
 @Composable
 private fun PenugasanCard(
     penugasan: PenugasanDto,
-    canManage: Boolean = false,
-    onDelete: () -> Unit,
     onCardClick: () -> Unit = {}
 ) {
-    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val urgencyColor = when (penugasan.urgency) {
         "urgent" -> UrgentColor
@@ -369,21 +364,6 @@ private fun PenugasanCard(
                     }
                 }
 
-                // Delete Button — sembunyikan untuk template & non-manager
-                if (canManage && penugasan.isTemplate != true) {
-                    IconButton(
-                        onClick = { showDeleteConfirm = true },
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(Error.copy(alpha = 0.1f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Hapus",
-                            tint = Error,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
                 }
             }
 
@@ -438,42 +418,7 @@ private fun PenugasanCard(
         }
     }
 
-    // ── Delete Confirmation Dialog ──
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Surface,
-            titleContentColor = Secondary,
-            textContentColor = OnSurfaceVariant,
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Default.Warning, null, tint = Error)
-                    Text("Hapus Tugas", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Text("Apakah Anda yakin ingin menghapus tugas \"${penugasan.judul}\"? Tindakan ini tidak dapat dibatalkan.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Error),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Batal", color = OnSurfaceVariant)
-                }
-            }
-        )
-    }
-}
+
 
 @Composable
 private fun MetadataItem(
@@ -503,11 +448,11 @@ private fun MetadataItem(
     }
 }
 
-// ─── Create Dialog ────────────────────────────────────────
+// ─── Create/Edit Dialog ────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CreatePenugasanDialog(
+private fun AssignmentFormDialog(
     uiState: PenugasanUiState,
     onDismiss: () -> Unit,
     onJudulChange: (String) -> Unit,
@@ -516,13 +461,15 @@ private fun CreatePenugasanDialog(
     onDivisiChange: (Int?) -> Unit,
     onTenggatChange: (String) -> Unit,
     onUrgencyChange: (String) -> Unit,
-    onCreate: () -> Unit
+    onSave: () -> Unit
 ) {
     var expandedKaryawan by remember { mutableStateOf(false) }
     var expandedDivisi by remember { mutableStateOf(false) }
     var expandedUrgency by remember { mutableStateOf(false) }
 
     val urgencyOptions = listOf("rendah", "sedang", "urgent")
+    val titleText = if (uiState.isEditing) "Edit Tugas" else "Buat Tugas Baru"
+    val buttonText = if (uiState.isEditing) "Simpan Perubahan" else "Buat Tugas"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -535,9 +482,14 @@ private fun CreatePenugasanDialog(
                     modifier = Modifier.size(36.dp).clip(CircleShape).background(Primary.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.EditCalendar, null, tint = Primary, modifier = Modifier.size(20.dp))
+                    Icon(
+                        imageVector = if (uiState.isEditing) Icons.Default.EditNote else Icons.Default.EditCalendar,
+                        contentDescription = null, 
+                        tint = Primary, 
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
-                Text("Buat Tugas Baru", fontWeight = FontWeight.ExtraBold)
+                Text(titleText, fontWeight = FontWeight.ExtraBold)
             }
         },
         text = {
@@ -711,10 +663,10 @@ private fun CreatePenugasanDialog(
         },
         confirmButton = {
             Button(
-                onClick = onCreate,
+                onClick = onSave,
                 enabled = !uiState.isCreating,
                 shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.height(48.dp).fillMaxWidth(0.5f),
+                modifier = Modifier.height(48.dp).fillMaxWidth(0.6f),
                 colors = ButtonDefaults.buttonColors(containerColor = Primary)
             ) {
                 if (uiState.isCreating) {
@@ -724,7 +676,7 @@ private fun CreatePenugasanDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Buat Tugas", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(buttonText, color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         },

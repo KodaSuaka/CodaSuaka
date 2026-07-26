@@ -26,6 +26,8 @@ data class PenugasanUiState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val showCreateDialog: Boolean = false,
+    val isEditing: Boolean = false,
+    val editingId: Int? = null,
     // Permission
     val canManagePenugasan: Boolean = false,
     // Current user info
@@ -128,6 +130,26 @@ class PenugasanViewModel(
                 formDivisiId = null,
                 formTenggat = "",
                 formUrgency = "sedang",
+                isEditing = false,
+                editingId = null,
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+    }
+
+    fun showEditDialog(penugasan: PenugasanDto) {
+        _uiState.update {
+            it.copy(
+                showCreateDialog = true,
+                isEditing = true,
+                editingId = penugasan.id,
+                formJudul = penugasan.judul,
+                formDeskripsi = penugasan.deskripsi ?: "",
+                formPenanggungJawabId = penugasan.penanggungJawabId ?: "",
+                formDivisiId = penugasan.divisiId,
+                formTenggat = penugasan.tenggat?.take(10) ?: "",
+                formUrgency = penugasan.urgency ?: "sedang",
                 errorMessage = null,
                 successMessage = null
             )
@@ -135,7 +157,7 @@ class PenugasanViewModel(
     }
 
     fun dismissCreateDialog() {
-        _uiState.update { it.copy(showCreateDialog = false) }
+        _uiState.update { it.copy(showCreateDialog = false, isEditing = false, editingId = null) }
     }
 
     fun updateFormJudul(value: String) {
@@ -162,7 +184,7 @@ class PenugasanViewModel(
         _uiState.update { it.copy(formUrgency = value) }
     }
 
-    fun createPenugasan() {
+    fun createOrUpdatePenugasan() {
         val state = _uiState.value
         if (state.formJudul.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Judul tugas harus diisi") }
@@ -176,8 +198,9 @@ class PenugasanViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isCreating = true, errorMessage = null) }
             try {
-                penugasanRepository.createPenugasan(
-                    CreatePenugasanRequest(
+                if (state.isEditing && state.editingId != null) {
+                    // Update
+                    val request = com.example.codasuaka.data.remote.dto.UpdatePenugasanRequest(
                         judul = state.formJudul,
                         deskripsi = state.formDeskripsi.ifBlank { null },
                         penanggungJawabId = state.formPenanggungJawabId,
@@ -185,20 +208,42 @@ class PenugasanViewModel(
                         tenggat = state.formTenggat.ifBlank { null },
                         status = null
                     )
-                ).getOrThrow()
-                _uiState.update {
-                    it.copy(
-                        isCreating = false,
-                        showCreateDialog = false,
-                        successMessage = "Tugas berhasil dibuat"
-                    )
+                    penugasanRepository.updatePenugasan(state.editingId, request).getOrThrow()
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            showCreateDialog = false,
+                            isEditing = false,
+                            editingId = null,
+                            successMessage = "Tugas berhasil diperbarui"
+                        )
+                    }
+                } else {
+                    // Create
+                    penugasanRepository.createPenugasan(
+                        CreatePenugasanRequest(
+                            judul = state.formJudul,
+                            deskripsi = state.formDeskripsi.ifBlank { null },
+                            penanggungJawabId = state.formPenanggungJawabId,
+                            divisiId = state.formDivisiId,
+                            tenggat = state.formTenggat.ifBlank { null },
+                            status = null
+                        )
+                    ).getOrThrow()
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            showCreateDialog = false,
+                            successMessage = "Tugas berhasil dibuat"
+                        )
+                    }
                 }
                 loadData()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isCreating = false,
-                        errorMessage = e.message ?: "Gagal membuat tugas"
+                        errorMessage = e.message ?: "Gagal memproses tugas"
                     )
                 }
             }
