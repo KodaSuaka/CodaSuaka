@@ -39,6 +39,9 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🔧 Set execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
       - name: ☕ Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -79,6 +82,9 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🔧 Set execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
       - name: ☕ Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -118,6 +124,9 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🔧 Set execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
       - name: ☕ Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -156,6 +165,9 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
+
+      - name: 🔧 Set execute permission for Gradle wrapper
+        run: chmod +x gradlew
 
       - name: ☕ Setup JDK 17
         uses: actions/setup-java@v4
