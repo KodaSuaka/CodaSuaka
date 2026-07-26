@@ -29,7 +29,7 @@ class UpdateInstansiRequest extends FormRequest
             'jam_operasional.jam_buka' => 'nullable|string|max:5',
             'jam_operasional.jam_tutup' => 'nullable|string|max:5',
             'jam_operasional.hari_operasional' => 'nullable|array',
-            'jam_operasional.hari_operasional.*' => 'integer|min:0|max:6',
+            'jam_operasional.hari_operasional.*' => 'integer|min:1|max:7',
         ];
     }
 

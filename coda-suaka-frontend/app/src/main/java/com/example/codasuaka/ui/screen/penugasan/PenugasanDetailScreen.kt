@@ -259,7 +259,9 @@ fun PenugasanDetailScreen(
             }
 
             // ── Action Buttons untuk Karyawan ──
-            if (isAssigned && !canManage) {
+            // Template task: semua karyawan bisa accept (tanpa penugasan langsung)
+            // Tugas biasa: hanya karyawan yang ditugasi
+            if (!canManage && (isAssigned || penugasan.isTemplate == true)) {
                 when (penugasan.status) {
                     "belum" -> {
                         Button(

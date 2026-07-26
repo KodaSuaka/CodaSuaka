@@ -50,18 +50,9 @@ class PenugasanPolicy
             return false;
         }
 
-        // Owner/Manager bisa update semua field
-        if (app(PermissionService::class)->userHasPermission($user, 'manage:penugasan')) {
-            return true;
-        }
-
-        // Karyawan yang ditugasi bisa update status (accept/complete)
-        $karyawan = $user->profilKaryawan;
-        if ($karyawan && $penugasan->penanggung_jawab_id === $karyawan->id) {
-            return true;
-        }
-
-        return false;
+        // Hanya Owner/Manager yang boleh edit field tugas (judul, deskripsi, dll).
+        // Karyawan yang ditugasi HANYA boleh pakai endpoint accept/complete.
+        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
     public function delete(User $user, penugasan $penugasan): bool
