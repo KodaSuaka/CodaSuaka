@@ -7,7 +7,6 @@ use App\Http\Requests\UpdatekaryawanRequest;
 use App\Models\karyawan;
 use App\Models\User;
 use App\Traits\ApiResponse;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -85,7 +84,7 @@ class KaryawanController extends Controller
             if ($currentCount >= $maxKaryawan) {
                 return $this->error(
                     "Batas maksimal karyawan untuk paket {$instansi->paket->nama_paket} adalah {$maxKaryawan} karyawan. "
-                    . "Saat ini sudah ada {$currentCount} karyawan.",
+                    ."Saat ini sudah ada {$currentCount} karyawan.",
                     422
                 );
             }

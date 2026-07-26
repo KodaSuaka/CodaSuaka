@@ -84,7 +84,7 @@ class DummyDataSeeder extends Seeder
         $this->command?->info('🏢 Membuat instansi/bisnis...');
         $instansi1 = $this->createInstansi('Toko Berkah Mart', $paketPro->id, 'Asia/Jakarta');
         $instansi2 = $this->createInstansi('Kopi Nusantara', $paketBasic->id, 'Asia/Makassar');
-        
+
         // Batas karyawan per paket (termasuk role users: owner, manager, keuangan, staff)
         $maxKaryawanInstansi1 = $paketPro->max_karyawan_per_outlet;    // Pro: 50
         $maxKaryawanInstansi2 = $paketBasic->max_karyawan_per_outlet;  // Basic: 5
@@ -309,7 +309,7 @@ class DummyDataSeeder extends Seeder
 
         // Hitung sisa slot karyawan setelah role users
         $karyawanBiasaCount = max(0, $maxKaryawan - count($roleMapping));
-        $this->command?->info("   → Membuat ".count($roleMapping)." role users + {$karyawanBiasaCount} karyawan biasa (max {$maxKaryawan})");
+        $this->command?->info('   → Membuat '.count($roleMapping)." role users + {$karyawanBiasaCount} karyawan biasa (max {$maxKaryawan})");
 
         foreach ($roleMapping as $key => $roleName) {
             $namaParts = explode(' ', $this->namaKaryawan[array_rand($this->namaKaryawan)]);

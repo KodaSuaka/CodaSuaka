@@ -67,37 +67,37 @@ object DateTimeUtil {
         } catch (_: Exception) {
             isoString
         }
-    
-        /**
-         * Format date string (yyyy-MM-dd) ke format terbaca.
-         * Contoh: "2026-07-25" -> "25 Juli 2026"
-         */
-        fun formatDateDisplay(dateString: String?): String {
-            if (dateString.isNullOrBlank()) return "-"
-            return try {
-                val ld = LocalDate.parse(dateString.take(10))
-                val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.forLanguageTag("id-ID"))
-                ld.format(formatter)
-            } catch (_: Exception) {
-                dateString.take(10)
-            }
+    }
+
+    /**
+     * Format date string (yyyy-MM-dd) ke format terbaca.
+     * Contoh: "2026-07-25" -> "25 Juli 2026"
+     */
+    fun formatDateDisplay(dateString: String?): String {
+        if (dateString.isNullOrBlank()) return "-"
+        return try {
+            val ld = LocalDate.parse(dateString.take(10))
+            val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.forLanguageTag("id-ID"))
+            ld.format(formatter)
+        } catch (_: Exception) {
+            dateString.take(10)
         }
-    
-        /**
-         * Format datetime string (ISO 8601) ke format terbaca lengkap.
-         * Contoh: "2026-07-25T17:00:00Z" -> "25 Juli 2026, 00:00"
-         */
-        fun formatDateTimeDisplay(isoString: String?): String {
-            if (isoString.isNullOrBlank()) return "-"
-            return try {
-                val instant = Instant.parse(isoString)
-                val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm", Locale.forLanguageTag("id-ID"))
-                    .withZone(localZoneId)
-                formatter.format(instant)
-            } catch (_: Exception) {
-                // Fallback: coba format sebagai date-only
-                formatDateDisplay(isoString)
-            }
+    }
+
+    /**
+     * Format datetime string (ISO 8601) ke format terbaca lengkap.
+     * Contoh: "2026-07-25T17:00:00Z" -> "25 Juli 2026, 00:00"
+     */
+    fun formatDateTimeDisplay(isoString: String?): String {
+        if (isoString.isNullOrBlank()) return "-"
+        return try {
+            val instant = Instant.parse(isoString)
+            val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm", Locale.forLanguageTag("id-ID"))
+                .withZone(localZoneId)
+            formatter.format(instant)
+        } catch (_: Exception) {
+            // Fallback: coba format sebagai date-only
+            formatDateDisplay(isoString)
         }
     }
 }

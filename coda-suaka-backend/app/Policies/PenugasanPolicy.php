@@ -83,6 +83,7 @@ class PenugasanPolicy
         }
 
         $karyawan = $user->profilKaryawan;
+
         return $karyawan && $penugasan->penanggung_jawab_id === $karyawan->id;
     }
 
