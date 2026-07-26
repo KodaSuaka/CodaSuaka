@@ -150,14 +150,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/arus-kas/export/excel', [LaporanExportController::class, 'exportArusKasExcel']);
     });
 
-    // [DINONAKTIFKAN SEMENTARA] Approval Workflow — fitur advance, belum diaktifkan
-    // Route::prefix('approval')->group(function () {
-    //     Route::get('/pending', [ApprovalController::class, 'pending']);
-    //     Route::get('/riwayat', [ApprovalController::class, 'riwayat']);
-    //     Route::post('/{transaksi_kas}/ajukan', [ApprovalController::class, 'ajukan']);
-    //     Route::post('/{approval_log}/setujui', [ApprovalController::class, 'setujui']);
-    //     Route::post('/{approval_log}/tolak', [ApprovalController::class, 'tolak']);
-    // });
+    // Bug #8: Approval Workflow — diaktifkan untuk persetujuan transaksi keuangan
+    Route::prefix('approval')->group(function () {
+        Route::get('/pending', [ApprovalController::class, 'pending']);
+        Route::get('/riwayat', [ApprovalController::class, 'riwayat']);
+        Route::post('/{transaksi_kas}/ajukan', [ApprovalController::class, 'ajukan']);
+        Route::post('/{approval_log}/setujui', [ApprovalController::class, 'setujui']);
+        Route::post('/{approval_log}/tolak', [ApprovalController::class, 'tolak']);
+    });
 
     // ─── Chat / Kontak ────────────────────────────────────────
     Route::prefix('chat')->group(function () {

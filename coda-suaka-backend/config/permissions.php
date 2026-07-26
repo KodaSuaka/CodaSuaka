@@ -212,7 +212,7 @@ return [
             // Keuangan
             'view:keuangan',
             'manage:keuangan',
-            // 'approve:keuangan',  // [FITUR ADVANCE — belum diaktifkan]
+            'approve:keuangan',
             'export:keuangan',
 
             // Laporan

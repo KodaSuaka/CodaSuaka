@@ -126,11 +126,16 @@ object ErrorMessageMapper {
                 type = NotificationType.WARNING,
                 title = "Konflik Data"
             )
-            413, 422 -> MappedMessage(
-                message = "Format data tidak sesuai. Periksa kembali isian Anda.",
-                type = NotificationType.WARNING,
-                title = "Format Tidak Sesuai"
-            )
+            413, 422 -> {
+                // Bug #7: Coba ekstrak detail validasi dari pesan server
+                val validationDetail = extractValidationDetails(msg)
+                MappedMessage(
+                    message = validationDetail
+                        ?: "Format data tidak sesuai. Periksa kembali isian Anda.",
+                    type = NotificationType.WARNING,
+                    title = "Format Tidak Sesuai"
+                )
+            }
             429 -> MappedMessage(
                 message = "Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.",
                 type = NotificationType.WARNING,
@@ -244,6 +249,40 @@ object ErrorMessageMapper {
      */
     private fun capitalizeContext(context: String): String {
         return context.replaceFirstChar { it.uppercase() }
+    }
+
+    /**
+     * Bug #7: Ekstrak detail pesan validasi dari response server.
+     * Contoh input: "The kategori field is required." atau
+     * "422: {\"message\":\"The selected kategori is invalid.\", ...}"
+     */
+    private fun extractValidationDetails(msg: String): String? {
+        val lower = msg.lowercase()
+
+        // Deteksi pola validasi Laravel umum
+        val patterns = listOf(
+            Regex("""(?i)the\s+(\w[\w\s]*?)\s+field\s+(is\s+required|must|should)""", RegexOption.IGNORE_CASE),
+            Regex("""(?i)the\s+selected\s+(\w[\w\s]*?)\s+is\s+invalid""", RegexOption.IGNORE_CASE),
+            Regex("""(?i)(\w[\w\s]*?)\s+(must be|cannot|should be|is not)""", RegexOption.IGNORE_CASE),
+        )
+
+        val details = mutableListOf<String>()
+        for (pattern in patterns) {
+            val matches = pattern.findAll(msg)
+            for (match in matches) {
+                val field = match.groupValues[1].trim().lowercase()
+                val issue = if (match.groupValues.size > 2) match.groupValues[2].trim() else ""
+                if (field.isNotBlank() && field != "the") {
+                    details.add("• ${capitalizeContext(field)}: $issue")
+                }
+            }
+        }
+
+        if (details.isNotEmpty()) {
+            return "Terdapat kesalahan pada isian data:\n${details.joinToString("\n")}\n\nPeriksa kembali isian Anda."
+        }
+
+        return null
     }
 
     // ── Convenience functions ──────────────────────────────────

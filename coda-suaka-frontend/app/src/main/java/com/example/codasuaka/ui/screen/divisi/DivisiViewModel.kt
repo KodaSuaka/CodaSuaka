@@ -43,6 +43,8 @@ data class DivisiUiState(
     val divisiList: List<Divisi> = emptyList(),
     val outlets: List<Outlet> = emptyList(),
     val karyawanList: List<Karyawan> = emptyList(),
+    /** Semua karyawan tanpa filter outlet — untuk mapping anggota divisi */
+    val allKaryawans: List<Karyawan> = emptyList(),
     val selectedOutletId: Int? = null,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
@@ -97,7 +99,7 @@ class DivisiViewModel(
                 errorMsg = it.message
             }
 
-            // Load karyawan
+            // Load karyawan — semua (untuk mapping anggota divisi)
             karyawanRepository.getKaryawans().onSuccess { dtos ->
                 loadedKaryawan = dtos.map { it.toKaryawanNoRole() }
             }.onFailure {
@@ -114,6 +116,7 @@ class DivisiViewModel(
             _uiState.value = _uiState.value.copy(
                 outlets = loadedOutlets,
                 karyawanList = loadedKaryawan,
+                allKaryawans = loadedKaryawan,
                 divisiList = loadedDivisi,
                 isLoading = false,
                 errorMessage = errorMsg

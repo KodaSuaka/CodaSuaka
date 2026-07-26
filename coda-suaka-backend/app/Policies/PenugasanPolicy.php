@@ -73,6 +73,11 @@ class PenugasanPolicy
             return false;
         }
 
+        // User dengan manage:penugasan (Owner/Manager) bisa accept semua tugas di instansinya
+        if (app(PermissionService::class)->userHasPermission($user, 'manage:penugasan')) {
+            return true;
+        }
+
         $karyawan = $user->profilKaryawan;
 
         if (! $karyawan) {

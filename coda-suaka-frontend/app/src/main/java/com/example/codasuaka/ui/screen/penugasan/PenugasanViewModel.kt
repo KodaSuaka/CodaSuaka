@@ -226,8 +226,16 @@ class PenugasanViewModel(
     /**
      * Cek apakah user adalah karyawan yang ditugasi pada tugas tertentu.
      */
+    /**
+     * Bug #3: Manager/Owner bisa accept semua tugas via backend policy.
+     * Frontend juga harus izinkan tombol "Terima Tugas" untuk mereka.
+     */
     fun isAssignedTo(penugasan: PenugasanDto): Boolean {
         val state = _uiState.value
+        // Manager/Owner dengan manage:penugasan boleh accept semua tugas
+        if (state.canManagePenugasan) {
+            return true
+        }
         return state.currentKaryawanId != null && penugasan.penanggungJawabId == state.currentKaryawanId
     }
 

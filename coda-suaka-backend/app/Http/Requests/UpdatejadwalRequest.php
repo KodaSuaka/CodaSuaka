@@ -29,7 +29,7 @@ class UpdatejadwalRequest extends FormRequest
             'nama_event' => 'sometimes|required|string|max:200',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'sometimes|required|date',
-            'kategori' => 'sometimes|required|in:meeting,training,event,libur,lainnya',
+            'kategori' => 'sometimes|required|in:meeting,training,event,libur,tugas,lainnya',
             'outlet_id' => [
                 'nullable',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),

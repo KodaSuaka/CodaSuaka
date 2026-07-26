@@ -73,12 +73,17 @@ class KaryawanController extends Controller
         $user = $request->user();
         $instansiId = $user->instansi_id;
 
-        // Cek batas karyawan berdasarkan paket langganan
+        // Bug #11: Cek batas karyawan — exclude Owner & Super Admin dari count
+        // karena pemilik bukan karyawan, tidak boleh menghabiskan kuota
         $instansi = $user->instansi;
         if ($instansi && $instansi->paket) {
             $maxKaryawan = (int) $instansi->paket->max_karyawan_per_outlet;
-            $currentCount = karyawan::whereHas('user', function ($q) use ($instansiId) {
-                $q->where('instansi_id', $instansiId);
+            $excludedRoleNames = ['Super Admin', 'Owner'];
+            $currentCount = karyawan::whereHas('user', function ($q) use ($instansiId, $excludedRoleNames) {
+                $q->where('instansi_id', $instansiId)
+                    ->whereHas('role', function ($rq) use ($excludedRoleNames) {
+                        $rq->whereNotIn('nama_role', $excludedRoleNames);
+                    });
             })->count();
 
             if ($currentCount >= $maxKaryawan) {
@@ -135,9 +140,16 @@ class KaryawanController extends Controller
      */
     public function update(UpdatekaryawanRequest $request, karyawan $karyawan)
     {
-        $karyawan->update($request->only([
+        // Bug #14: Validasi sisa_cuti tidak boleh negatif
+        $data = $request->only([
             'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil',
-        ]));
+        ]);
+
+        if (isset($data['sisa_cuti']) && $data['sisa_cuti'] < 0) {
+            return $this->error('Sisa cuti tidak boleh bernilai negatif', 422);
+        }
+
+        $karyawan->update($data);
 
         $karyawan->load(['user.role', 'outlet']);
 

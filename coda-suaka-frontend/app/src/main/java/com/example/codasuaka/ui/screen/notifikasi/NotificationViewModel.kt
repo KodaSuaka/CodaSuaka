@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.NotificationDto
 import com.example.codasuaka.domain.repository.NotificationRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class NotificationUiState(
@@ -25,12 +27,31 @@ class NotificationViewModel(
     private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
+    companion object {
+        /** Interval polling unread count (30 detik) */
+        private const val POLL_INTERVAL_MS = 30_000L
+    }
+
     private val _uiState = MutableStateFlow(NotificationUiState())
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
 
     init {
         loadNotifications()
         loadUnreadCount()
+        startPeriodicPolling()
+    }
+
+    /**
+     * Bug #6: Periodic polling untuk unread count agar badge notifikasi
+     * selalu up-to-date tanpa harus buka sidebar.
+     */
+    private fun startPeriodicPolling() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(POLL_INTERVAL_MS)
+                loadUnreadCount()
+            }
+        }
     }
 
     fun toggleSidebar(open: Boolean) {

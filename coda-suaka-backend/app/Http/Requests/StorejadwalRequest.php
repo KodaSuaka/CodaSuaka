@@ -29,7 +29,7 @@ class StorejadwalRequest extends FormRequest
             'nama_event' => 'required|string|max:200',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'required|date',
-            'kategori' => 'required|in:meeting,training,event,libur,lainnya',
+            'kategori' => 'required|in:meeting,training,event,libur,tugas,lainnya',
             'outlet_id' => [
                 'nullable',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),

@@ -121,6 +121,15 @@ class PenugasanController extends Controller
 
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
 
+        // Bug #1: Kirim notifikasi ke karyawan yang ditugasi
+        if ($penugasan->penanggung_jawab_id) {
+            $this->notificationService->onPenugasanBaru(
+                $penugasan->id,
+                $penugasan->penanggung_jawab_id,
+                $penugasan->judul
+            );
+        }
+
         return $this->success($penugasan, 'Tugas berhasil ditambahkan', 201);
     }
 
@@ -266,11 +275,28 @@ class PenugasanController extends Controller
         $karyawan = $currentUser->profilKaryawan;
         $namaKaryawan = $karyawan->nama_lengkap ?? $currentUser->name;
 
-        // Kirim ke pembuat tugas (owner/manager)
+        // Kirim ke pembuat tugas (owner/manager) jika berbeda dari pelaku
         if ($penugasan->created_by && $penugasan->created_by !== $currentUser->id) {
             $this->notificationService->onPenugasanDikerjakan(
                 $penugasan->id,
                 $penugasan->created_by,
+                $namaKaryawan,
+                $penugasan->judul
+            );
+
+            return;
+        }
+
+        // Bug #2: Fallback — untuk task dari template, kirim ke owner/manager instansi
+        $recipientIds = User::where('instansi_id', $currentUser->instansi_id)
+            ->whereHas('role', fn ($q) => $q->whereIn('nama_role', ['Owner', 'Manager']))
+            ->where('id', '!=', $currentUser->id)
+            ->pluck('id');
+
+        foreach ($recipientIds as $recipientId) {
+            $this->notificationService->onPenugasanDikerjakan(
+                $penugasan->id,
+                $recipientId,
                 $namaKaryawan,
                 $penugasan->judul
             );
@@ -285,11 +311,28 @@ class PenugasanController extends Controller
         $karyawan = $currentUser->profilKaryawan;
         $namaKaryawan = $karyawan->nama_lengkap ?? $currentUser->name;
 
-        // Kirim ke pembuat tugas (owner/manager)
+        // Kirim ke pembuat tugas (owner/manager) jika berbeda dari pelaku
         if ($penugasan->created_by && $penugasan->created_by !== $currentUser->id) {
             $this->notificationService->onPenugasanSelesai(
                 $penugasan->id,
                 $penugasan->created_by,
+                $namaKaryawan,
+                $penugasan->judul
+            );
+
+            return;
+        }
+
+        // Bug #2: Fallback — untuk task dari template, kirim ke owner/manager instansi
+        $recipientIds = User::where('instansi_id', $currentUser->instansi_id)
+            ->whereHas('role', fn ($q) => $q->whereIn('nama_role', ['Owner', 'Manager']))
+            ->where('id', '!=', $currentUser->id)
+            ->pluck('id');
+
+        foreach ($recipientIds as $recipientId) {
+            $this->notificationService->onPenugasanSelesai(
+                $penugasan->id,
+                $recipientId,
                 $namaKaryawan,
                 $penugasan->judul
             );

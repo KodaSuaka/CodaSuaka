@@ -230,22 +230,100 @@ class AttandenceController extends Controller
             ->get()
             ->keyBy('id');
 
+        // Bug #5: Ambil pengajuan yang sudah disetujui di bulan ini
+        // untuk cross-reference agar karyawan yang sudah izin/cuti/sakit
+        // tidak dihitung sebagai alpha
+        $pengajuansDisetujui = \App\Models\pengajuan::whereIn('user_id', $userIds)
+            ->where('status', 'disetujui')
+            ->where(function ($q) use ($tahun, $bulan) {
+                // Pengajuan yang overlap dengan bulan rekap
+                $q->where(function ($q2) use ($tahun, $bulan) {
+                    $q2->whereYear('tanggal_mulai', $tahun)
+                        ->whereMonth('tanggal_mulai', $bulan);
+                })->orWhere(function ($q2) use ($tahun, $bulan) {
+                    $q2->whereYear('tanggal_selesai', $tahun)
+                        ->whereMonth('tanggal_selesai', $bulan);
+                })->orWhere(function ($q2) use ($tahun, $bulan) {
+                    // Pengajuan yang mencakup seluruh bulan
+                    $q2->where('tanggal_mulai', '<=', "$tahun-$bulan-01")
+                        ->where('tanggal_selesai', '>=', "$tahun-$bulan-31");
+                });
+            })
+            ->get()
+            ->groupBy('user_id');
+
         $rekap = attandence::whereIn('user_id', $userIds)
             ->whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
             ->get()
             ->groupBy('user_id')
-            ->map(function ($items, $userId) use ($users) {
+            ->map(function ($items, $userId) use ($users, $pengajuansDisetujui, $bulan, $tahun) {
                 $user = $users->get($userId);
+
+                // Hitung jumlah hari kerja di bulan ini (exclude Minggu)
+                $startDate = \Carbon\Carbon::create($tahun, $bulan, 1);
+                $endDate = $startDate->copy()->endOfMonth();
+                $totalDaysInMonth = $startDate->diffInDays($endDate) + 1;
+                $mingguCount = 0;
+                for ($d = $startDate->copy(); $d->lte($endDate); $d->addDay()) {
+                    if ($d->dayOfWeek === \Carbon\Carbon::SUNDAY) {
+                        $mingguCount++;
+                    }
+                }
+                $hariKerja = $totalDaysInMonth - $mingguCount;
+
+                // Hari hadir dari absensi
+                $hadirCount = $items->where('status', 'hadir')->count();
+                $izinCount = $items->where('status', 'izin')->count();
+                $sakitCount = $items->where('status', 'sakit')->count();
+                $cutiCount = $items->where('status', 'cuti')->count();
+
+                // Tambah hari izin/cuti/sakit dari pengajuan yang disetujui
+                // yang belum tercatat di attandence
+                $userPengajuans = $pengajuansDisetujui->get($userId, collect());
+                foreach ($userPengajuans as $p) {
+                    $pMulai = \Carbon\Carbon::parse($p->tanggal_mulai)->startOfDay();
+                    $pSelesai = \Carbon\Carbon::parse($p->tanggal_selesai)->endOfDay();
+
+                    // Batasi range ke bulan rekap
+                    $rangeStart = $pMulai->lt($startDate) ? $startDate->copy() : $pMulai->copy();
+                    $rangeEnd = $pSelesai->gt($endDate) ? $endDate->copy() : $pSelesai->copy();
+
+                    // Hitung hari dalam range (exclude Minggu)
+                    for ($d = $rangeStart->copy(); $d->lte($rangeEnd); $d->addDay()) {
+                        if ($d->dayOfWeek === \Carbon\Carbon::SUNDAY) {
+                            continue;
+                        }
+                        // Cek apakah sudah ada absensi di hari ini
+                        $alreadyAttended = $items->contains(fn ($a) =>
+                            \Carbon\Carbon::parse($a->tanggal)->isSameDay($d)
+                        );
+                        if (! $alreadyAttended) {
+                            // Tambahkan ke count sesuai jenis pengajuan
+                            $jenis = strtolower($p->jenis);
+                            if ($jenis === 'cuti_tahunan') {
+                                $cutiCount++;
+                            } elseif ($jenis === 'izin_sakit') {
+                                $sakitCount++;
+                            } else {
+                                $izinCount++;
+                            }
+                        }
+                    }
+                }
+
+                // Hitung alpha = hari kerja - hadir - izin - sakit - cuti
+                $alphaCount = max(0, $hariKerja - $hadirCount - $izinCount - $sakitCount - $cutiCount);
 
                 return [
                     'user_id' => $userId,
                     'nama_lengkap' => $user?->profilKaryawan?->nama_lengkap ?? $user?->name,
-                    'total_hadir' => $items->where('status', 'hadir')->count(),
-                    'total_izin' => $items->where('status', 'izin')->count(),
-                    'total_sakit' => $items->where('status', 'sakit')->count(),
-                    'total_alpha' => $items->where('status', 'alpha')->count(),
-                    'total_cuti' => $items->where('status', 'cuti')->count(),
+                    'total_hadir' => $hadirCount,
+                    'total_izin' => $izinCount,
+                    'total_sakit' => $sakitCount,
+                    'total_alpha' => $alphaCount,
+                    'total_cuti' => $cutiCount,
+                    'hari_kerja' => $hariKerja,
                 ];
             })->values();
 

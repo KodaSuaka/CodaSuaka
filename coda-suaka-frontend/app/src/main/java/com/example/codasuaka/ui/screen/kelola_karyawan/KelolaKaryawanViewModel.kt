@@ -45,6 +45,8 @@ sealed class KaryawanDialogMode {
 data class KelolaKaryawanUiState(
     val karyawanList: List<Karyawan> = emptyList(),
     val outlets: List<Outlet> = emptyList(),
+    /** Bug #15: Flag untuk UI — apakah ada outlet yang tersedia */
+    val hasOutlets: Boolean = false,
     val roles: List<Role> = emptyList(),
     val selectedOutletId: Int? = null,
     val isLoading: Boolean = false,
@@ -120,6 +122,7 @@ class KelolaKaryawanViewModel(
             _uiState.value = _uiState.value.copy(
                 roles = loadedRoles,
                 outlets = loadedOutlets,
+                hasOutlets = loadedOutlets.isNotEmpty(),
                 karyawanList = loadedKaryawan,
                 isLoading = false,
                 errorMessage = errorMsg
