@@ -15,4 +15,6 @@ interface PenugasanRepository {
     suspend fun createPenugasan(request: CreatePenugasanRequest): Result<PenugasanDto>
     suspend fun updatePenugasan(id: Int, request: UpdatePenugasanRequest): Result<PenugasanDto>
     suspend fun deletePenugasan(id: Int): Result<Unit>
+    suspend fun acceptPenugasan(id: Int): Result<PenugasanDto>
+    suspend fun completePenugasan(id: Int): Result<PenugasanDto>
 }

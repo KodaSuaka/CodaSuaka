@@ -53,3 +53,7 @@ mapping.txt
 
 # Build Version Info (auto-generated)
 version.properties
+
+# Test files — jangan deploy ke production
+/app/src/test/
+/app/src/androidTest/

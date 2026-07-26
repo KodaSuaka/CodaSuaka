@@ -202,6 +202,40 @@ class NotificationService
     }
 
     /**
+     * Notifikasi otomatis saat tugas diterima/dikerjakan oleh karyawan.
+     */
+    public function onPenugasanDikerjakan(int $penugasanId, int $ownerUserId, string $namaKaryawan, string $judul): void
+    {
+        $this->create(
+            $ownerUserId,
+            'penugasan',
+            'Tugas Sedang Dikerjakan',
+            "{$namaKaryawan} sedang mengerjakan tugas: {$judul}",
+            'Assignment',
+            '#3B82F6',
+            $penugasanId,
+            'App\\Models\\penugasan'
+        );
+    }
+
+    /**
+     * Notifikasi otomatis saat tugas selesai dikerjakan oleh karyawan.
+     */
+    public function onPenugasanSelesai(int $penugasanId, int $ownerUserId, string $namaKaryawan, string $judul): void
+    {
+        $this->create(
+            $ownerUserId,
+            'penugasan',
+            'Tugas Selesai',
+            "{$namaKaryawan} telah menyelesaikan tugas: {$judul}",
+            'CheckCircle',
+            '#10B981',
+            $penugasanId,
+            'App\\Models\\penugasan'
+        );
+    }
+
+    /**
      * Notifikasi otomatis saat presensi.
      */
     public function onPresensi(int $userId, string $jenis): void

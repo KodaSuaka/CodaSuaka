@@ -13,7 +13,9 @@ class InstansiController extends Controller
 
     public function __construct()
     {
-        $this->authorizeResource(Instansi::class, 'instansi');
+        // authorizeResource tidak digunakan karena route /api/instansi
+        // tidak memiliki parameter {instansi} untuk model resolution.
+        // Authorization dilakukan manual di setiap method.
     }
 
     /**
@@ -30,6 +32,8 @@ class InstansiController extends Controller
             return $this->error('Instansi tidak ditemukan', 404);
         }
 
+        $this->authorize('view', $instansi);
+
         return $this->success($instansi);
     }
 
@@ -41,7 +45,10 @@ class InstansiController extends Controller
     {
         $instansi = Instansi::findOrFail($request->user()->instansi_id);
 
-        $instansi->update($request->only(['nama_instansi']));
+        $this->authorize('update', $instansi);
+
+        $data = $request->only(['nama_instansi', 'jam_operasional']);
+        $instansi->update($data);
 
         return $this->success($instansi, 'Instansi berhasil diperbarui');
     }

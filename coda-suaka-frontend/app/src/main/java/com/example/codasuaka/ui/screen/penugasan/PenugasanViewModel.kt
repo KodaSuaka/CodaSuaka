@@ -22,11 +22,19 @@ data class PenugasanUiState(
     val karyawans: List<KaryawanDto> = emptyList(),
     val isLoading: Boolean = false,
     val isCreating: Boolean = false,
+    val isProcessing: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val showCreateDialog: Boolean = false,
     // Permission
     val canManagePenugasan: Boolean = false,
+    // Current user info
+    val currentUserId: Int? = null,
+    val currentKaryawanId: String? = null,
+    val userRole: String? = null,
+    // Detail view
+    val selectedPenugasan: PenugasanDto? = null,
+    val showDetail: Boolean = false,
     // Filter
     val filterStatus: String? = null,
     // Form fields
@@ -42,7 +50,8 @@ class PenugasanViewModel(
     private val penugasanRepository: PenugasanRepository,
     private val divisiRepository: DivisiRepository,
     private val karyawanRepository: KaryawanRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val apiService: com.example.codasuaka.data.remote.ApiService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PenugasanUiState())
@@ -57,7 +66,22 @@ class PenugasanViewModel(
         viewModelScope.launch {
             val role = tokenManager.getUserRole()
             val canManage = role in listOf("Owner", "Manager")
-            _uiState.update { it.copy(canManagePenugasan = canManage) }
+            try {
+                val userResponse = apiService.getUser()
+                if (userResponse.isSuccessful) {
+                    val userData = userResponse.body()?.data
+                    _uiState.update {
+                        it.copy(
+                            canManagePenugasan = canManage,
+                            currentUserId = userData?.id,
+                            currentKaryawanId = userData?.profilKaryawan?.id,
+                            userRole = role
+                        )
+                    }
+                    return@launch
+                }
+            } catch (_: Exception) {}
+            _uiState.update { it.copy(canManagePenugasan = canManage, userRole = role) }
         }
     }
 
@@ -196,6 +220,96 @@ class PenugasanViewModel(
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Cek apakah user adalah karyawan yang ditugasi pada tugas tertentu.
+     */
+    fun isAssignedTo(penugasan: PenugasanDto): Boolean {
+        val state = _uiState.value
+        return state.currentKaryawanId != null && penugasan.penanggungJawabId == state.currentKaryawanId
+    }
+
+    /**
+     * Karyawan menerima tugas (belum → proses).
+     */
+    fun acceptPenugasan(id: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessing = true, errorMessage = null) }
+            try {
+                penugasanRepository.acceptPenugasan(id).getOrThrow()
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        successMessage = "Tugas berhasil diterima"
+                    )
+                }
+                loadData()
+                refreshSelectedPenugasan(id)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        errorMessage = e.message ?: "Gagal menerima tugas"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Karyawan menyelesaikan tugas (proses → selesai).
+     */
+    fun completePenugasan(id: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessing = true, errorMessage = null) }
+            try {
+                penugasanRepository.completePenugasan(id).getOrThrow()
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        successMessage = "Tugas berhasil diselesaikan"
+                    )
+                }
+                loadData()
+                refreshSelectedPenugasan(id)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        errorMessage = e.message ?: "Gagal menyelesaikan tugas"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Tampilkan detail penugasan.
+     */
+    fun showPenugasanDetail(penugasan: PenugasanDto) {
+        _uiState.update { it.copy(selectedPenugasan = penugasan, showDetail = true) }
+    }
+
+    /**
+     * Sembunyikan detail penugasan.
+     */
+    fun hidePenugasanDetail() {
+        _uiState.update { it.copy(selectedPenugasan = null, showDetail = false) }
+    }
+
+    /**
+     * Refresh selected penugasan setelah accept/complete.
+     */
+    fun refreshSelectedPenugasan(id: Int) {
+        viewModelScope.launch {
+            try {
+                val updated = penugasanRepository.getPenugasan(id).getOrNull()
+                if (updated != null) {
+                    _uiState.update { it.copy(selectedPenugasan = updated) }
+                }
+            } catch (_: Exception) {}
         }
     }
 

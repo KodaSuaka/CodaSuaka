@@ -224,6 +224,12 @@ interface ApiService {
     @DELETE("api/penugasans/{id}")
     suspend fun deletePenugasan(@Path("id") id: Int): Response<ApiStatusResponse>
 
+    @PUT("api/penugasans/{id}/accept")
+    suspend fun acceptPenugasan(@Path("id") id: Int): Response<PenugasanSingleResponse>
+
+    @PUT("api/penugasans/{id}/complete")
+    suspend fun completePenugasan(@Path("id") id: Int): Response<PenugasanSingleResponse>
+
     // ─── Template Penugasan (maks 10 per instansi) ─────────────
 
     @GET("api/template-penugasans")

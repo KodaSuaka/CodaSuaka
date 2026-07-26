@@ -6,6 +6,7 @@ use App\Models\Instansi;
 use App\Models\karyawan;
 use App\Models\role;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,6 +45,13 @@ class PresensiTest extends TestCase
                 'alamat' => 'Jakarta',
             ]
         );
+    }
+
+    protected function tearDown(): void
+    {
+        // Pastikan test time di-reset setelah setiap test
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     public function test_user_dapat_checkin()
@@ -89,17 +97,16 @@ class PresensiTest extends TestCase
 
     public function test_user_dapat_checkout_setelah_checkin()
     {
-        // Arrange — checkin dulu
+        // Arrange — checkin dulu (di waktu real)
         $this->actingAs($this->user)
             ->postJson('/api/presensis/checkin', [
                 'lokasi' => '-6.2088,106.8456',
             ]);
 
-        // Act — travel ke jam 17:00 waktu instansi (setelah jam standar 16:30)
-        $this->travel(now('Asia/Jakarta')->setTime(17, 0, 0));
+        // Act — freeze waktu ke jam 17:00 Asia/Jakarta (setelah jam standar 16:30)
+        Carbon::setTestNow(Carbon::now('Asia/Jakarta')->setTime(17, 0, 0));
         $response = $this->actingAs($this->user)
             ->postJson('/api/presensis/checkout');
-        $this->travelBack();
 
         // Assert
         $response->assertStatus(200)
@@ -110,11 +117,12 @@ class PresensiTest extends TestCase
 
     public function test_checkout_gagal_jika_belum_checkin()
     {
-        // Act
+        // Act — freeze waktu ke17:00 agar lolos time check, tapi belum checkin
+        Carbon::setTestNow(Carbon::now('Asia/Jakarta')->setTime(17, 0, 0));
         $response = $this->actingAs($this->user)
             ->postJson('/api/presensis/checkout');
 
-        // Assert
+        // Assert — harus ditolak karena belum checkin
         $response->assertStatus(400)
             ->assertJson([
                 'status' => 'error',
@@ -129,11 +137,10 @@ class PresensiTest extends TestCase
                 'lokasi' => '-6.2088,106.8456',
             ]);
 
-        // Act — travel ke jam 15:00 waktu instansi (sebelum jam standar 16:30)
-        $this->travel(now('Asia/Jakarta')->setTime(15, 0, 0));
+        // Act — freeze waktu ke jam 15:00 Asia/Jakarta (sebelum jam standar 16:30)
+        Carbon::setTestNow(Carbon::now('Asia/Jakarta')->setTime(15, 0, 0));
         $response = $this->actingAs($this->user)
             ->postJson('/api/presensis/checkout');
-        $this->travelBack();
 
         // Assert — harus ditolak karena belum waktunya
         $response->assertStatus(422)

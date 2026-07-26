@@ -23,7 +23,8 @@ data class Karyawan(
     val kontak: String = "",
     val fotoProfil: String? = null,
     val role: Role? = null,
-    val outlet: Outlet? = null
+    val outlet: Outlet? = null,
+    val sisaCuti: Int? = null
 )
 
 data class Role(
@@ -58,6 +59,7 @@ data class KelolaKaryawanUiState(
     val formPassword: String = "",
     val formRoleId: Int = 0,
     val formOutletId: Int = 0,
+    val formSisaCuti: String = "",
     val editingKaryawanId: String? = null
 )
 
@@ -173,6 +175,7 @@ class KelolaKaryawanViewModel(
             formPassword = "",
             formRoleId = karyawan.role?.id ?: 0,
             formOutletId = karyawan.outlet?.id ?: 0,
+            formSisaCuti = karyawan.sisaCuti?.toString() ?: "",
             editingKaryawanId = karyawan.id,
             errorMessage = null,
             successMessage = null
@@ -217,6 +220,10 @@ class KelolaKaryawanViewModel(
 
     fun onFormOutletChange(outletId: Int) {
         _uiState.value = _uiState.value.copy(formOutletId = outletId, errorMessage = null)
+    }
+
+    fun onFormSisaCutiChange(value: String) {
+        _uiState.value = _uiState.value.copy(formSisaCuti = value, errorMessage = null)
     }
 
     // ─── Actions ───
@@ -313,7 +320,8 @@ class KelolaKaryawanViewModel(
             val request = UpdateKaryawanRequest(
                 namaLengkap = state.formNama.trim(),
                 alamat = state.formAlamat.trim(),
-                outletId = state.formOutletId.takeIf { it > 0 }
+                outletId = state.formOutletId.takeIf { it > 0 },
+                sisaCuti = state.formSisaCuti.toIntOrNull()
             )
 
             karyawanRepository.updateKaryawan(id, request).onSuccess {
@@ -395,7 +403,8 @@ class KelolaKaryawanViewModel(
                 kontak = this.kontak ?: "",
                 fotoProfil = this.fotoProfil,
                 role = role,
-                outlet = outlet
+                outlet = outlet,
+                sisaCuti = this.sisaCuti
             )
         }
     }

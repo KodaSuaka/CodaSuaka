@@ -222,6 +222,9 @@ return [
             // Audit Log — [FITUR ADVANCE — belum diaktifkan]
             // 'view:audit',
             // 'manage:audit',
+
+            // Instansi / Perusahaan
+            'manage:instansi',
         ],
 
         'Keuangan' => [

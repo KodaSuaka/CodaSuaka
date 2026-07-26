@@ -14,7 +14,15 @@ class Instansi extends Model
         'nama_instansi',
         'paket_id',
         'timezone',
+        'jam_operasional',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'jam_operasional' => 'array',
+        ];
+    }
 
     public function users()
     {

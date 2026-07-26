@@ -50,7 +50,18 @@ class PenugasanPolicy
             return false;
         }
 
-        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
+        // Owner/Manager bisa update semua field
+        if (app(PermissionService::class)->userHasPermission($user, 'manage:penugasan')) {
+            return true;
+        }
+
+        // Karyawan yang ditugasi bisa update status (accept/complete)
+        $karyawan = $user->profilKaryawan;
+        if ($karyawan && $penugasan->penanggung_jawab_id === $karyawan->id) {
+            return true;
+        }
+
+        return false;
     }
 
     public function delete(User $user, penugasan $penugasan): bool
@@ -60,6 +71,24 @@ class PenugasanPolicy
         }
 
         return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
+    }
+
+    /**
+     * Allow karyawan yang ditugasi untuk accept/complete tugas.
+     */
+    public function accept(User $user, penugasan $penugasan): bool
+    {
+        if (! $this->isSameTenant($user, $penugasan)) {
+            return false;
+        }
+
+        $karyawan = $user->profilKaryawan;
+        return $karyawan && $penugasan->penanggung_jawab_id === $karyawan->id;
+    }
+
+    public function complete(User $user, penugasan $penugasan): bool
+    {
+        return $this->accept($user, $penugasan);
     }
 
     public function restore(User $user, penugasan $penugasan): bool

@@ -20,6 +20,10 @@ class penugasan extends Model
         'created_by',
         'is_template',
         'instansi_id',
+        'template_penugasan_id',
+        'accepted_at',
+        'completed_at',
+        'status_changed_by',
     ];
 
     protected function casts(): array
@@ -28,6 +32,8 @@ class penugasan extends Model
             'tenggat' => 'date',
             'poin' => 'integer',
             'is_template' => 'boolean',
+            'accepted_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 
@@ -105,5 +111,10 @@ class penugasan extends Model
     public function pembuat()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function statusChanger()
+    {
+        return $this->belongsTo(User::class, 'status_changed_by');
     }
 }

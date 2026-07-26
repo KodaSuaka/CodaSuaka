@@ -389,8 +389,11 @@ data class PenugasanDto(
     @SerializedName("is_template") val isTemplate: Boolean?,
     @SerializedName("instansi_id") val instansiId: String?,
     @SerializedName("created_by") val createdBy: Int?,
+    @SerializedName("accepted_at") val acceptedAt: String?,
+    @SerializedName("completed_at") val completedAt: String?,
     @SerializedName("penanggung_jawab") val penanggungJawab: KaryawanDto?,
     @SerializedName("divisi") val divisi: DivisiDto?,
+    @SerializedName("pembuat") val pembuat: UserInfoData?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
 )

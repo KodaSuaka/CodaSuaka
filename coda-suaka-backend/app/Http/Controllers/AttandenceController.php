@@ -126,21 +126,10 @@ class AttandenceController extends Controller
         $user = $request->user();
         $tz = $this->getTimezone($user);
         $today = now($tz)->toDateString();
-        $jamSekarang = now($tz);
-
-        // Standar waktu checkout: 16:30 waktu lokal instansi
-        $jamCheckoutStandard = Carbon::today($tz)->setTime(16, 30, 0);
-
-        // Blokir checkout sebelum waktu standar (16:30)
-        if ($jamSekarang->lt($jamCheckoutStandard)) {
-            return $this->error('Belum waktunya checkout. Checkout hanya bisa dilakukan pada jam 16:30 atau setelahnya.', 422);
-        }
-
-        // Tentukan status_keterangan berdasarkan waktu checkout
-        $statusKeterangan = $this->tentukanStatusCheckout($jamSekarang, $jamCheckoutStandard);
 
         try {
-            return DB::transaction(function () use ($user, $today, $jamSekarang, $statusKeterangan) {
+            return DB::transaction(function () use ($user, $today, $tz) {
+                // ── 1. Cek apakah user sudah checkin hari ini ──────────
                 $presensi = attandence::where('user_id', $user->id)
                     ->where('tanggal', $today)
                     ->lockForUpdate()
@@ -153,6 +142,17 @@ class AttandenceController extends Controller
                 if ($presensi->jam_checkout) {
                     return $this->error('Anda sudah melakukan checkout', 409);
                 }
+
+                // ── 2. Cek waktu checkout setelah cek checkin ──────────
+                $jamSekarang = now($tz);
+                $jamCheckoutStandard = Carbon::today($tz)->setTime(16, 30, 0);
+
+                if ($jamSekarang->lt($jamCheckoutStandard)) {
+                    return $this->error('Belum waktunya checkout. Checkout hanya bisa dilakukan pada jam 16:30 atau setelahnya.', 422);
+                }
+
+                // Tentukan status_keterangan berdasarkan waktu checkout
+                $statusKeterangan = $this->tentukanStatusCheckout($jamSekarang, $jamCheckoutStandard);
 
                 $presensi->update([
                     'jam_checkout' => $jamSekarang->toTimeString(),

@@ -104,7 +104,8 @@ val viewModelModule = module {
         penugasanRepository = get(),
         divisiRepository = get(),
         karyawanRepository = get(),
-        tokenManager = get()
+        tokenManager = get(),
+        apiService = get()
     ) }
 
     // Notifikasi

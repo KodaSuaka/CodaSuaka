@@ -25,6 +25,11 @@ class UpdateInstansiRequest extends FormRequest
         return [
             'nama_instansi' => 'sometimes|required|string|max:255',
             'paket_id' => 'nullable|exists:pakets,id',
+            'jam_operasional' => 'nullable|array',
+            'jam_operasional.jam_buka' => 'nullable|string|max:5',
+            'jam_operasional.jam_tutup' => 'nullable|string|max:5',
+            'jam_operasional.hari_operasional' => 'nullable|array',
+            'jam_operasional.hari_operasional.*' => 'integer|min:0|max:6',
         ];
     }
 

@@ -236,6 +236,7 @@ fun KelolaKaryawanScreen(
                 nama = uiState.formNama,
                 alamat = uiState.formAlamat,
                 selectedOutletId = uiState.formOutletId,
+                sisaCuti = uiState.formSisaCuti,
                 outlets = uiState.outlets,
                 roleName = dialog.karyawan.role?.namaRole ?: "-",
                 isSaving = uiState.isSaving,
@@ -243,6 +244,7 @@ fun KelolaKaryawanScreen(
                 onNamaChange = viewModel::onFormNamaChange,
                 onAlamatChange = viewModel::onFormAlamatChange,
                 onOutletChange = viewModel::onFormOutletChange,
+                onSisaCutiChange = viewModel::onFormSisaCutiChange,
                 onSimpan = viewModel::updateKaryawan,
                 onHapus = { viewModel.hapusKaryawan(dialog.karyawan.id) },
                 onDismiss = viewModel::closeDialog
@@ -619,6 +621,7 @@ private fun DialogEditKaryawan(
     nama: String,
     alamat: String,
     selectedOutletId: Int,
+    sisaCuti: String,
     outlets: List<Outlet>,
     roleName: String,
     isSaving: Boolean,
@@ -626,6 +629,7 @@ private fun DialogEditKaryawan(
     onNamaChange: (String) -> Unit,
     onAlamatChange: (String) -> Unit,
     onOutletChange: (Int) -> Unit,
+    onSisaCutiChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onHapus: () -> Unit,
     onDismiss: () -> Unit
@@ -749,6 +753,33 @@ private fun DialogEditKaryawan(
                     outlets = outlets,
                     selectedOutletId = selectedOutletId,
                     onOutletSelected = onOutletChange
+                )
+
+                // Sisa Cuti
+                OutlinedTextField(
+                    value = sisaCuti,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            onSisaCutiChange(newValue)
+                        }
+                    },
+                    label = { Text("Sisa Cuti (hari)") },
+                    placeholder = { Text("Masukkan jumlah sisa cuti") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
                 )
 
                 // Baris Tombol: Hapus | Simpan

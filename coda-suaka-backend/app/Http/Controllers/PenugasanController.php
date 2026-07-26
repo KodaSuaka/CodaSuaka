@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorepenugasanRequest;
 use App\Http\Requests\UpdatepenugasanRequest;
 use App\Models\penugasan;
+use App\Models\User;
+use App\Services\NotificationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -12,8 +14,9 @@ class PenugasanController extends Controller
 {
     use ApiResponse;
 
-    public function __construct()
-    {
+    public function __construct(
+        private NotificationService $notificationService,
+    ) {
         $this->authorizeResource(penugasan::class, 'penugasan');
     }
 
@@ -142,6 +145,10 @@ class PenugasanController extends Controller
         if (isset($data['status']) && $data['status'] === 'selesai' && $penugasan->status !== 'selesai') {
             $urgency = $data['urgency'] ?? $penugasan->urgency;
             $data['poin'] = penugasan::getPoinForUrgency($urgency);
+            $data['completed_at'] = now();
+
+            // Kirim notifikasi ke owner/pembuat tugas saat karyawan selesai
+            $this->sendPenugasanSelesaiNotification($penugasan, $request->user());
         }
 
         // Jika urgency berubah dan tugas belum selesai, update poin
@@ -149,10 +156,65 @@ class PenugasanController extends Controller
             $data['poin'] = penugasan::getPoinForUrgency($data['urgency']);
         }
 
+        $data['status_changed_by'] = $request->user()->id;
         $penugasan->update($data);
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
 
         return $this->success($penugasan, 'Tugas berhasil diperbarui');
+    }
+
+    /**
+     * PUT /api/penugasans/{penugasan}/accept
+     * Karyawan menerima/mulai mengerjakan tugas (belum → proses)
+     */
+    public function accept(Request $request, penugasan $penugasan)
+    {
+        $this->authorize('accept', $penugasan);
+
+        if ($penugasan->status !== 'belum') {
+            return $this->error('Tugas hanya bisa diterima jika status masih "belum"', 422);
+        }
+
+        $penugasan->update([
+            'status' => 'proses',
+            'accepted_at' => now(),
+            'status_changed_by' => $request->user()->id,
+        ]);
+
+        // Kirim notifikasi ke owner/pembuat tugas
+        $this->sendPenugasanDikerjakanNotification($penugasan, $request->user());
+
+        $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+        return $this->success($penugasan, 'Tugas berhasil diterima');
+    }
+
+    /**
+     * PUT /api/penugasans/{penugasan}/complete
+     * Karyawan menyelesaikan tugas (proses → selesai)
+     */
+    public function complete(Request $request, penugasan $penugasan)
+    {
+        $this->authorize('complete', $penugasan);
+
+        if ($penugasan->status !== 'proses') {
+            return $this->error('Tugas hanya bisa diselesaikan jika status "proses"', 422);
+        }
+
+        $urgency = $penugasan->urgency;
+        $penugasan->update([
+            'status' => 'selesai',
+            'completed_at' => now(),
+            'poin' => penugasan::getPoinForUrgency($urgency),
+            'status_changed_by' => $request->user()->id,
+        ]);
+
+        // Kirim notifikasi ke owner/pembuat tugas
+        $this->sendPenugasanSelesaiNotification($penugasan, $request->user());
+
+        $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+        return $this->success($penugasan, 'Tugas berhasil diselesaikan');
     }
 
     /**
@@ -163,5 +225,43 @@ class PenugasanController extends Controller
         $penugasan->delete();
 
         return $this->success(null, 'Tugas berhasil dihapus');
+    }
+
+    /**
+     * Kirim notifikasi ke owner/pembuat tugas saat tugas dikerjakan.
+     */
+    private function sendPenugasanDikerjakanNotification(penugasan $penugasan, User $currentUser): void
+    {
+        $karyawan = $currentUser->profilKaryawan;
+        $namaKaryawan = $karyawan->nama_lengkap ?? $currentUser->name;
+
+        // Kirim ke pembuat tugas (owner/manager)
+        if ($penugasan->created_by && $penugasan->created_by !== $currentUser->id) {
+            $this->notificationService->onPenugasanDikerjakan(
+                $penugasan->id,
+                $penugasan->created_by,
+                $namaKaryawan,
+                $penugasan->judul
+            );
+        }
+    }
+
+    /**
+     * Kirim notifikasi ke owner/pembuat tugas saat tugas selesai.
+     */
+    private function sendPenugasanSelesaiNotification(penugasan $penugasan, User $currentUser): void
+    {
+        $karyawan = $currentUser->profilKaryawan;
+        $namaKaryawan = $karyawan->nama_lengkap ?? $currentUser->name;
+
+        // Kirim ke pembuat tugas (owner/manager)
+        if ($penugasan->created_by && $penugasan->created_by !== $currentUser->id) {
+            $this->notificationService->onPenugasanSelesai(
+                $penugasan->id,
+                $penugasan->created_by,
+                $namaKaryawan,
+                $penugasan->judul
+            );
+        }
     }
 }

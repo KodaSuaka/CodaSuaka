@@ -5,6 +5,7 @@ namespace Tests\Feature\Keuangan;
 use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\role;
+use App\Models\role_permission;
 use App\Models\TransaksiKas;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,10 +26,29 @@ class TransaksiKasTest extends TestCase
         parent::setUp();
 
         $this->instansi = Instansi::factory()->create();
-        $role = role::factory()->create(['nama_role' => 'Owner']);
+        $role = role::firstOrCreate(
+            ['nama_role' => 'Owner'],
+            ['deskripsi' => 'Owner']
+        );
+
+        // Setup permission untuk Owner agar bisa akses keuangan
+        role_permission::firstOrCreate(
+            ['role_id' => $role->id, 'permission' => 'view:keuangan'],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+        role_permission::firstOrCreate(
+            ['role_id' => $role->id, 'permission' => 'manage:keuangan'],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+        role_permission::firstOrCreate(
+            ['role_id' => $role->id, 'permission' => 'delete:keuangan'],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+
         $this->user = User::factory()->create([
             'instansi_id' => $this->instansi->id,
             'role_id' => $role->id,
+            'email_verified_at' => now(),
         ]);
         $this->kategori = KategoriTransaksi::factory()
             ->pemasukan()

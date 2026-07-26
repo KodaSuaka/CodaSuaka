@@ -54,4 +54,24 @@ class PenugasanRepositoryImpl(
             throw Exception("Gagal menghapus penugasan: ${response.code()}")
         }
     }
+
+    override suspend fun acceptPenugasan(id: Int): Result<PenugasanDto> = runCatching {
+        val response = apiService.acceptPenugasan(id)
+        if (response.isSuccessful && response.body()?.status == "success") {
+            response.body()?.data ?: throw Exception("Gagal menerima penugasan")
+        } else {
+            val msg = response.body()?.message ?: "Gagal menerima penugasan: ${response.code()}"
+            throw Exception(msg)
+        }
+    }
+
+    override suspend fun completePenugasan(id: Int): Result<PenugasanDto> = runCatching {
+        val response = apiService.completePenugasan(id)
+        if (response.isSuccessful && response.body()?.status == "success") {
+            response.body()?.data ?: throw Exception("Gagal menyelesaikan penugasan")
+        } else {
+            val msg = response.body()?.message ?: "Gagal menyelesaikan penugasan: ${response.code()}"
+            throw Exception(msg)
+        }
+    }
 }

@@ -168,7 +168,8 @@ fun PenugasanScreen(
                             PenugasanCard(
                                 penugasan = penugasan,
                                 canManage = uiState.canManagePenugasan,
-                                onDelete = { viewModel.deletePenugasan(penugasan.id) }
+                                onDelete = { viewModel.deletePenugasan(penugasan.id) },
+                                onCardClick = { viewModel.showPenugasanDetail(penugasan) }
                             )
                         }
                     }
@@ -188,6 +189,19 @@ fun PenugasanScreen(
                 onTenggatChange = { viewModel.updateFormTenggat(it) },
                 onUrgencyChange = { viewModel.updateFormUrgency(it) },
                 onCreate = { viewModel.createPenugasan() }
+            )
+        }
+
+        // ── Detail Screen Overlay ──
+        if (uiState.showDetail && uiState.selectedPenugasan != null) {
+            PenugasanDetailScreen(
+                penugasan = uiState.selectedPenugasan!!,
+                onBack = { viewModel.hidePenugasanDetail() },
+                onAccept = { viewModel.acceptPenugasan(uiState.selectedPenugasan!!.id) },
+                onComplete = { viewModel.completePenugasan(uiState.selectedPenugasan!!.id) },
+                canManage = uiState.canManagePenugasan,
+                isAssigned = viewModel.isAssignedTo(uiState.selectedPenugasan!!),
+                isProcessing = uiState.isProcessing
             )
         }
     }
@@ -263,7 +277,8 @@ private fun FilterChipRow(
 private fun PenugasanCard(
     penugasan: PenugasanDto,
     canManage: Boolean = false,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onCardClick: () -> Unit = {}
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -281,7 +296,9 @@ private fun PenugasanCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
