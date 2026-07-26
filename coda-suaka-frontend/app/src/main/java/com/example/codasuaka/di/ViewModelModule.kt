@@ -19,6 +19,7 @@ import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewMod
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
+import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -107,6 +108,9 @@ val viewModelModule = module {
         tokenManager = get(),
         apiService = get()
     ) }
+
+    // Jam Operasional
+    viewModel { JamOperasionalViewModel(apiService = get()) }
 
     // Notifikasi
     viewModel { NotificationViewModel(notificationRepository = get()) }

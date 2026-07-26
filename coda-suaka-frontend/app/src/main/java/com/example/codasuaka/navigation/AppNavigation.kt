@@ -39,6 +39,8 @@ import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaScreen
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.penugasan.PenugasanScreen
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
+import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalScreen
+import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -67,6 +69,7 @@ object Routes {
     const val APPROVAL_KEUANGAN = "approval_keuangan"
     const val POIN_KINERJA = "poin_kinerja"
     const val PENUGASAN = "penugasan"
+    const val JAM_OPERASIONAL = "jam_operasional"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -334,6 +337,15 @@ fun AppNavigation(navController: NavHostController) {
             PenugasanScreen(
                 onBack = { safePopBackStack() },
                 viewModel = penugasanViewModel
+            )
+        }
+
+        // ── Jam Operasional ──
+        composable(Routes.JAM_OPERASIONAL) {
+            val jamOperasionalViewModel: JamOperasionalViewModel = koinViewModel()
+            JamOperasionalScreen(
+                onBack = { safePopBackStack() },
+                viewModel = jamOperasionalViewModel
             )
         }
 

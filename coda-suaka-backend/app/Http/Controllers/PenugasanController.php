@@ -166,6 +166,9 @@ class PenugasanController extends Controller
     /**
      * PUT /api/penugasans/{penugasan}/accept
      * Karyawan menerima/mulai mengerjakan tugas (belum → proses)
+     *
+     * Jika tugas adalah template (is_template=true), maka akan dibuat
+     * task BARU dari template agar template tetap tersedia untuk karyawan lain.
      */
     public function accept(Request $request, penugasan $penugasan)
     {
@@ -175,6 +178,34 @@ class PenugasanController extends Controller
             return $this->error('Tugas hanya bisa diterima jika status masih "belum"', 422);
         }
 
+        // Jika template: buat task baru dari template
+        if ($penugasan->is_template) {
+            $karyawan = $request->user()->profilKaryawan;
+            $newTask = penugasan::create([
+                'judul' => $penugasan->judul,
+                'deskripsi' => $penugasan->deskripsi,
+                'divisi_id' => $penugasan->divisi_id,
+                'tenggat' => $penugasan->tenggat,
+                'urgency' => $penugasan->urgency,
+                'poin' => $penugasan->poin,
+                'status' => 'proses',
+                'penanggung_jawab_id' => $karyawan?->id,
+                'created_by' => $request->user()->id,
+                'is_template' => false,
+                'instansi_id' => $request->user()->instansi_id,
+                'template_penugasan_id' => $penugasan->id,
+                'accepted_at' => now(),
+                'status_changed_by' => $request->user()->id,
+            ]);
+
+            $this->sendPenugasanDikerjakanNotification($newTask, $request->user());
+
+            $newTask->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+            return $this->success($newTask, 'Tugas berhasil diterima');
+        }
+
+        // Tugas biasa: langsung update
         $penugasan->update([
             'status' => 'proses',
             'accepted_at' => now(),

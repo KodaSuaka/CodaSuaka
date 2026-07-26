@@ -14,9 +14,9 @@ class PenugasanPolicy
      */
     private function isSameTenant(User $user, penugasan $penugasan): bool
     {
-        // Template: scope via instansi_id langsung
+        // Template: global (instansi_id=null) bisa diakses semua, instansi-specific hanya instansi yang sama
         if ($penugasan->is_template) {
-            return $user->instansi_id === $penugasan->instansi_id;
+            return is_null($penugasan->instansi_id) || $user->instansi_id === $penugasan->instansi_id;
         }
 
         if ($penugasan->divisi_id !== null) {
@@ -84,7 +84,17 @@ class PenugasanPolicy
 
         $karyawan = $user->profilKaryawan;
 
-        return $karyawan && $penugasan->penanggung_jawab_id === $karyawan->id;
+        if (! $karyawan) {
+            return false;
+        }
+
+        // Template (penanggung_jawab_id = null): bisa diterima semua karyawan
+        if ($penugasan->is_template) {
+            return true;
+        }
+
+        // Tugas biasa: hanya bisa diterima oleh yang ditugaskan
+        return $penugasan->penanggung_jawab_id === $karyawan->id;
     }
 
     public function complete(User $user, penugasan $penugasan): bool

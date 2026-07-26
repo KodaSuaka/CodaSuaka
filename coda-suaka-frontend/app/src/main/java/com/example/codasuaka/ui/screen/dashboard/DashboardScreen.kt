@@ -218,12 +218,14 @@ fun DashboardScreen(
                     userRole = uiState.userRole,
                     items = listOf(
                         MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
-                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
+                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus),
+                        MenuItem("Jam Operasional", Icons.Default.AccessTime, OrangeManage, allowedRoles = listOf("Owner"))
                     ),
                     onItemClick = { label ->
                         when (label) {
                             "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
                             "Status Karyawan" -> onNavigateTo("status_karyawan")
+                            "Jam Operasional" -> onNavigateTo("jam_operasional")
                         }
                     }
                 )

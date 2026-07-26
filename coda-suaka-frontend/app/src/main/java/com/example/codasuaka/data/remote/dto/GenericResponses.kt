@@ -446,8 +446,20 @@ data class InstansiData(
     @SerializedName("id") val id: String,
     @SerializedName("nama_instansi") val namaInstansi: String,
     @SerializedName("alamat") val alamat: String?,
+    @SerializedName("jam_operasional") val jamOperasional: JamOperasionalData?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class JamOperasionalData(
+    @SerializedName("jam_buka") val jamBuka: String?,
+    @SerializedName("jam_tutup") val jamTutup: String?,
+    @SerializedName("hari_operasional") val hariOperasional: List<Int>?
+)
+
+data class UpdateInstansiRequest(
+    @SerializedName("nama_instansi") val namaInstansi: String? = null,
+    @SerializedName("jam_operasional") val jamOperasional: Map<String, Any?>? = null
 )
 
 // ─── Keuangan: Kategori Transaksi DTOs ──────────────────────────

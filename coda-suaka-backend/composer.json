@@ -15,7 +15,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "openspout/openspout": "^4.24",
-        "php-cs-fixer/diff": "*"
+        "php-cs-fixer/diff": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

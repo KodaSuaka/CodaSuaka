@@ -43,6 +43,9 @@ interface ApiService {
     @GET("api/instansi")
     suspend fun getInstansi(): Response<InstansiResponse>
 
+    @PUT("api/instansi")
+    suspend fun updateInstansi(@Body request: UpdateInstansiRequest): Response<InstansiResponse>
+
     // ─── Outlet ───────────────────────────────────────────────
 
     @GET("api/outlets")

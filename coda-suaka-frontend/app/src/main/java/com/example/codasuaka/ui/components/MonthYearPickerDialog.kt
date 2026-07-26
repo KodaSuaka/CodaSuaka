@@ -80,7 +80,7 @@ fun MonthYearPickerDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = month.getDisplayName(TextStyle.FULL, Locale("id", "ID")),
+                                text = month.getDisplayName(TextStyle.FULL, Locale.of("id", "ID")),
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) OnPrimary else OnSurface,
                                 style = MaterialTheme.typography.bodySmall
