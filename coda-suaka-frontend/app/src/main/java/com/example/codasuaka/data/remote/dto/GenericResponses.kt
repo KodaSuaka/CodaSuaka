@@ -439,6 +439,7 @@ data class UserInfoData(
 
 data class InstansiResponse(
     @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String? = null,
     @SerializedName("data") val data: InstansiData?
 )
 
