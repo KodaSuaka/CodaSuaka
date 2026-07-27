@@ -258,21 +258,46 @@ private fun ProductCard(
     onAdd: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val categoryColor = when (produk.kategori) {
+        "Minuman" -> BlueSchedule
+        "Makanan" -> OrangeManage
+        "Camilan" -> PurpleLog
+        "Jasa" -> TealStatus
+        else -> Secondary
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Header: Category Badge
+            Surface(
+                color = categoryColor.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = produk.kategori,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = categoryColor
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Placeholder Image / Icon
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Primary.copy(alpha = 0.05f)),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(categoryColor.copy(alpha = 0.05f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -283,8 +308,8 @@ private fun ProductCard(
                         else -> Icons.Default.Fastfood
                     },
                     contentDescription = null,
-                    tint = Primary,
-                    modifier = Modifier.size(40.dp)
+                    tint = categoryColor,
+                    modifier = Modifier.size(44.dp)
                 )
             }
 
@@ -293,32 +318,34 @@ private fun ProductCard(
             Text(
                 text = produk.nama,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Black,
                 color = Secondary,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 18.sp
             )
 
             Text(
                 text = formatRupiahKasir(produk.harga),
                 style = MaterialTheme.typography.titleMedium,
-                color = Primary,
-                fontWeight = FontWeight.Black
+                color = OnSurface,
+                fontWeight = FontWeight.ExtraBold
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Action: Add/Minus
             if (quantity == 0) {
                 Button(
                     onClick = onAdd,
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                    shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
                 ) {
                     Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                    Text("Tambah", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Tambah", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                 }
             } else {
                 Row(
@@ -328,22 +355,23 @@ private fun ProductCard(
                 ) {
                     IconButton(
                         onClick = onRemove,
-                        modifier = Modifier.size(32.dp).background(Neutral, CircleShape)
+                        modifier = Modifier.size(36.dp).background(Neutral, CircleShape)
                     ) {
-                        Icon(Icons.Default.Remove, null, tint = Secondary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Remove, null, tint = Secondary, modifier = Modifier.size(18.dp))
                     }
                     
                     Text(
                         text = quantity.toString(),
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Secondary
+                        fontWeight = FontWeight.Black,
+                        color = Secondary,
+                        fontSize = 16.sp
                     )
 
                     IconButton(
                         onClick = onAdd,
-                        modifier = Modifier.size(32.dp).background(Primary, CircleShape)
+                        modifier = Modifier.size(36.dp).background(categoryColor, CircleShape)
                     ) {
-                        Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -362,52 +390,65 @@ private fun CartSummaryBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .height(64.dp)
+            .height(72.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Secondary),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Primary.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Primary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.ShoppingBag, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(
+                        imageVector = Icons.Default.ShoppingBag, 
+                        null, 
+                        tint = Primary, 
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = "$totalItems Item",
+                        text = "$totalItems Item terpilih",
                         fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Medium
+                        color = OnSurfaceVariant,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = formatRupiahKasir(totalPrice),
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Secondary
                     )
                 }
             }
 
             Button(
-                onClick = onCheckout,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                onClick = { 
+                    // To prevent immediate navigation, let's open the sheet first
+                    onClick()
+                },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Success),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
-                Text("Bayar", fontWeight = FontWeight.ExtraBold)
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(18.dp))
+                Text("Bayar", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -500,18 +541,19 @@ private fun CartDetailsSheet(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                    .height(60.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Success),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 Text(
                     text = "Konfirmasi & Bayar",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black,
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.width(10.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                Spacer(modifier = Modifier.width(12.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -523,47 +565,111 @@ private fun CartItemRow(
     onAdd: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val categoryColor = when (item.produk.kategori) {
+        "Minuman" -> BlueSchedule
+        "Makanan" -> OrangeManage
+        "Camilan" -> PurpleLog
+        "Jasa" -> TealStatus
+        else -> Secondary
+    }
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp), // Menambah ruang agar tidak sesak
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Ikon Produk
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(categoryColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = when(item.produk.kategori) {
+                    "Minuman" -> Icons.Default.LocalCafe
+                    "Makanan" -> Icons.Default.Restaurant
+                    "Jasa" -> Icons.Default.Build
+                    else -> Icons.Default.Fastfood
+                },
+                contentDescription = null,
+                tint = categoryColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        // Info Barang
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.produk.nama,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = Secondary
+                fontWeight = FontWeight.ExtraBold,
+                color = Secondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = formatRupiahKasir(item.produk.harga),
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariant
+                color = OnSurfaceVariant,
+                fontWeight = FontWeight.Bold
             )
         }
 
+        // Kontrol Jumlah (Slim Design)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Neutral.copy(alpha = 0.3f))
+                .padding(horizontal = 4.dp, vertical = 4.dp)
         ) {
-            IconButton(
+            // Tombol Minus
+            Surface(
                 onClick = onRemove,
-                modifier = Modifier.size(30.dp).background(Neutral.copy(alpha = 0.5f), CircleShape)
+                modifier = Modifier.size(26.dp),
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 1.dp
             ) {
-                Icon(Icons.Default.Remove, null, tint = Secondary, modifier = Modifier.size(14.dp))
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Remove,
+                        contentDescription = null,
+                        tint = Secondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
 
             Text(
                 text = item.quantity.toString(),
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Black,
                 color = Secondary,
                 fontSize = 15.sp
             )
 
-            IconButton(
+            // Tombol Plus
+            Surface(
                 onClick = onAdd,
-                modifier = Modifier.size(30.dp).background(Primary.copy(alpha = 0.1f), CircleShape)
+                modifier = Modifier.size(26.dp),
+                shape = CircleShape,
+                color = categoryColor,
+                shadowElevation = 2.dp
             ) {
-                Icon(Icons.Default.Add, null, tint = Primary, modifier = Modifier.size(14.dp))
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
     }

@@ -10,6 +10,9 @@ import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.domain.repository.DivisiRepository
 import com.example.codasuaka.domain.repository.KaryawanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,49 +63,49 @@ class PenugasanViewModel(
     val uiState: StateFlow<PenugasanUiState> = _uiState.asStateFlow()
 
     init {
-        loadUserRole()
         loadData()
-    }
-
-    private fun loadUserRole() {
-        viewModelScope.launch {
-            val role = tokenManager.getUserRole()
-            val canManage = role in listOf("Owner", "Manager")
-            try {
-                val userResponse = apiService.getUser()
-                if (userResponse.isSuccessful) {
-                    val userData = userResponse.body()?.data
-                    _uiState.update {
-                        it.copy(
-                            canManagePenugasan = canManage,
-                            currentUserId = userData?.id,
-                            currentKaryawanId = userData?.profilKaryawan?.id,
-                            userRole = role
-                        )
-                    }
-                    return@launch
-                }
-            } catch (_: Exception) {}
-            _uiState.update { it.copy(canManagePenugasan = canManage, userRole = role) }
-        }
     }
 
     fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val penugasans = penugasanRepository.getPenugasans(
-                    status = _uiState.value.filterStatus
-                ).getOrThrow()
-                val divisis = divisiRepository.getDivisis().getOrThrow()
-                val karyawans = karyawanRepository.getKaryawans().getOrThrow()
-                _uiState.update {
-                    it.copy(
-                        penugasans = penugasans,
-                        divisis = divisis,
-                        karyawans = karyawans,
-                        isLoading = false
-                    )
+                coroutineScope {
+                    // Fetch user info/role and data in parallel
+                    val userDeferred = async { apiService.getUser() }
+                    val penugasansDeferred = async { penugasanRepository.getPenugasans(status = _uiState.value.filterStatus) }
+                    val divisisDeferred = async { divisiRepository.getDivisis() }
+                    val karyawansDeferred = async { karyawanRepository.getKaryawans() }
+                    val roleDeferred = async { tokenManager.getUserRole() }
+
+                    val userResponse = userDeferred.await()
+                    val penugasans = penugasansDeferred.await().getOrThrow()
+                    val divisis = divisisDeferred.await().getOrThrow()
+                    val karyawans = karyawansDeferred.await().getOrThrow()
+                    val role = roleDeferred.await()
+
+                    val canManage = role in listOf("Owner", "Manager")
+                    var currentUserId: Int? = null
+                    var currentKaryawanId: String? = null
+
+                    if (userResponse.isSuccessful) {
+                        val userData = userResponse.body()?.data
+                        currentUserId = userData?.id
+                        currentKaryawanId = userData?.profilKaryawan?.id
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            penugasans = penugasans,
+                            divisis = divisis,
+                            karyawans = karyawans,
+                            isLoading = false,
+                            canManagePenugasan = canManage,
+                            userRole = role,
+                            currentUserId = currentUserId,
+                            currentKaryawanId = currentKaryawanId
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {

@@ -1,6 +1,8 @@
 package com.example.codasuaka.ui.screen.notifikasi
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -60,8 +62,14 @@ fun NotificationSidebar(
         // Sidebar Sheet
         AnimatedVisibility(
             visible = uiState.isSidebarOpen,
-            enter = slideInHorizontally(initialOffsetX = { it }),
-            exit = slideOutHorizontally(targetOffsetX = { it }),
+            enter = slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = tween(400, easing = FastOutSlowInEasing)
+            ),
+            exit = slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = tween(400, easing = FastOutSlowInEasing)
+            ),
             modifier = Modifier.align(Alignment.CenterEnd)
         ) {
             Surface(

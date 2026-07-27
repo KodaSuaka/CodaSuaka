@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.*
 import com.example.codasuaka.domain.repository.KeuanganRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import java.io.File
@@ -15,8 +18,6 @@ import java.time.format.DateTimeFormatter
 
 /**
  * State untuk halaman Laporan Keuangan (Buku Kas).
- *
- * Metode pembayaran yang valid untuk form.
  */
 private val VALID_METODE_PEMBAYARAN = listOf(
     "Tunai", "Transfer", "QRIS", "Kartu Kredit", "Kartu Debit", "Lainnya"
@@ -82,6 +83,10 @@ data class LaporanKeuanganUiState(
     val showLabaRugiSheet: Boolean = false,
     val showArusKasSheet: Boolean = false,
 
+    // Detail Popup
+    val selectedTransaksiDetail: TransaksiKasDto? = null,
+    val showDetailDialog: Boolean = false,
+
     // Pagination
     val currentPage: Int = 1,
     val lastPage: Int = 1,
@@ -100,42 +105,68 @@ class LaporanKeuanganViewModel(
     }
 
     private fun loadInitialData() {
-        loadKategoriTransaksis()
-        loadTransaksiKas()
-        loadSaldo()
-    }
-
-    // ─── Kategori ────────────────────────────────────────────────
-
-    fun loadKategoriTransaksis() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingKategori = true)
-            keuanganRepository.getKategoriTransaksis(activeOnly = true)
-                .onSuccess { list ->
-                    _uiState.value = _uiState.value.copy(
-                        kategoriList = list,
-                        isLoadingKategori = false
-                    )
+            _uiState.update { it.copy(isLoadingTransaksi = true, isLoadingSaldo = true, isLoadingKategori = true) }
+            try {
+                coroutineScope {
+                    val kategoriDeferred = async { keuanganRepository.getKategoriTransaksis(activeOnly = true) }
+                    val transaksiDeferred = async {
+                        keuanganRepository.getTransaksiKasList(
+                            page = 1,
+                            tipe = _uiState.value.filterTipe,
+                            kategoriTransaksiId = _uiState.value.filterKategoriId,
+                            startDate = _uiState.value.filterStartDate,
+                            endDate = _uiState.value.filterEndDate,
+                            perPage = 50
+                        )
+                    }
+                    val saldoDeferred = async {
+                        keuanganRepository.getSaldo(
+                            startDate = _uiState.value.filterStartDate,
+                            endDate = _uiState.value.filterEndDate
+                        )
+                    }
+
+                    val kategoriResult = kategoriDeferred.await()
+                    val transaksiResult = transaksiDeferred.await()
+                    val saldoResult = saldoDeferred.await()
+
+                    _uiState.update { state ->
+                        state.copy(
+                            kategoriList = kategoriResult.getOrDefault(emptyList()),
+                            isLoadingKategori = false,
+                            transaksiList = transaksiResult.getOrNull()?.first ?: emptyList(),
+                            isLoadingTransaksi = false,
+                            currentPage = transaksiResult.getOrNull()?.second?.currentPage ?: 1,
+                            lastPage = transaksiResult.getOrNull()?.second?.lastPage ?: 1,
+                            saldoData = saldoResult.getOrNull(),
+                            isLoadingSaldo = false
+                        )
+                    }
                 }
-                .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingKategori = false
-                    )
-                }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isLoadingTransaksi = false, isLoadingSaldo = false, isLoadingKategori = false) }
+            }
         }
     }
 
-    // ─── Transaksi Kas ───────────────────────────────────────────
+    fun loadKategoriTransaksis() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingKategori = true) }
+            keuanganRepository.getKategoriTransaksis(activeOnly = true)
+                .onSuccess { list ->
+                    _uiState.update { it.copy(kategoriList = list, isLoadingKategori = false) }
+                }
+                .onFailure { _uiState.update { it.copy(isLoadingKategori = false) } }
+        }
+    }
 
     fun loadTransaksiKas(page: Int = 1) {
         viewModelScope.launch {
             if (page == 1) {
-                _uiState.value = _uiState.value.copy(
-                    isLoadingTransaksi = true,
-                    transaksiError = null
-                )
+                _uiState.update { it.copy(isLoadingTransaksi = true, transaksiError = null) }
             } else {
-                _uiState.value = _uiState.value.copy(isLoadingMore = true)
+                _uiState.update { it.copy(isLoadingMore = true) }
             }
 
             keuanganRepository.getTransaksiKasList(
@@ -146,19 +177,19 @@ class LaporanKeuanganViewModel(
                 endDate = _uiState.value.filterEndDate,
                 perPage = 50
             ).onSuccess { (list, meta) ->
-                _uiState.value = _uiState.value.copy(
-                    transaksiList = if (page == 1) list else _uiState.value.transaksiList + list,
+                _uiState.update { it.copy(
+                    transaksiList = if (page == 1) list else it.transaksiList + list,
                     isLoadingTransaksi = false,
                     isLoadingMore = false,
                     currentPage = meta?.currentPage ?: 1,
                     lastPage = meta?.lastPage ?: 1
-                )
+                ) }
             }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoadingTransaksi = false,
                     isLoadingMore = false,
                     transaksiError = e.message ?: "Gagal memuat transaksi"
-                )
+                ) }
             }
         }
     }
@@ -168,75 +199,52 @@ class LaporanKeuanganViewModel(
         loadSaldo()
     }
 
-    // ─── Filter ──────────────────────────────────────────────────
-
     fun setFilterTipe(tipe: String?) {
-        _uiState.value = _uiState.value.copy(filterTipe = tipe)
+        _uiState.update { it.copy(filterTipe = tipe) }
         loadTransaksiKas(page = 1)
     }
 
     fun setFilterKategoriId(kategoriId: Int?) {
-        _uiState.value = _uiState.value.copy(filterKategoriId = kategoriId)
+        _uiState.update { it.copy(filterKategoriId = kategoriId) }
         loadTransaksiKas(page = 1)
     }
 
     fun setFilterDateRange(startDate: String, endDate: String) {
-        _uiState.value = _uiState.value.copy(
-            filterStartDate = startDate,
-            filterEndDate = endDate
-        )
+        _uiState.update { it.copy(filterStartDate = startDate, filterEndDate = endDate) }
         loadTransaksiKas(page = 1)
         loadSaldo()
     }
 
-    // ─── Saldo ───────────────────────────────────────────────────
-
     fun loadSaldo() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingSaldo = true, saldoError = null)
+            _uiState.update { it.copy(isLoadingSaldo = true, saldoError = null) }
             keuanganRepository.getSaldo(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
             ).onSuccess { data ->
-                _uiState.value = _uiState.value.copy(
-                    saldoData = data,
-                    isLoadingSaldo = false
-                )
+                _uiState.update { it.copy(saldoData = data, isLoadingSaldo = false) }
             }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoadingSaldo = false,
-                    saldoError = e.message ?: "Gagal memuat saldo"
-                )
+                _uiState.update { it.copy(isLoadingSaldo = false, saldoError = e.message ?: "Gagal memuat saldo") }
             }
         }
     }
 
-    // ─── Laba Rugi ───────────────────────────────────────────────
-
     fun loadLabaRugi() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingLabaRugi = true, labaRugiError = null)
+            _uiState.update { it.copy(isLoadingLabaRugi = true, labaRugiError = null) }
             keuanganRepository.getLabaRugi(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
             ).onSuccess { data ->
-                _uiState.value = _uiState.value.copy(
-                    labaRugiData = data,
-                    isLoadingLabaRugi = false
-                )
+                _uiState.update { it.copy(labaRugiData = data, isLoadingLabaRugi = false) }
             }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoadingLabaRugi = false,
-                    labaRugiError = e.message ?: "Gagal memuat laba rugi"
-                )
+                _uiState.update { it.copy(isLoadingLabaRugi = false, labaRugiError = e.message ?: "Gagal memuat laba rugi") }
             }
         }
     }
 
-    // ─── Dialog / Form ───────────────────────────────────────────
-
     fun showAddForm(tipe: String = "masuk") {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             showFormDialog = true,
             isEditing = false,
             editingTransaksiId = null,
@@ -248,11 +256,11 @@ class LaporanKeuanganViewModel(
             formKeterangan = "",
             submitError = null,
             submitSuccess = null
-        )
+        ) }
     }
 
     fun showEditForm(transaksi: TransaksiKasDto) {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             showFormDialog = true,
             isEditing = true,
             editingTransaksiId = transaksi.id,
@@ -264,11 +272,11 @@ class LaporanKeuanganViewModel(
             formKeterangan = transaksi.keterangan ?: "",
             submitError = null,
             submitSuccess = null
-        )
+        ) }
     }
 
     fun hideForm() {
-        _uiState.value = _uiState.value.copy(showFormDialog = false)
+        _uiState.update { it.copy(showFormDialog = false) }
     }
 
     fun updateFormField(
@@ -279,68 +287,33 @@ class LaporanKeuanganViewModel(
         metodePembayaran: String? = null,
         keterangan: String? = null
     ) {
-        val current = _uiState.value
-        _uiState.value = current.copy(
-            formTipe = tipe ?: current.formTipe,
-            formNominal = nominal ?: current.formNominal,
-            formKategoriId = kategoriId ?: current.formKategoriId,
-            formTanggal = tanggal ?: current.formTanggal,
-            formMetodePembayaran = metodePembayaran ?: current.formMetodePembayaran,
-            formKeterangan = keterangan ?: current.formKeterangan
-        )
+        _uiState.update { current ->
+            current.copy(
+                formTipe = tipe ?: current.formTipe,
+                formNominal = nominal ?: current.formNominal,
+                formKategoriId = kategoriId ?: current.formKategoriId,
+                formTanggal = tanggal ?: current.formTanggal,
+                formMetodePembayaran = metodePembayaran ?: current.formMetodePembayaran,
+                formKeterangan = keterangan ?: current.formKeterangan
+            )
+        }
     }
 
     fun submitForm() {
         val state = _uiState.value
-
-        // Validasi nominal
         val nominal = state.formNominal.replace(".", "").replace(",", ".").toDoubleOrNull()
         if (nominal == null || nominal <= 0) {
-            _uiState.value = _uiState.value.copy(submitError = "Nominal harus diisi dengan angka valid")
+            _uiState.update { it.copy(submitError = "Nominal harus diisi dengan angka valid") }
             return
         }
-        if (nominal > 999999999999.99) {
-            _uiState.value = _uiState.value.copy(submitError = "Nominal melebihi batas maksimum")
-            return
-        }
-
-        // Validasi kategori
         if (state.formKategoriId == null) {
-            _uiState.value = _uiState.value.copy(submitError = "Pilih kategori transaksi")
-            return
-        }
-
-        // Validasi tanggal — handle format yyyy-MM-dd dan ISO datetime lengkap
-        try {
-            val tanggal = com.example.codasuaka.util.DateTimeUtil.toLocalLocalDate(state.formTanggal)
-            if (tanggal.isAfter(LocalDate.now())) {
-                _uiState.value = _uiState.value.copy(submitError = "Tanggal tidak boleh melebihi hari ini")
-                return
-            }
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(submitError = "Format tanggal tidak valid")
-            return
-        }
-
-        // Validasi metode pembayaran (jika diisi)
-        if (state.formMetodePembayaran.isNotBlank() &&
-            state.formMetodePembayaran !in VALID_METODE_PEMBAYARAN
-        ) {
-            _uiState.value = _uiState.value.copy(submitError = "Metode pembayaran tidak valid")
-            return
-        }
-
-        // Validasi keterangan (max 1000 karakter)
-        if (state.formKeterangan.length > 1000) {
-            _uiState.value = _uiState.value.copy(submitError = "Keterangan maksimal 1000 karakter")
+            _uiState.update { it.copy(submitError = "Pilih kategori transaksi") }
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSubmitting = true, submitError = null)
-
+            _uiState.update { it.copy(isSubmitting = true, submitError = null) }
             if (state.isEditing && state.editingTransaksiId != null) {
-                // Update
                 val request = UpdateTransaksiKasRequest(
                     tanggal = state.formTanggal,
                     tipe = state.formTipe,
@@ -351,21 +324,11 @@ class LaporanKeuanganViewModel(
                 )
                 keuanganRepository.updateTransaksiKas(state.editingTransaksiId, request)
                     .onSuccess {
-                        _uiState.value = _uiState.value.copy(
-                            isSubmitting = false,
-                            showFormDialog = false,
-                            submitSuccess = "Transaksi berhasil diperbarui"
-                        )
+                        _uiState.update { it.copy(isSubmitting = false, showFormDialog = false, submitSuccess = "Transaksi berhasil diperbarui") }
                         refreshTransaksi()
                     }
-                    .onFailure { e ->
-                        _uiState.value = _uiState.value.copy(
-                            isSubmitting = false,
-                            submitError = e.message ?: "Gagal memperbarui transaksi"
-                        )
-                    }
+                    .onFailure { e -> _uiState.update { it.copy(isSubmitting = false, submitError = e.message ?: "Gagal memperbarui transaksi") } }
             } else {
-                // Create
                 val request = CreateTransaksiKasRequest(
                     tanggal = state.formTanggal,
                     tipe = state.formTipe,
@@ -376,217 +339,126 @@ class LaporanKeuanganViewModel(
                 )
                 keuanganRepository.createTransaksiKas(request)
                     .onSuccess {
-                        _uiState.value = _uiState.value.copy(
-                            isSubmitting = false,
-                            showFormDialog = false,
-                            submitSuccess = "Transaksi berhasil ditambahkan"
-                        )
+                        _uiState.update { it.copy(isSubmitting = false, showFormDialog = false, submitSuccess = "Transaksi berhasil ditambahkan") }
                         refreshTransaksi()
                     }
-                    .onFailure { e ->
-                        _uiState.value = _uiState.value.copy(
-                            isSubmitting = false,
-                            submitError = e.message ?: "Gagal menambah transaksi"
-                        )
-                    }
+                    .onFailure { e -> _uiState.update { it.copy(isSubmitting = false, submitError = e.message ?: "Gagal menambah transaksi") } }
             }
         }
     }
 
     fun deleteTransaksi(id: Int) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingTransaksi = true)
+            _uiState.update { it.copy(isLoadingTransaksi = true) }
             keuanganRepository.deleteTransaksiKas(id)
                 .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        submitSuccess = "Transaksi berhasil dihapus"
-                    )
+                    _uiState.update { it.copy(isLoadingTransaksi = false, submitSuccess = "Transaksi berhasil dihapus") }
                     refreshTransaksi()
                 }
                 .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingTransaksi = false,
-                        transaksiError = e.message ?: "Gagal menghapus transaksi"
-                    )
+                    _uiState.update { it.copy(isLoadingTransaksi = false, transaksiError = e.message ?: "Gagal menghapus transaksi") }
                 }
         }
     }
-
-    // ─── Approval ────────────────────────────────────────────────
 
     fun ajukanApproval(transaksiId: Int) {
         viewModelScope.launch {
             keuanganRepository.ajukanApproval(transaksiId)
                 .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        submitSuccess = "Approval berhasil diajukan"
-                    )
+                    _uiState.update { it.copy(submitSuccess = "Approval berhasil diajukan") }
                     refreshTransaksi()
                 }
-                .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(
-                        transaksiError = e.message ?: "Gagal mengajukan approval"
-                    )
-                }
+                .onFailure { e -> _uiState.update { it.copy(transaksiError = e.message ?: "Gagal mengajukan approval") } }
         }
     }
 
-    // ─── Bottom Sheet Toggle ─────────────────────────────────────
-
     fun toggleSaldoSheet() {
-        _uiState.value = _uiState.value.copy(
-            showSaldoSheet = !_uiState.value.showSaldoSheet
-        )
-        if (_uiState.value.showSaldoSheet) {
-            loadSaldo()
-        }
+        _uiState.update { it.copy(showSaldoSheet = !it.showSaldoSheet) }
+        if (_uiState.value.showSaldoSheet) loadSaldo()
     }
 
     fun toggleLabaRugiSheet() {
-        _uiState.value = _uiState.value.copy(
-            showLabaRugiSheet = !_uiState.value.showLabaRugiSheet
-        )
-        if (_uiState.value.showLabaRugiSheet) {
-            loadLabaRugi()
-        }
+        _uiState.update { it.copy(showLabaRugiSheet = !it.showLabaRugiSheet) }
+        if (_uiState.value.showLabaRugiSheet) loadLabaRugi()
     }
-
-    // ─── Arus Kas ─────────────────────────────────────────────────
 
     fun loadArusKas() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingArusKas = true, arusKasError = null)
+            _uiState.update { it.copy(isLoadingArusKas = true, arusKasError = null) }
             keuanganRepository.getArusKas(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
-            ).onSuccess { data ->
-                _uiState.value = _uiState.value.copy(
-                    arusKasData = data,
-                    isLoadingArusKas = false
-                )
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoadingArusKas = false,
-                    arusKasError = e.message ?: "Gagal memuat arus kas"
-                )
-            }
+            ).onSuccess { data -> _uiState.update { it.copy(arusKasData = data, isLoadingArusKas = false) } }
+            .onFailure { e -> _uiState.update { it.copy(isLoadingArusKas = false, arusKasError = e.message ?: "Gagal memuat arus kas") } }
         }
     }
 
     fun toggleArusKasSheet() {
-        _uiState.value = _uiState.value.copy(
-            showArusKasSheet = !_uiState.value.showArusKasSheet
-        )
-        if (_uiState.value.showArusKasSheet) {
-            loadArusKas()
-        }
+        _uiState.update { it.copy(showArusKasSheet = !it.showArusKasSheet) }
+        if (_uiState.value.showArusKasSheet) loadArusKas()
     }
-
-    // ─── Ringkasan Keuangan ───────────────────────────────────────
 
     fun loadRingkasanKeuangan(tahun: Int? = null) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingRingkasan = true, ringkasanKeuanganError = null)
+            _uiState.update { it.copy(isLoadingRingkasan = true, ringkasanKeuanganError = null) }
             keuanganRepository.getRingkasanKeuangan(tahun)
-                .onSuccess { data ->
-                    _uiState.value = _uiState.value.copy(
-                        ringkasanKeuanganData = data,
-                        isLoadingRingkasan = false
-                    )
-                }
-                .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingRingkasan = false,
-                        ringkasanKeuanganError = e.message ?: "Gagal memuat ringkasan keuangan"
-                    )
-                }
+                .onSuccess { data -> _uiState.update { it.copy(ringkasanKeuanganData = data, isLoadingRingkasan = false) } }
+                .onFailure { e -> _uiState.update { it.copy(isLoadingRingkasan = false, ringkasanKeuanganError = e.message ?: "Gagal memuat ringkasan keuangan") } }
         }
     }
 
-    // ─── Ekspor ───────────────────────────────────────────────────
-
     fun exportBukuKasPdf() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
             keuanganRepository.exportBukuKasPdf(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
-            ).onSuccess { body ->
-                saveFile(body, "buku_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf")
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = e.message ?: "Gagal mengekspor PDF buku kas"
-                )
-            }
+            ).onSuccess { body -> saveFile(body, "buku_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf") }
+            .onFailure { e -> _uiState.update { it.copy(isExporting = false, exportError = e.message ?: "Gagal mengekspor PDF buku kas") } }
         }
     }
 
     fun exportBukuKasExcel() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
             keuanganRepository.exportBukuKasExcel(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
-            ).onSuccess { body ->
-                saveFile(body, "buku_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.xlsx")
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = e.message ?: "Gagal mengekspor Excel buku kas"
-                )
-            }
+            ).onSuccess { body -> saveFile(body, "buku_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.xlsx") }
+            .onFailure { e -> _uiState.update { it.copy(isExporting = false, exportError = e.message ?: "Gagal mengekspor Excel buku kas") } }
         }
     }
 
     fun exportLabaRugiPdf() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
             keuanganRepository.exportLabaRugiPdf(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
-            ).onSuccess { body ->
-                saveFile(body, "laba_rugi_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf")
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = e.message ?: "Gagal mengekspor PDF laba rugi"
-                )
-            }
+            ).onSuccess { body -> saveFile(body, "laba_rugi_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf") }
+            .onFailure { e -> _uiState.update { it.copy(isExporting = false, exportError = e.message ?: "Gagal mengekspor PDF laba rugi") } }
         }
     }
 
     fun exportArusKasPdf() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
             keuanganRepository.exportArusKasPdf(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
-            ).onSuccess { body ->
-                saveFile(body, "arus_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf")
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = e.message ?: "Gagal mengekspor PDF arus kas"
-                )
-            }
+            ).onSuccess { body -> saveFile(body, "arus_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.pdf") }
+            .onFailure { e -> _uiState.update { it.copy(isExporting = false, exportError = e.message ?: "Gagal mengekspor PDF arus kas") } }
         }
     }
 
     fun exportArusKasExcel() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isExporting = true, exportError = null)
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
             keuanganRepository.exportArusKasExcel(
                 startDate = _uiState.value.filterStartDate,
                 endDate = _uiState.value.filterEndDate
-            ).onSuccess { body ->
-                saveFile(body, "arus_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.xlsx")
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = e.message ?: "Gagal mengekspor Excel arus kas"
-                )
-            }
+            ).onSuccess { body -> saveFile(body, "arus_kas_${_uiState.value.filterStartDate}_${_uiState.value.filterEndDate}.xlsx") }
+            .onFailure { e -> _uiState.update { it.copy(isExporting = false, exportError = e.message ?: "Gagal mengekspor Excel arus kas") } }
         }
     }
 
@@ -597,59 +469,42 @@ class LaporanKeuanganViewModel(
             )
             if (!downloadsDir.exists()) downloadsDir.mkdirs()
             val file = File(downloadsDir, filename)
-            FileOutputStream(file).use { outputStream ->
-                outputStream.write(body.bytes())
-            }
-            _uiState.value = _uiState.value.copy(
-                isExporting = false,
-                exportSuccessPath = file.absolutePath
-            )
+            FileOutputStream(file).use { it.write(body.bytes()) }
+            _uiState.update { it.copy(isExporting = false, exportSuccessPath = file.absolutePath) }
         } catch (e: Exception) {
-            // Fallback: simpan di cache
-            try {
-                val cacheDir = java.io.File(
-                    android.os.Environment.getExternalStorageDirectory(),
-                    "Android/data/com.example.codasuaka/cache"
-                )
-                if (!cacheDir.exists()) cacheDir.mkdirs()
-                val file = File(cacheDir, filename)
-                FileOutputStream(file).use { outputStream ->
-                    outputStream.write(body.bytes())
-                }
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportSuccessPath = file.absolutePath
-                )
-            } catch (e2: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = "Gagal menyimpan file: ${e2.message}"
-                )
-            }
+            _uiState.update { it.copy(isExporting = false, exportError = "Gagal menyimpan file: ${e.message}") }
         }
     }
 
     fun clearExportSuccess() {
-        _uiState.value = _uiState.value.copy(exportSuccessPath = null)
+        _uiState.update { it.copy(exportSuccessPath = null) }
     }
 
-    // ─── Utility ─────────────────────────────────────────────────
-
     fun clearSubmitSuccess() {
-        _uiState.value = _uiState.value.copy(submitSuccess = null)
+        _uiState.update { it.copy(submitSuccess = null) }
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(
-            transaksiError = null,
-            saldoError = null,
-            labaRugiError = null,
-            submitError = null
-        )
+        _uiState.update { it.copy(transaksiError = null, saldoError = null, labaRugiError = null, submitError = null) }
+    }
+
+    // ─── Detail Popup ───────────────────────────────────────────
+
+    fun showDetail(transaksi: TransaksiKasDto) {
+        _uiState.update { it.copy(
+            selectedTransaksiDetail = transaksi,
+            showDetailDialog = true
+        ) }
+    }
+
+    fun hideDetail() {
+        _uiState.update { it.copy(
+            selectedTransaksiDetail = null,
+            showDetailDialog = false
+        ) }
     }
 
     private fun formatNominalForEdit(nominal: Double): String {
-        // Hilangkan desimal .00 jika tidak ada sen
         return if (nominal == nominal.toLong().toDouble()) {
             nominal.toLong().toString()
         } else {

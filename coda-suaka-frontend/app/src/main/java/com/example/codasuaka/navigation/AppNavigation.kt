@@ -1,5 +1,7 @@
 package com.example.codasuaka.navigation
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -102,7 +104,19 @@ fun AppNavigation(navController: NavHostController) {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.AUTH
+        startDestination = Routes.AUTH,
+        enterTransition = {
+            slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn(animationSpec = tween(400))
+        },
+        exitTransition = {
+            slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(400)) + fadeOut(animationSpec = tween(400))
+        },
+        popEnterTransition = {
+            slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(400)) + fadeIn(animationSpec = tween(400))
+        },
+        popExitTransition = {
+            slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut(animationSpec = tween(400))
+        }
     ) {
         // ── Auth Check (gatekeeper) ──
         composable(Routes.AUTH) {

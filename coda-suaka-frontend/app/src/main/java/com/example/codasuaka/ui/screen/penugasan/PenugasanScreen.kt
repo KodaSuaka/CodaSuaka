@@ -1,11 +1,14 @@
 package com.example.codasuaka.ui.screen.penugasan
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -130,46 +133,58 @@ fun PenugasanScreen(
                     onStatusSelected = { viewModel.filterByStatus(it) }
                 )
 
-                // ── Loading ──
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Primary)
-                    }
-                } else if (uiState.penugasans.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Assignment,
-                                contentDescription = null,
-                                tint = OnSurfaceVariant.copy(alpha = 0.5f),
-                                modifier = Modifier.size(64.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Belum ada tugas",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = OnSurfaceVariant
-                            )
+                // ── Animated Content Body ──
+                AnimatedContent(
+                    targetState = uiState.isLoading,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
+                    },
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    label = "penugasanBody"
+                ) { isLoading ->
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Primary)
                         }
-                    }
-                } else {
-                    // ── Task List ──
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(uiState.penugasans, key = { it.id }) { penugasan ->
-                        PenugasanCard(
-                            penugasan = penugasan,
-                            onCardClick = { viewModel.showPenugasanDetail(penugasan) }
-                        )
-                    }
+                    } else if (uiState.penugasans.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Assignment,
+                                    contentDescription = null,
+                                    tint = OnSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(64.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "Belum ada tugas",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = OnSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            itemsIndexed(uiState.penugasans, key = { _, item -> item.id }) { index, penugasan ->
+                                // Simplified Staggered Animation
+                                var visible by remember(penugasan.id) { mutableStateOf(false) }
+                                LaunchedEffect(penugasan.id) { visible = true }
+                                
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = slideInVertically(initialOffsetY = { 30 }) + fadeIn(),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    PenugasanCard(
+                                        penugasan = penugasan,
+                                        onCardClick = { viewModel.showPenugasanDetail(penugasan) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

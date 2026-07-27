@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -27,7 +28,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.data.remote.dto.JadwalDto
+import com.example.codasuaka.ui.components.CodaSuakaNavbar
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
+import com.example.codasuaka.ui.components.NavbarItem
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
@@ -70,6 +73,7 @@ fun DashboardKaryawanScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = Tertiary, // Fix: Ensure gaps around floating navbar are not dark
         topBar = {
             TopAppBar(
                 title = {
@@ -111,13 +115,33 @@ fun DashboardKaryawanScreen(
             )
         },
         bottomBar = {
-            BottomNavigationBar(
+            CodaSuakaNavbar(
+                items = listOf(
+                    NavbarItem(
+                        selectedIcon = Icons.Default.Home, 
+                        unselectedIcon = Icons.Outlined.Home, 
+                        label = "Beranda", 
+                        index = 0
+                    ),
+                    NavbarItem(
+                        selectedIcon = Icons.AutoMirrored.Filled.Assignment, 
+                        unselectedIcon = Icons.AutoMirrored.Outlined.Assignment, 
+                        label = "Pengajuan", 
+                        index = 1
+                    ),
+                    NavbarItem(
+                        selectedIcon = Icons.Default.ChatBubble, 
+                        unselectedIcon = Icons.Outlined.ChatBubbleOutline, 
+                        label = "Pesan", 
+                        index = 2, 
+                        hasBadge = notificationUiState.unreadCount > 0
+                    )
+                ),
                 selectedIndex = uiState.selectedBottomNav,
-                hasUnreadMessages = uiState.hasUnreadMessages,
                 onItemSelected = { index ->
                     viewModel.onBottomNavSelected(index)
                     when (index) {
-                        0 -> { /* already on dashboard */ }
+                        0 -> { /* Beranda */ }
                         1 -> onNavigateTo("pengajuan")
                         2 -> onNavigateTo("contact_list")
                     }
@@ -1165,66 +1189,6 @@ private fun SectionLeave(
                     modifier = Modifier.size(28.dp)
                 )
             }
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// BOTTOM NAVIGATION
-// ═══════════════════════════════════════════════════════════════
-
-@Composable
-private fun BottomNavigationBar(
-    selectedIndex: Int,
-    hasUnreadMessages: Boolean,
-    onItemSelected: (Int) -> Unit
-) {
-    NavigationBar(
-        containerColor = Surface,
-        tonalElevation = 8.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        val items = listOf(
-            Triple(Icons.Default.Home, "Dashboard", 0),
-            Triple(Icons.Default.Description, "Pengajuan", 1),
-            Triple(Icons.Default.Email, "Pesan", 2)
-        )
-
-        items.forEach { (icon, label, index) ->
-            NavigationBarItem(
-                selected = selectedIndex == index,
-                onClick = { onItemSelected(index) },
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            if (index == 2 && hasUnreadMessages) {
-                                Badge(
-                                    containerColor = Primary,
-                                    modifier = Modifier.size(8.dp)
-                                )
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = label
-                        )
-                    }
-                },
-                label = {
-                    Text(
-                        text = label,
-                        fontSize = 11.sp
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Primary,
-                    selectedTextColor = Primary,
-                    unselectedIconColor = OnSurfaceVariant,
-                    unselectedTextColor = OnSurfaceVariant,
-                    indicatorColor = Primary.copy(alpha = 0.1f)
-                )
-            )
         }
     }
 }
