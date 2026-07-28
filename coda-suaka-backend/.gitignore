@@ -26,6 +26,3 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 phpunit.xml
-
-# Test files — jangan deploy ke production
-/tests/
