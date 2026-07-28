@@ -29,7 +29,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.data.remote.dto.JadwalDto
 import com.example.codasuaka.ui.components.CodaSuakaNavbar
-import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.components.NavbarItem
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
@@ -61,15 +60,6 @@ fun DashboardKaryawanScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // ── Handle messages via Snackbar ──
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
-        }
-    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -147,8 +137,7 @@ fun DashboardKaryawanScreen(
                     }
                 }
             )
-        },
-        snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) }
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -170,7 +159,13 @@ fun DashboardKaryawanScreen(
             }
 
             // ── Error Message (User-Friendly Notification) ──
-            // Moved to SnackbarHost
+            if (uiState.errorMessage != null) {
+                NotificationBannerStatic(
+                    message = uiState.errorMessage ?: "",
+                    mapFromServer = true,
+                    onDismiss = { viewModel.clearError() }
+                )
+            }
 
             // ══════════════════════════════════════════════════
             // 1. Data Diri Karyawan

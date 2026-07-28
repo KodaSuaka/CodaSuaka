@@ -24,7 +24,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.components.CodaSuakaNavbar
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.NavbarItem
@@ -63,15 +62,6 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // ── Handle errors via Snackbar ──
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
-        }
-    }
 
     // ── Tangani drawer via ViewModel ──
     LaunchedEffect(uiState.isDrawerOpen) {
@@ -185,8 +175,7 @@ fun DashboardScreen(
                         }
                     }
                 )
-            },
-            snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) }
+            }
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -208,7 +197,13 @@ fun DashboardScreen(
                 }
 
                 // ── Error Message (User-Friendly Notification) ──
-                // Moved to SnackbarHost
+                if (uiState.errorMessage != null) {
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearError() }
+                    )
+                }
 
                 // ══════════════════════════════════════════════
                 // SECTION ATAS — Omset
