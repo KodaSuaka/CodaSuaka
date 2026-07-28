@@ -18,7 +18,10 @@ class UpdateTransaksiKasRequest extends FormRequest
         $user = $this->user();
 
         return [
-            'tanggal' => 'sometimes|required|date|before_or_equal:today',
+            // Sama seperti StoreTransaksiKasRequest: bandingkan ke akhir hari
+            // ini, bukan tengah malam, karena frontend mengirim datetime
+            // lengkap untuk kolom yang sebenarnya cuma DATE.
+            'tanggal' => ['sometimes', 'required', 'date', 'before_or_equal:'.now()->endOfDay()->toDateTimeString()],
             'tipe' => 'sometimes|required|in:masuk,keluar',
             'nominal' => [
                 'sometimes',

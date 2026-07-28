@@ -3,7 +3,9 @@ package com.example.codasuaka.ui.screen.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.local.TokenManager
+import com.example.codasuaka.data.remote.ApiService
 import com.example.codasuaka.domain.repository.AuthRepository
+import com.example.codasuaka.util.DateTimeUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -33,7 +35,8 @@ sealed class AuthState {
  */
 class AuthViewModel(
     private val authRepository: AuthRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val apiService: ApiService
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -72,6 +75,7 @@ class AuthViewModel(
                     // logout) mendapat akses ke layar Owner. Ambil role tersimpan
                     // agar navigasi konsisten dengan alur login.
                     _authState.value = AuthState.Authenticated(tokenManager.getUserRole() ?: "")
+                    syncServerTimezone()
                 } else {
                     // Token invalid/expired → bersihkan
                     tokenManager.clearAuthData()
@@ -93,6 +97,23 @@ class AuthViewModel(
     /**
      * Logout: hapus data auth, lalu ubah state ke Unauthenticated.
      */
+    /**
+     * Ambil zona waktu instansi dari server dan terapkan ke DateTimeUtil,
+     * supaya perhitungan tanggal/jam di app tidak tergantung zona waktu
+     * device (yang bisa salah setel). Gagal diam-diam — ini bukan syarat
+     * agar user bisa login, cuma memperbaiki keakuratan tampilan waktu.
+     */
+    private fun syncServerTimezone() {
+        viewModelScope.launch {
+            runCatching {
+                val response = apiService.getInstansi()
+                if (response.isSuccessful) {
+                    DateTimeUtil.setServerTimezone(response.body()?.data?.timezone)
+                }
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             try {

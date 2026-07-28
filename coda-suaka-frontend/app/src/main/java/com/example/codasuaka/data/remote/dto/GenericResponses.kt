@@ -269,6 +269,8 @@ data class PresensiTodayResponse(
 data class PresensiTodayData(
     @SerializedName("sudah_checkin") val sudahCheckin: Boolean,
     @SerializedName("sudah_checkout") val sudahCheckout: Boolean,
+    @SerializedName("jam_checkin_standar") val jamCheckinStandar: String? = null,
+    @SerializedName("jam_checkout_standar") val jamCheckoutStandar: String? = null,
     @SerializedName("presensi") val presensi: PresensiDto?
 )
 
@@ -457,6 +459,7 @@ data class InstansiData(
     @SerializedName("id") val id: String,
     @SerializedName("nama_instansi") val namaInstansi: String,
     @SerializedName("alamat") val alamat: String?,
+    @SerializedName("timezone") val timezone: String? = null,
     @SerializedName("jam_operasional") val jamOperasional: JamOperasionalData?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?

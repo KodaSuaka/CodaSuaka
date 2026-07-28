@@ -121,11 +121,15 @@ class PenugasanController extends Controller
 
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
 
-        // Bug #1: Kirim notifikasi ke karyawan yang ditugasi
-        if ($penugasan->penanggung_jawab_id) {
+        // Kirim notifikasi ke karyawan yang ditugasi.
+        // penanggung_jawab_id adalah karyawans.id (UUID) — NotificationService
+        // butuh users.id (int) untuk kolom notifications.user_id, jadi pakai
+        // user_id dari relasi penanggungJawab, bukan id karyawan itu sendiri.
+        $penanggungJawabUserId = $penugasan->penanggungJawab?->user_id;
+        if ($penanggungJawabUserId) {
             $this->notificationService->onPenugasanBaru(
                 $penugasan->id,
-                $penugasan->penanggung_jawab_id,
+                $penanggungJawabUserId,
                 $penugasan->judul
             );
         }

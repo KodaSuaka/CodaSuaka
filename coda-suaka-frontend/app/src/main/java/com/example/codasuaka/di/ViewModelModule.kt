@@ -33,7 +33,7 @@ val viewModelModule = module {
     // Auth
     viewModel { LoginViewModel(loginUseCase = get()) }
     viewModel { RegisterViewModel(registerUseCase = get()) }
-    viewModel { AuthViewModel(authRepository = get(), tokenManager = get()) }
+    viewModel { AuthViewModel(authRepository = get(), tokenManager = get(), apiService = get()) }
 
     // Dashboard
     viewModel { DashboardViewModel(

@@ -155,7 +155,7 @@ fun DashboardScreen(
                             unselectedIcon = Icons.Outlined.ChatBubbleOutline, 
                             label = "Pesan", 
                             index = 2, 
-                            hasBadge = notificationUiState.unreadCount > 0
+                            hasBadge = uiState.hasUnreadMessages
                         ),
                         NavbarItem(
                             selectedIcon = Icons.Default.PointOfSale, 

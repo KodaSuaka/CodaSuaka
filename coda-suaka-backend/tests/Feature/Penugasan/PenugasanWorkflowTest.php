@@ -113,6 +113,40 @@ class PenugasanWorkflowTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════
+    //  CREATE (STORE) TESTS
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * Regresi: onPenugasanBaru() dulu dipanggil dengan penanggung_jawab_id
+     * (UUID karyawan) sebagai $userId (int) — TypeError 500 di setiap
+     * pembuatan tugas dengan assignee. Root cause: NotificationService
+     * butuh users.id, bukan karyawans.id.
+     */
+    public function test_owner_dapat_membuat_tugas_dengan_penanggung_jawab_tanpa_error_500()
+    {
+        $response = $this->actingAs($this->ownerUser)
+            ->postJson('/api/penugasans', [
+                'judul' => 'Tugas Baru',
+                'deskripsi' => 'Deskripsi',
+                'penanggung_jawab_id' => $this->karyawan->id,
+                'divisi_id' => $this->divisi->id,
+                'tenggat' => now()->addDays(3)->toDateString(),
+                'urgency' => 'sedang',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJson(['status' => 'success']);
+
+        // Notifikasi harus dikirim ke users.id karyawan yang ditugasi,
+        // bukan ke karyawans.id (UUID).
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->karyawanUser->id,
+            'type' => 'penugasan',
+            'title' => 'Penugasan Baru',
+        ]);
+    }
+
+    // ════════════════════════════════════════════════════════════
     //  ACCEPT WORKFLOW TESTS
     // ════════════════════════════════════════════════════════════
 

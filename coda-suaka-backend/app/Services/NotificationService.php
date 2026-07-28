@@ -62,7 +62,7 @@ class NotificationService
      * Kirim notifikasi ke semua user dalam instansi.
      */
     public function createForInstansi(
-        int $instansiId,
+        string $instansiId,
         string $type,
         string $title,
         string $body,

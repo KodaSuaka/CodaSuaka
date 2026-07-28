@@ -11,7 +11,22 @@ import java.util.Locale
  */
 object DateTimeUtil {
 
-    private val localZoneId = ZoneId.systemDefault()
+    @Volatile
+    private var serverZoneId: ZoneId? = null
+
+    /** Zona waktu instansi (dari server) jika sudah di-set, jika belum fallback ke zona device. */
+    private val zoneId: ZoneId
+        get() = serverZoneId ?: ZoneId.systemDefault()
+
+    /**
+     * Set zona waktu resmi instansi (dipanggil sekali setelah login/resume,
+     * lihat AuthViewModel) supaya perhitungan tanggal/jam tidak tergantung
+     * zona waktu device — device yang salah setel zona/jam tidak akan lagi
+     * membuat tampilan "hari ini" berbeda dari server.
+     */
+    fun setServerTimezone(timezone: String?) {
+        serverZoneId = timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() }
+    }
 
     /**
      * Mengonversi ISO String (UTC) ke Format Terbaca (Lokal).
@@ -24,7 +39,7 @@ object DateTimeUtil {
         // Coba parse sebagai ISO datetime lengkap
         return try {
             val instant = Instant.parse(isoString)
-            formatter.withZone(localZoneId).format(instant)
+            formatter.withZone(zoneId).format(instant)
         } catch (_: Exception) {
             // Fallback: coba parse sebagai date-only (yyyy-MM-dd)
             try {
@@ -43,7 +58,7 @@ object DateTimeUtil {
         if (isoString.isNullOrBlank()) return LocalDate.now()
         return try {
             val instant = Instant.parse(isoString)
-            instant.atZone(localZoneId).toLocalDate()
+            instant.atZone(zoneId).toLocalDate()
         } catch (_: Exception) {
             try {
                 LocalDate.parse(isoString.take(10))
@@ -62,7 +77,7 @@ object DateTimeUtil {
         return try {
             val instant = Instant.parse(isoString)
             val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("id-ID"))
-                .withZone(localZoneId)
+                .withZone(zoneId)
             formatter.format(instant)
         } catch (_: Exception) {
             isoString
@@ -93,7 +108,7 @@ object DateTimeUtil {
         return try {
             val instant = Instant.parse(isoString)
             val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm", Locale.forLanguageTag("id-ID"))
-                .withZone(localZoneId)
+                .withZone(zoneId)
             formatter.format(instant)
         } catch (_: Exception) {
             // Fallback: coba format sebagai date-only

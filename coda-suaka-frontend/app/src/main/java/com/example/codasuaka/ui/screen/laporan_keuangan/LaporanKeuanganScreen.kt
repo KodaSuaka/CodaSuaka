@@ -1177,8 +1177,12 @@ private fun TransaksiDetailDialog(
                 )
 
                 DetailInfoItem(
+                    // "tanggal" adalah kolom DATE saja (tanpa jam) — format
+                    // dengan HH:mm sebelumnya menampilkan jam palsu hasil
+                    // konversi timezone dari tengah malam, yang bahkan bisa
+                    // menggeser tanggal yang ditampilkan.
                     label = "Tanggal",
-                    value = DateTimeUtil.formatIsoToLocal(transaksi.tanggal, "dd MMMM yyyy, HH:mm"),
+                    value = DateTimeUtil.formatIsoToLocal(transaksi.tanggal, "dd MMMM yyyy"),
                     icon = Icons.Default.Event
                 )
 

@@ -55,7 +55,7 @@ class LaporanExportService
                 $t['tanggal'],
                 $t['kategori'] ?? '-',
                 $t['tipe'] === 'masuk' ? 'Masuk' : 'Keluar',
-                number_format($t['nominal'], 0, ',', '.'),
+                (float) $t['nominal'],
                 $t['metode_pembayaran'] ?? '-',
                 $t['keterangan'] ?? '',
             ]));
@@ -73,14 +73,14 @@ class LaporanExportService
                 $writer->addRow(Row::fromValues([
                     $kategori,
                     count($items),
-                    number_format($total, 0, ',', '.'),
+                    (float) $total,
                 ]));
             }
         }
         $writer->addRow(Row::fromValues([
             'TOTAL PEMASUKAN',
             '',
-            number_format($grandTotalMasuk, 0, ',', '.'),
+            (float) $grandTotalMasuk,
         ]));
 
         // ─── Sheet 3: Ringkasan per Kategori Pengeluaran ───
@@ -95,14 +95,14 @@ class LaporanExportService
                 $writer->addRow(Row::fromValues([
                     $kategori,
                     count($items),
-                    number_format($total, 0, ',', '.'),
+                    (float) $total,
                 ]));
             }
         }
         $writer->addRow(Row::fromValues([
             'TOTAL PENGELUARAN',
             '',
-            number_format($grandTotalKeluar, 0, ',', '.'),
+            (float) $grandTotalKeluar,
         ]));
 
         $writer->close();
@@ -168,9 +168,9 @@ class LaporanExportService
             $bersih = ($item['masuk'] ?? 0) - ($item['keluar'] ?? 0);
             $writer->addRow(Row::fromValues([
                 'Operasi', $item['kategori'],
-                number_format($item['masuk'] ?? 0, 0, ',', '.'),
-                number_format($item['keluar'] ?? 0, 0, ',', '.'),
-                number_format($bersih, 0, ',', '.'),
+                (float) ($item['masuk'] ?? 0),
+                (float) ($item['keluar'] ?? 0),
+                (float) $bersih,
             ]));
         }
 
@@ -179,16 +179,16 @@ class LaporanExportService
             $bersih = ($item['masuk'] ?? 0) - ($item['keluar'] ?? 0);
             $writer->addRow(Row::fromValues([
                 'Pendanaan', $item['kategori'],
-                number_format($item['masuk'] ?? 0, 0, ',', '.'),
-                number_format($item['keluar'] ?? 0, 0, ',', '.'),
-                number_format($bersih, 0, ',', '.'),
+                (float) ($item['masuk'] ?? 0),
+                (float) ($item['keluar'] ?? 0),
+                (float) $bersih,
             ]));
         }
 
         $writer->addRow(Row::fromValues(['', 'Kenaikan Bersih Kas', '', '',
-            number_format($data['kenaikan_bersih_kas'] ?? 0, 0, ',', '.')]));
+            (float) ($data['kenaikan_bersih_kas'] ?? 0)]));
         $writer->addRow(Row::fromValues(['', 'Saldo Akhir', '', '',
-            number_format($data['saldo_akhir'] ?? 0, 0, ',', '.')]));
+            (float) ($data['saldo_akhir'] ?? 0)]));
 
         $writer->close();
 

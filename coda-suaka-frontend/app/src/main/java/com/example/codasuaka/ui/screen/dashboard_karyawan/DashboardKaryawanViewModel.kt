@@ -63,6 +63,8 @@ data class DashboardKaryawanUiState(
     val absensiStatus: AbsensiStatus = AbsensiStatus.CHECKED_OUT,
     val absensiTime: String? = null,
     val statusKeterangan: String? = null,
+    val jamCheckinStandar: String? = null,
+    val jamCheckoutStandar: String? = null,
     val specialEvent: String? = null,
     val showSpecialEvent: Boolean = false,
 
@@ -131,14 +133,17 @@ class DashboardKaryawanViewModel(
     private val isProcessingAbsensi = AtomicBoolean(false)
 
     init {
-        loadDashboardData()
+        // loadDashboardData() dipanggil via OnResumeEffect di
+        // DashboardKaryawanScreen (bukan di sini) supaya data — termasuk
+        // daftar tugas & jam presensi — ikut refresh tiap layar ini kembali
+        // terlihat, bukan cuma sekali per ViewModel.
         startUnreadMessagesPolling()
     }
 
     /**
      * Memuat data awal dashboard dari API.
      */
-    private fun loadDashboardData() {
+    fun loadDashboardData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -202,7 +207,9 @@ class DashboardKaryawanViewModel(
                     _uiState.value = _uiState.value.copy(
                         absensiStatus = status,
                         absensiTime = time,
-                        statusKeterangan = today.presensi?.statusKeterangan
+                        statusKeterangan = today.presensi?.statusKeterangan,
+                        jamCheckinStandar = today.jamCheckinStandar,
+                        jamCheckoutStandar = today.jamCheckoutStandar
                     )
                 }.onFailure { firstError = firstError ?: it.message }
 

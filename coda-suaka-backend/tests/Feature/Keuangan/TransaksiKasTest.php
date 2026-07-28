@@ -103,6 +103,30 @@ class TransaksiKasTest extends TestCase
             ]);
     }
 
+    /**
+     * Regresi: before_or_equal:today pakai Carbon::parse('today') = tengah
+     * malam, tapi frontend mengirim tanggal hari ini lengkap dengan jam
+     * (mis. dari date-time picker) — sebelumnya selalu gagal validasi
+     * kecuali persis jam 00:00.
+     */
+    public function test_user_dapat_membuat_entri_kas_dengan_tanggal_hari_ini_dan_jam()
+    {
+        $payload = [
+            'tanggal' => now()->format('Y-m-d\TH:i:sP'),
+            'tipe' => 'masuk',
+            'nominal' => 250000,
+            'kategori_transaksi_id' => $this->kategori->id,
+            'metode_pembayaran' => 'Tunai',
+            'keterangan' => 'Transaksi hari ini',
+        ];
+
+        $response = $this->actingAs($this->user)
+            ->postJson('/api/transaksi-kas', $payload);
+
+        $response->assertStatus(201)
+            ->assertJson(['status' => 'success']);
+    }
+
     public function test_validasi_gagal_saat_nominal_negatif()
     {
         // Arrange

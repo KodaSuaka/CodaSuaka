@@ -63,10 +63,12 @@
                 $nominal = $t['nominal'] ?? $t->nominal ?? 0;
                 $tipe = $t['tipe'] ?? $t->tipe ?? '';
                 $saldo = $t['saldo_berjalan'] ?? null;
+                $tanggalRaw = $t['tanggal'] ?? $t->tanggal ?? null;
+                $tanggalDisplay = $tanggalRaw ? \Carbon\Carbon::parse($tanggalRaw)->translatedFormat('d M Y') : '-';
             @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $t['tanggal'] ?? $t->tanggal ?? '-' }}</td>
+                <td>{{ $tanggalDisplay }}</td>
                 <td>{{ $t['kategori_transaksi']['nama_kategori'] ?? $t['kategori'] ?? '-' }}</td>
                 <td class="text-right">{{ $tipe === 'masuk' ? 'Rp '.number_format($nominal, 0, ',', '.') : '-' }}</td>
                 <td class="text-right">{{ $tipe === 'keluar' ? 'Rp '.number_format($nominal, 0, ',', '.') : '-' }}</td>

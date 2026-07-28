@@ -53,6 +53,11 @@ fun PenugasanScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Muat ulang setiap kali layar ini kembali terlihat (buka pertama kali,
+    // kembali dari layar lain, atau app di-resume) — supaya daftar tugas
+    // tidak basi setelah pergantian hari selagi app tetap terbuka.
+    com.example.codasuaka.util.OnResumeEffect { viewModel.loadData() }
+
     // ─── Force Light Theme for this screen ───
     MaterialTheme(
         colorScheme = lightColorScheme(

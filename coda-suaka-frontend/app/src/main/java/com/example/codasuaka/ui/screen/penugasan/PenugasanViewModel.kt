@@ -62,10 +62,10 @@ class PenugasanViewModel(
     private val _uiState = MutableStateFlow(PenugasanUiState())
     val uiState: StateFlow<PenugasanUiState> = _uiState.asStateFlow()
 
-    init {
-        loadData()
-    }
-
+    // Dimuat via OnResumeEffect di PenugasanScreen (bukan init{}) supaya
+    // daftar tugas ikut refresh saat layar ini kembali terlihat — termasuk
+    // setelah pergantian hari selagi app tetap terbuka, bukan cuma sekali
+    // per proses/ViewModel.
     fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }

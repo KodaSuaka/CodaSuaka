@@ -61,6 +61,11 @@ fun DashboardKaryawanScreen(
     val uiState by viewModel.uiState.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
 
+    // Muat ulang setiap kali layar ini kembali terlihat — supaya daftar
+    // tugas & status presensi tidak basi setelah pergantian hari selagi
+    // app tetap terbuka di background.
+    com.example.codasuaka.util.OnResumeEffect { viewModel.loadDashboardData() }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Tertiary, // Fix: Ensure gaps around floating navbar are not dark
@@ -124,7 +129,7 @@ fun DashboardKaryawanScreen(
                         unselectedIcon = Icons.Outlined.ChatBubbleOutline, 
                         label = "Pesan", 
                         index = 2, 
-                        hasBadge = notificationUiState.unreadCount > 0
+                        hasBadge = uiState.hasUnreadMessages
                     )
                 ),
                 selectedIndex = uiState.selectedBottomNav,
@@ -181,6 +186,7 @@ fun DashboardKaryawanScreen(
                 absensiStatus = uiState.absensiStatus,
                 absensiTime = uiState.absensiTime,
                 statusKeterangan = uiState.statusKeterangan,
+                jamCheckinStandar = uiState.jamCheckinStandar,
                 specialEvent = uiState.specialEvent,
                 showSpecialEvent = uiState.showSpecialEvent,
                 isLoading = uiState.isLoading,
@@ -461,6 +467,7 @@ private fun SectionPresensiToday(
     absensiStatus: AbsensiStatus,
     absensiTime: String?,
     statusKeterangan: String?,
+    jamCheckinStandar: String? = null,
     specialEvent: String?,
     showSpecialEvent: Boolean,
     isLoading: Boolean,
@@ -480,7 +487,7 @@ private fun SectionPresensiToday(
     val detailText = when (absensiStatus) {
         AbsensiStatus.CHECKED_IN -> "Masuk pukul ${absensiTime ?: "-"}"
         AbsensiStatus.COMPLETED -> "Jam Kerja: $absensiTime"
-        else -> "Belum ada catatan"
+        else -> if (jamCheckinStandar != null) "Jadwal masuk: $jamCheckinStandar" else "Belum ada catatan"
     }
 
     val statusColor = when (absensiStatus) {
