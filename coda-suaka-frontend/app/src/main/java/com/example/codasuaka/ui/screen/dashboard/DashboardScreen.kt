@@ -8,11 +8,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.automirrored.filled.FactCheck
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +24,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
+import com.example.codasuaka.ui.components.CodaSuakaNavbar
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.NavbarItem
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
@@ -61,6 +63,15 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // ── Handle errors via Snackbar ──
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     // ── Tangani drawer via ViewModel ──
     LaunchedEffect(uiState.isDrawerOpen) {
@@ -84,6 +95,7 @@ fun DashboardScreen(
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            containerColor = Tertiary, // Fix: Ensure gaps around floating navbar are not dark
             topBar = {
                 TopAppBar(
                     title = {
@@ -134,21 +146,47 @@ fun DashboardScreen(
                 )
             },
             bottomBar = {
-                BottomNavigationBar(
+                CodaSuakaNavbar(
+                    items = listOf(
+                        NavbarItem(
+                            selectedIcon = Icons.Default.Home, 
+                            unselectedIcon = Icons.Outlined.Home, 
+                            label = "Beranda", 
+                            index = 0
+                        ),
+                        NavbarItem(
+                            selectedIcon = Icons.AutoMirrored.Filled.Assignment, 
+                            unselectedIcon = Icons.AutoMirrored.Outlined.Assignment, 
+                            label = "Kehadiran", 
+                            index = 1
+                        ),
+                        NavbarItem(
+                            selectedIcon = Icons.Default.ChatBubble, 
+                            unselectedIcon = Icons.Outlined.ChatBubbleOutline, 
+                            label = "Pesan", 
+                            index = 2, 
+                            hasBadge = notificationUiState.unreadCount > 0
+                        ),
+                        NavbarItem(
+                            selectedIcon = Icons.Default.PointOfSale, 
+                            unselectedIcon = Icons.Outlined.PointOfSale, 
+                            label = "Kasir", 
+                            index = 3
+                        )
+                    ),
                     selectedIndex = uiState.selectedBottomNav,
-                    hasUnreadMessages = uiState.hasUnreadMessages,
                     onItemSelected = { index ->
                         viewModel.onBottomNavSelected(index)
-                        // Navigate based on selection
                         when (index) {
-                            0 -> { /* already on dashboard */ }
+                            0 -> { /* Beranda */ }
                             1 -> onNavigateTo("riwayat_kehadiran")
                             2 -> onNavigateTo("contact_list")
-                            3 -> onNavigateTo("divisi")
+                            3 -> onNavigateTo("kasir")
                         }
                     }
                 )
-            }
+            },
+            snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) }
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -170,13 +208,7 @@ fun DashboardScreen(
                 }
 
                 // ── Error Message (User-Friendly Notification) ──
-                if (uiState.errorMessage != null) {
-                    NotificationBannerStatic(
-                        message = uiState.errorMessage ?: "",
-                        mapFromServer = true,
-                        onDismiss = { viewModel.clearError() }
-                    )
-                }
+                // Moved to SnackbarHost
 
                 // ══════════════════════════════════════════════
                 // SECTION ATAS — Omset
@@ -218,14 +250,12 @@ fun DashboardScreen(
                     userRole = uiState.userRole,
                     items = listOf(
                         MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
-                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus),
-                        MenuItem("Jam Operasional", Icons.Default.AccessTime, OrangeManage, allowedRoles = listOf("Owner"))
+                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
                     ),
                     onItemClick = { label ->
                         when (label) {
                             "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
                             "Status Karyawan" -> onNavigateTo("status_karyawan")
-                            "Jam Operasional" -> onNavigateTo("jam_operasional")
                         }
                     }
                 )
@@ -637,66 +667,6 @@ private fun MenuCard(
     }
 }
 
-// ─── Bottom Navigation ──────────────────────────────────────
-
-@Composable
-private fun BottomNavigationBar(
-    selectedIndex: Int,
-    hasUnreadMessages: Boolean,
-    onItemSelected: (Int) -> Unit
-) {
-    NavigationBar(
-        containerColor = Surface,
-        tonalElevation = 8.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // Item definitions
-        val items = listOf(
-            Triple(Icons.Default.Home, "Beranda", 0),
-            Triple(Icons.AutoMirrored.Filled.Assignment, "Kehadiran", 1),
-            Triple(Icons.Default.ChatBubble, "Pesan", 2),
-            Triple(Icons.Default.Groups, "Divisi", 3)
-        )
-
-        items.forEach { (icon, label, index) ->
-            NavigationBarItem(
-                selected = selectedIndex == index,
-                onClick = { onItemSelected(index) },
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            if (index == 2 && hasUnreadMessages) {
-                                Badge(
-                                    containerColor = Primary,
-                                    modifier = Modifier.size(8.dp)
-                                )
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = label
-                        )
-                    }
-                },
-                label = {
-                    Text(
-                        text = label,
-                        fontSize = 11.sp
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Primary,
-                    selectedTextColor = Primary,
-                    unselectedIconColor = OnSurfaceVariant,
-                    unselectedTextColor = OnSurfaceVariant,
-                    indicatorColor = Primary.copy(alpha = 0.1f)
-                )
-            )
-        }
-    }
-}
-
 // ─── Drawer Content ─────────────────────────────────────────
 
 @Composable
@@ -782,11 +752,20 @@ private fun DrawerContent(
         )
 
         DrawerItem(
-            icon = Icons.Default.Schedule,
-            label = "Kalender",
+            icon = Icons.Default.AccessTime,
+            label = "Jam Operasional",
             onClick = {
                 onCloseDrawer()
-                onNavigateTo("kalender")
+                onNavigateTo("jam_operasional")
+            }
+        )
+
+        DrawerItem(
+            icon = Icons.Default.Groups,
+            label = "Divisi",
+            onClick = {
+                onCloseDrawer()
+                onNavigateTo("divisi")
             }
         )
 

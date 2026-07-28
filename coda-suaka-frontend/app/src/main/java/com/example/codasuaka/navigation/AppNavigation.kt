@@ -1,6 +1,11 @@
 package com.example.codasuaka.navigation
 
+<<<<<<< HEAD
 import androidx.activity.compose.BackHandler
+=======
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+>>>>>>> 5102bb9d7567199e04b14c0dda80ed50d665d211
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +52,8 @@ import com.example.codasuaka.ui.screen.penugasan.PenugasanScreen
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalScreen
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
+import com.example.codasuaka.ui.screen.kasir.KasirScreen
+import com.example.codasuaka.ui.screen.kasir.KasirViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -76,6 +83,7 @@ object Routes {
     const val POIN_KINERJA = "poin_kinerja"
     const val PENUGASAN = "penugasan"
     const val JAM_OPERASIONAL = "jam_operasional"
+    const val KASIR = "kasir"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -136,7 +144,19 @@ fun AppNavigation(navController: NavHostController) {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.AUTH
+        startDestination = Routes.AUTH,
+        enterTransition = {
+            slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn(animationSpec = tween(400))
+        },
+        exitTransition = {
+            slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(400)) + fadeOut(animationSpec = tween(400))
+        },
+        popEnterTransition = {
+            slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(400)) + fadeIn(animationSpec = tween(400))
+        },
+        popExitTransition = {
+            slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut(animationSpec = tween(400))
+        }
     ) {
         // ── Auth Check (gatekeeper) ──
         composable(Routes.AUTH) {
@@ -375,6 +395,15 @@ fun AppNavigation(navController: NavHostController) {
             JamOperasionalScreen(
                 onBack = { safePopBackStack() },
                 viewModel = jamOperasionalViewModel
+            )
+        }
+
+        // ── Kasir ──
+        composable(Routes.KASIR) {
+            val kasirViewModel: KasirViewModel = koinViewModel()
+            KasirScreen(
+                onBack = { safePopBackStack() },
+                viewModel = kasirViewModel
             )
         }
 

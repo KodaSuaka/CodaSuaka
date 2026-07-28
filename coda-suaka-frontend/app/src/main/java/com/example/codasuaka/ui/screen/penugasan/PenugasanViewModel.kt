@@ -10,6 +10,9 @@ import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.domain.repository.DivisiRepository
 import com.example.codasuaka.domain.repository.KaryawanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +29,8 @@ data class PenugasanUiState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val showCreateDialog: Boolean = false,
+    val isEditing: Boolean = false,
+    val editingId: Int? = null,
     // Permission
     val canManagePenugasan: Boolean = false,
     // Current user info
@@ -58,49 +63,49 @@ class PenugasanViewModel(
     val uiState: StateFlow<PenugasanUiState> = _uiState.asStateFlow()
 
     init {
-        loadUserRole()
         loadData()
-    }
-
-    private fun loadUserRole() {
-        viewModelScope.launch {
-            val role = tokenManager.getUserRole()
-            val canManage = role in listOf("Owner", "Manager")
-            try {
-                val userResponse = apiService.getUser()
-                if (userResponse.isSuccessful) {
-                    val userData = userResponse.body()?.data
-                    _uiState.update {
-                        it.copy(
-                            canManagePenugasan = canManage,
-                            currentUserId = userData?.id,
-                            currentKaryawanId = userData?.profilKaryawan?.id,
-                            userRole = role
-                        )
-                    }
-                    return@launch
-                }
-            } catch (_: Exception) {}
-            _uiState.update { it.copy(canManagePenugasan = canManage, userRole = role) }
-        }
     }
 
     fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val penugasans = penugasanRepository.getPenugasans(
-                    status = _uiState.value.filterStatus
-                ).getOrThrow()
-                val divisis = divisiRepository.getDivisis().getOrThrow()
-                val karyawans = karyawanRepository.getKaryawans().getOrThrow()
-                _uiState.update {
-                    it.copy(
-                        penugasans = penugasans,
-                        divisis = divisis,
-                        karyawans = karyawans,
-                        isLoading = false
-                    )
+                coroutineScope {
+                    // Fetch user info/role and data in parallel
+                    val userDeferred = async { apiService.getUser() }
+                    val penugasansDeferred = async { penugasanRepository.getPenugasans(status = _uiState.value.filterStatus) }
+                    val divisisDeferred = async { divisiRepository.getDivisis() }
+                    val karyawansDeferred = async { karyawanRepository.getKaryawans() }
+                    val roleDeferred = async { tokenManager.getUserRole() }
+
+                    val userResponse = userDeferred.await()
+                    val penugasans = penugasansDeferred.await().getOrThrow()
+                    val divisis = divisisDeferred.await().getOrThrow()
+                    val karyawans = karyawansDeferred.await().getOrThrow()
+                    val role = roleDeferred.await()
+
+                    val canManage = role in listOf("Owner", "Manager")
+                    var currentUserId: Int? = null
+                    var currentKaryawanId: String? = null
+
+                    if (userResponse.isSuccessful) {
+                        val userData = userResponse.body()?.data
+                        currentUserId = userData?.id
+                        currentKaryawanId = userData?.profilKaryawan?.id
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            penugasans = penugasans,
+                            divisis = divisis,
+                            karyawans = karyawans,
+                            isLoading = false,
+                            canManagePenugasan = canManage,
+                            userRole = role,
+                            currentUserId = currentUserId,
+                            currentKaryawanId = currentKaryawanId
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -128,6 +133,26 @@ class PenugasanViewModel(
                 formDivisiId = null,
                 formTenggat = "",
                 formUrgency = "sedang",
+                isEditing = false,
+                editingId = null,
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+    }
+
+    fun showEditDialog(penugasan: PenugasanDto) {
+        _uiState.update {
+            it.copy(
+                showCreateDialog = true,
+                isEditing = true,
+                editingId = penugasan.id,
+                formJudul = penugasan.judul,
+                formDeskripsi = penugasan.deskripsi ?: "",
+                formPenanggungJawabId = penugasan.penanggungJawabId ?: "",
+                formDivisiId = penugasan.divisiId,
+                formTenggat = penugasan.tenggat?.take(10) ?: "",
+                formUrgency = penugasan.urgency ?: "sedang",
                 errorMessage = null,
                 successMessage = null
             )
@@ -157,7 +182,7 @@ class PenugasanViewModel(
     }
 
     fun dismissCreateDialog() {
-        _uiState.update { it.copy(showCreateDialog = false) }
+        _uiState.update { it.copy(showCreateDialog = false, isEditing = false, editingId = null) }
     }
 
     fun updateFormJudul(value: String) {
@@ -184,7 +209,7 @@ class PenugasanViewModel(
         _uiState.update { it.copy(formUrgency = value) }
     }
 
-    fun createPenugasan() {
+    fun createOrUpdatePenugasan() {
         val state = _uiState.value
         if (state.formJudul.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Judul tugas harus diisi") }
@@ -198,8 +223,9 @@ class PenugasanViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isCreating = true, errorMessage = null) }
             try {
-                penugasanRepository.createPenugasan(
-                    CreatePenugasanRequest(
+                if (state.isEditing && state.editingId != null) {
+                    // Update
+                    val request = com.example.codasuaka.data.remote.dto.UpdatePenugasanRequest(
                         judul = state.formJudul,
                         deskripsi = state.formDeskripsi.ifBlank { null },
                         penanggungJawabId = state.formPenanggungJawabId,
@@ -207,20 +233,42 @@ class PenugasanViewModel(
                         tenggat = state.formTenggat.ifBlank { null },
                         status = null
                     )
-                ).getOrThrow()
-                _uiState.update {
-                    it.copy(
-                        isCreating = false,
-                        showCreateDialog = false,
-                        successMessage = "Tugas berhasil dibuat"
-                    )
+                    penugasanRepository.updatePenugasan(state.editingId, request).getOrThrow()
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            showCreateDialog = false,
+                            isEditing = false,
+                            editingId = null,
+                            successMessage = "Tugas berhasil diperbarui"
+                        )
+                    }
+                } else {
+                    // Create
+                    penugasanRepository.createPenugasan(
+                        CreatePenugasanRequest(
+                            judul = state.formJudul,
+                            deskripsi = state.formDeskripsi.ifBlank { null },
+                            penanggungJawabId = state.formPenanggungJawabId,
+                            divisiId = state.formDivisiId,
+                            tenggat = state.formTenggat.ifBlank { null },
+                            status = null
+                        )
+                    ).getOrThrow()
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            showCreateDialog = false,
+                            successMessage = "Tugas berhasil dibuat"
+                        )
+                    }
                 }
                 loadData()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isCreating = false,
-                        errorMessage = e.message ?: "Gagal membuat tugas"
+                        errorMessage = e.message ?: "Gagal memproses tugas"
                     )
                 }
             }

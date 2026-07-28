@@ -3,10 +3,10 @@ package com.example.codasuaka.ui.screen.penugasan
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,13 +16,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.util.DateTimeUtil
 
-// ─── Colors (sama dengan PenugasanScreen) ─────────────────
+// ─── Colors ───────────────────────────────────────────────
 private val UrgentColor = Color(0xFFEF4444)
 private val SedangColor = Color(0xFFF59E0B)
 private val RendahColor = Color(0xFF10B981)
@@ -30,7 +34,6 @@ private val StatusBelum = Color(0xFF6B7280)
 private val StatusProses = Color(0xFF3B82F6)
 private val StatusSelesai = Color(0xFF10B981)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PenugasanDetailScreen(
     penugasan: PenugasanDto,
@@ -69,274 +72,137 @@ fun PenugasanDetailScreen(
         else -> penugasan.urgency ?: "-"
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Detail Tugas") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+    Dialog(
+        onDismissRequest = onBack,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        MaterialTheme(
+            colorScheme = lightColorScheme(
+                surface = Color.White,
+                onSurface = OnSurface,
+                primary = Primary,
+                secondary = Secondary
             )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ── Header: Judul + Status Badge ──
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Judul
-                    Text(
-                        text = penugasan.judul,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Badges: Urgency + Status
+                    // ── Header ──
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
                     ) {
-                        // Urgency badge
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = urgencyColor.copy(alpha = 0.15f)
-                        ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = urgencyLabel,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                color = urgencyColor,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
+                                text = "Detail Tugas",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = penugasan.judul,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Secondary,
+                                lineHeight = 26.sp
                             )
                         }
-                        // Status badge
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = statusColor.copy(alpha = 0.15f)
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.size(32.dp).background(Neutral, CircleShape)
                         ) {
-                            Text(
-                                text = statusLabel,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                color = statusColor,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        // Poin badge
-                        if (penugasan.poin != null && penugasan.poin > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFF8B5CF6).copy(alpha = 0.15f)
-                            ) {
-                                Text(
-                                    text = "${penugasan.poin} Poin",
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                    color = Color(0xFF8B5CF6),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
+                            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Secondary, modifier = Modifier.size(18.dp))
                         }
                     }
-                }
-            }
 
-            // ── Deskripsi ──
-            if (!penugasan.deskripsi.isNullOrBlank()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
+                    HorizontalDivider(color = Neutral)
+
+                    // ── Content (Scrollable) ──
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = "Deskripsi",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = penugasan.deskripsi,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // ── Info Detail ──
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Informasi Tugas",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    // Penanggung Jawab
-                    DetailInfoRow(
-                        icon = Icons.Default.Person,
-                        label = "Penanggung Jawab",
-                        value = penugasan.penanggungJawab?.namaLengkap ?: "-"
-                    )
-
-                    // Divisi
-                    DetailInfoRow(
-                        icon = Icons.Default.Business,
-                        label = "Divisi",
-                        value = penugasan.divisi?.namaDivisi ?: "-"
-                    )
-
-                    // Tenggat
-                    DetailInfoRow(
-                        icon = Icons.Default.Event,
-                        label = "Tenggat",
-                        value = if (!penugasan.tenggat.isNullOrBlank()) {
-                            DateTimeUtil.formatDateDisplay(penugasan.tenggat)
-                        } else "-"
-                    )
-
-                    // Dibuat Oleh
-                    DetailInfoRow(
-                        icon = Icons.Default.Create,
-                        label = "Dibuat Oleh",
-                        value = penugasan.pembuat?.name ?: "-"
-                    )
-
-                    // Dibuat Pada
-                    DetailInfoRow(
-                        icon = Icons.Default.AccessTime,
-                        label = "Dibuat Pada",
-                        value = if (!penugasan.createdAt.isNullOrBlank()) {
-                            DateTimeUtil.formatDateTimeDisplay(penugasan.createdAt)
-                        } else "-"
-                    )
-
-                    // Waktu Dikerjakan
-                    if (!penugasan.acceptedAt.isNullOrBlank()) {
-                        DetailInfoRow(
-                            icon = Icons.Default.PlayArrow,
-                            label = "Mulai Dikerjakan",
-                            value = DateTimeUtil.formatDateTimeDisplay(penugasan.acceptedAt)
-                        )
-                    }
-
-                    // Waktu Selesai
-                    if (!penugasan.completedAt.isNullOrBlank()) {
-                        DetailInfoRow(
-                            icon = Icons.Default.CheckCircle,
-                            label = "Selesai Pada",
-                            value = DateTimeUtil.formatDateTimeDisplay(penugasan.completedAt)
-                        )
-                    }
-                }
-            }
-
-            // ── Action Buttons untuk Karyawan ──
-            // Template task: semua karyawan bisa accept (tanpa penugasan langsung)
-            // Tugas biasa: hanya karyawan yang ditugasi
-            if (!canManage && (isAssigned || penugasan.isTemplate == true)) {
-                when (penugasan.status) {
-                    "belum" -> {
-                        Button(
-                            onClick = onAccept,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isProcessing,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF3B82F6)
-                            )
-                        ) {
-                            if (isProcessing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                        // Badges Row
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BadgeItem(text = urgencyLabel, color = urgencyColor)
+                            BadgeItem(text = statusLabel, color = statusColor)
+                            if (penugasan.poin != null && penugasan.poin > 0) {
+                                BadgeItem(text = "${penugasan.poin} Poin", color = Color(0xFF8B5CF6))
                             }
-                            Icon(Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Terima & Mulai Kerjakan")
+                        }
+
+                        // Deskripsi
+                        if (!penugasan.deskripsi.isNullOrBlank()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Deskripsi", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Secondary)
+                                Surface(
+                                    color = Neutral.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = penugasan.deskripsi,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = OnSurface.copy(alpha = 0.8f),
+                                        modifier = Modifier.padding(14.dp),
+                                        lineHeight = 20.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        // Info Metadata
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            DetailItem(Icons.Default.Person, "PJ", penugasan.penanggungJawab?.namaLengkap ?: "-")
+                            DetailItem(Icons.Default.Groups, "Divisi", penugasan.divisi?.namaDivisi ?: "-")
+                            DetailItem(Icons.Default.Event, "Tenggat", DateTimeUtil.formatIsoToLocal(penugasan.tenggat))
+                            DetailItem(Icons.Default.Create, "Pembuat", penugasan.pembuat?.name ?: "-")
+                            DetailItem(Icons.Default.AccessTime, "Dibuat", DateTimeUtil.formatIsoToLocal(penugasan.createdAt))
                         }
                     }
-                    "proses" -> {
-                        Button(
-                            onClick = onComplete,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isProcessing,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF10B981)
-                            )
-                        ) {
-                            if (isProcessing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Tandai Selesai")
-                        }
-                    }
-                    "selesai" -> {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF10B981).copy(alpha = 0.1f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = Color(0xFF10B981)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "Tugas sudah selesai",
-                                    color = Color(0xFF10B981),
-                                    fontWeight = FontWeight.SemiBold
-                                )
+
+                    // ── Actions ──
+                    if (!canManage && (isAssigned || penugasan.isTemplate == true)) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        when (penugasan.status) {
+                            "belum" -> ActionButton("Terima & Mulai Kerja", Icons.Default.PlayArrow, Primary, onAccept, isProcessing)
+                            "proses" -> ActionButton("Selesaikan Tugas", Icons.Default.CheckCircle, Success, onComplete, isProcessing)
+                            "selesai" -> {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = Success.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Text(
+                                        "Tugas Selesai",
+                                        modifier = Modifier.padding(14.dp),
+                                        textAlign = TextAlign.Center,
+                                        color = Success,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+<<<<<<< HEAD
 
             // ── Validasi manual (Owner/Manager) untuk tugas menunggu_validasi ──
             if (canManage && penugasan.status == "menunggu_validasi") {
@@ -375,37 +241,59 @@ fun PenugasanDetailScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+=======
+>>>>>>> 5102bb9d7567199e04b14c0dda80ed50d665d211
         }
     }
 }
 
 @Composable
-private fun DetailInfoRow(
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+private fun BadgeItem(text: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = color
         )
+    }
+}
+
+@Composable
+private fun DetailItem(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(
+            modifier = Modifier.size(32.dp).clip(CircleShape).background(Neutral),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = Secondary.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+        }
         Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
+            Text(label, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Secondary)
+        }
+    }
+}
+
+@Composable
+private fun ActionButton(text: String, icon: ImageVector, color: Color, onClick: () -> Unit, isLoading: Boolean) {
+    Button(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = Modifier.fillMaxWidth().height(54.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = color)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
+        } else {
+            Icon(icon, null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(text, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
         }
     }
 }

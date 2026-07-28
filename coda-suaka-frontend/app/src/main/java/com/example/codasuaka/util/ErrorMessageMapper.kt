@@ -25,7 +25,7 @@ object ErrorMessageMapper {
 
     // ── Pola regex untuk mendeteksi HTTP status code ──────────
     private val httpCodePattern = Regex("""(?:Gagal[^:]*:\s*)?(\d{3})""")
-    private val exceptionPattern = Regex("""(?i)(java\.\w+[\.\w]*Exception|kotlin\.\w+[\.\w]*Exception)""")
+    private val exceptionPattern = Regex("""(?i)(java\.\w+[.\w]*Exception|kotlin\.\w+[.\w]*Exception)""")
     private val connectionPattern = Regex("""(?i)(timeout|connection|refused|unreachable|resolve|unknown host)""")
 
     /**
@@ -257,8 +257,6 @@ object ErrorMessageMapper {
      * "422: {\"message\":\"The selected kategori is invalid.\", ...}"
      */
     private fun extractValidationDetails(msg: String): String? {
-        val lower = msg.lowercase()
-
         // Deteksi pola validasi Laravel umum
         val patterns = listOf(
             Regex("""(?i)the\s+(\w[\w\s]*?)\s+field\s+(is\s+required|must|should)""", RegexOption.IGNORE_CASE),
@@ -285,45 +283,5 @@ object ErrorMessageMapper {
         return null
     }
 
-    // ── Convenience functions ──────────────────────────────────
-
-    /**
-     * Quick map untuk error tanpa context.
-     */
-    fun error(rawMessage: String?): MappedMessage = map(rawMessage, null)
-
-    /**
-     * Quick map untuk error dengan context.
-     */
-    fun error(rawMessage: String?, context: String): MappedMessage = map(rawMessage, context)
-
-    /**
-     * Success message.
-     */
-    fun success(message: String): MappedMessage {
-        return MappedMessage(
-            message = message,
-            type = NotificationType.SUCCESS
-        )
-    }
-
-    /**
-     * Warning message.
-     */
-    fun warning(message: String): MappedMessage {
-        return MappedMessage(
-            message = message,
-            type = NotificationType.WARNING
-        )
-    }
-
-    /**
-     * Info message.
-     */
-    fun info(message: String): MappedMessage {
-        return MappedMessage(
-            message = message,
-            type = NotificationType.INFO
-        )
-    }
 }
+
