@@ -7,10 +7,10 @@ import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.domain.repository.DashboardRepository
 import com.example.codasuaka.domain.repository.JadwalRepository
 import com.example.codasuaka.domain.repository.KaryawanRepository
-import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
 import com.example.codasuaka.domain.repository.PresensiRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -117,7 +117,6 @@ class DashboardKaryawanViewModel(
     private val presensiRepository: PresensiRepository,
     private val penugasanRepository: PenugasanRepository,
     private val karyawanRepository: KaryawanRepository,
-    private val pengajuanRepository: PengajuanRepository,
     private val dashboardRepository: DashboardRepository,
     private val jadwalRepository: JadwalRepository,
     private val chatRepository: com.example.codasuaka.domain.repository.ChatRepository
@@ -145,12 +144,23 @@ class DashboardKaryawanViewModel(
 
             try {
                 // Muat data dari berbagai endpoint secara paralel
-                val karyawanResult = karyawanRepository.getKaryawanMe()
-                val presensiResult = presensiRepository.getPresensiToday()
-                val tugasResult = penugasanRepository.getPenugasans(status = "belum,proses")
-                val pengajuanResult = pengajuanRepository.getPengajuans()
-                val dashboardResult = dashboardRepository.getKaryawanDashboard()
-                val poinResult = dashboardRepository.getPoinKinerja()
+                val karyawanDeferred = async { karyawanRepository.getKaryawanMe() }
+                val presensiDeferred = async { presensiRepository.getPresensiToday() }
+                val tugasDeferred = async { penugasanRepository.getPenugasans(status = null) }
+                val dashboardDeferred = async { dashboardRepository.getKaryawanDashboard() }
+                val poinDeferred = async { dashboardRepository.getPoinKinerja() }
+                val jadwalDeferred = async {
+                    jadwalRepository.getJadwals(bulan = java.time.LocalDate.now().monthValue, tahun = java.time.LocalDate.now().year)
+                }
+
+                val karyawanResult = karyawanDeferred.await()
+                val presensiResult = presensiDeferred.await()
+                val tugasResult = tugasDeferred.await()
+                val dashboardResult = dashboardDeferred.await()
+                val poinResult = poinDeferred.await()
+                val jadwalResult = jadwalDeferred.await()
+
+                var firstError: String? = null
 
                 karyawanResult.onSuccess { karyawan ->
                     _uiState.value = _uiState.value.copy(
@@ -163,7 +173,7 @@ class DashboardKaryawanViewModel(
                         ),
                         sisaCuti = karyawan.sisaCuti ?: 0
                     )
-                }
+                }.onFailure { firstError = firstError ?: it.message }
 
                 poinResult.onSuccess { poinData ->
                     _uiState.value = _uiState.value.copy(
@@ -172,7 +182,7 @@ class DashboardKaryawanViewModel(
                         ),
                         poinKinerja = poinData.totalPoin
                     )
-                }
+                }.onFailure { firstError = firstError ?: it.message }
 
                 presensiResult.onSuccess { today ->
                     val status = when {
@@ -194,7 +204,7 @@ class DashboardKaryawanViewModel(
                         absensiTime = time,
                         statusKeterangan = today.presensi?.statusKeterangan
                     )
-                }
+                }.onFailure { firstError = firstError ?: it.message }
 
                 tugasResult.onSuccess { tugasList ->
                     val tugasItems = tugasList.map { tugas ->
@@ -213,11 +223,7 @@ class DashboardKaryawanViewModel(
                         tugasSelesai = tugasList.count { it.status == "selesai" },
                         daftarTugas = tugasItems
                     )
-                }
-
-                pengajuanResult.onSuccess { pengajuanList ->
-                    val pendingCount = pengajuanList.count { it.status == "pending" }
-                }
+                }.onFailure { firstError = firstError ?: it.message }
 
                 dashboardResult.onSuccess { dashboardData ->
                     val roleMenus = dashboardData.roleMenuItems?.map {
@@ -232,15 +238,13 @@ class DashboardKaryawanViewModel(
                         roleMenuItems = roleMenus,
                         additionalContent = additionalItems
                     )
-                }
+                }.onFailure { firstError = firstError ?: it.message }
 
-                // ── Load Jadwal/Event ──
-                jadwalRepository.getJadwals(bulan = java.time.LocalDate.now().monthValue, tahun = java.time.LocalDate.now().year)
-                    .onSuccess { jadwals ->
-                        _uiState.update { it.copy(jadwalList = jadwals) }
-                    }
+                jadwalResult.onSuccess { jadwals ->
+                    _uiState.update { it.copy(jadwalList = jadwals) }
+                }.onFailure { firstError = firstError ?: it.message }
 
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = firstError)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

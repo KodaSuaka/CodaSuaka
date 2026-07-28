@@ -21,6 +21,7 @@ import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -45,7 +46,6 @@ val viewModelModule = module {
         presensiRepository = get(),
         penugasanRepository = get(),
         karyawanRepository = get(),
-        pengajuanRepository = get(),
         dashboardRepository = get(),
         jadwalRepository = get(),
         chatRepository = get()
@@ -92,7 +92,7 @@ val viewModelModule = module {
     }
 
     // Keuangan
-    viewModel { LaporanKeuanganViewModel(keuanganRepository = get()) }
+    viewModel { LaporanKeuanganViewModel(keuanganRepository = get(), context = androidContext()) }
 
     // Approval Keuangan
     viewModel { ApprovalKeuanganViewModel(keuanganRepository = get()) }

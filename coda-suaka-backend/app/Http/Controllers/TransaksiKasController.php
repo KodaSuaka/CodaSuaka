@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTransaksiKasRequest;
 use App\Http\Requests\UpdateTransaksiKasRequest;
 use App\Models\TransaksiKas;
+use App\Models\User;
 use App\Services\ApprovalService;
 use App\Services\AuditService;
+use App\Services\NotificationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -18,10 +20,13 @@ class TransaksiKasController extends Controller
 
     protected AuditService $auditService;
 
-    public function __construct(ApprovalService $approvalService, AuditService $auditService)
+    protected NotificationService $notificationService;
+
+    public function __construct(ApprovalService $approvalService, AuditService $auditService, NotificationService $notificationService)
     {
         $this->approvalService = $approvalService;
         $this->auditService = $auditService;
+        $this->notificationService = $notificationService;
         $this->authorizeResource(TransaksiKas::class, 'transaksi_kas');
     }
 
@@ -126,6 +131,18 @@ class TransaksiKasController extends Controller
         // Auto-submit approval jika perlu
         if ($this->approvalService->perluApproval($transaksi)) {
             $this->approvalService->ajukanApproval($transaksi, $user);
+
+            $pemeriksaIds = User::where('instansi_id', $user->instansi_id)
+                ->whereHas('role.permissions', fn ($q) => $q->where('permission', 'approve:keuangan'))
+                ->pluck('id');
+
+            foreach ($pemeriksaIds as $pemeriksaId) {
+                $this->notificationService->onTransaksiPendingApproval(
+                    $transaksi->id,
+                    $pemeriksaId,
+                    $transaksi->keterangan
+                );
+            }
         }
 
         $transaksi->load(['kategoriTransaksi', 'outlet', 'createdByUser']);

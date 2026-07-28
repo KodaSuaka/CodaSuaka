@@ -1,12 +1,18 @@
 package com.example.codasuaka.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.koin.androidx.compose.get
 import org.koin.androidx.compose.koinViewModel
+import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.util.ClickHelper
 import com.example.codasuaka.ui.screen.auth.AuthScreen
 import com.example.codasuaka.ui.screen.auth.AuthViewModel
@@ -75,6 +81,16 @@ object Routes {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
         return "chat_detail/$userId/$encodedName"
     }
+
+    /**
+     * Dashboard tujuan berdasarkan role — dipakai baik oleh alur login baru
+     * maupun gatekeeper AUTH (resume tanpa logout), supaya keduanya konsisten
+     * dan Karyawan tidak pernah diarahkan ke Dashboard Owner.
+     */
+    private val FUNCTIONAL_ROLES = listOf("Keuangan", "Manager", "Staff", "Karyawan")
+
+    fun dashboardForRole(role: String): String =
+        if (role in FUNCTIONAL_ROLES) DASHBOARD_KARYAWAN else DASHBOARD
 }
 
 @Composable
@@ -97,6 +113,27 @@ fun AppNavigation(navController: NavHostController) {
         }
     }
 
+    // Tombol back fisik/gestur tidak melewati safePopBackStack secara default,
+    // jadi spam-tap bisa memicu banyak pop berturut-turut lebih cepat dari
+    // recomposition/ViewModel state sempat settle. Rutekan lewat debounce yang
+    // sama dengan tombol back di layar. `enabled` mengikuti apakah masih ada
+    // entry sebelumnya, supaya di layar akar back tetap keluar app seperti biasa.
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val canPopBack = navController.previousBackStackEntry != null
+    BackHandler(enabled = canPopBack) {
+        safePopBackStack()
+    }
+
+    // Sesi habis (401) di mana pun → kembali ke Login, bersihkan seluruh back stack.
+    val tokenManager: TokenManager = get()
+    LaunchedEffect(Unit) {
+        tokenManager.sessionExpired.collect {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Routes.AUTH
@@ -106,10 +143,11 @@ fun AppNavigation(navController: NavHostController) {
             val authViewModel: AuthViewModel = koinViewModel()
             AuthScreen(
                 viewModel = authViewModel,
-                onAuthenticated = {
-                    // Navigasi berdasarkan role akan ditentukan oleh AuthScreen
-                    // Default ke DASHBOARD (Owner), jika Karyawan akan pakai DASHBOARD_KARYAWAN
-                    navController.navigate(Routes.DASHBOARD) {
+                onAuthenticated = { role ->
+                    // Route berdasarkan role saat ini — sebelumnya selalu ke
+                    // DASHBOARD (Owner) tanpa cek role, jadi Karyawan yang
+                    // resume tanpa logout ikut mendapat akses Dashboard Owner.
+                    navController.navigate(Routes.dashboardForRole(role)) {
                         popUpTo(Routes.AUTH) { inclusive = true }
                     }
                 },
@@ -126,16 +164,7 @@ fun AppNavigation(navController: NavHostController) {
             val loginViewModel: LoginViewModel = koinViewModel()
             LoginScreen(
                 onLoginSuccess = { role, permissions ->
-                    // Functional roles (Keuangan, Manager, Staff) dan Karyawan
-                    // semua masuk ke DASHBOARD_KARYAWAN
-                    // Owner masuk ke DASHBOARD
-                    val functionalRoles = listOf("Keuangan", "Manager", "Staff", "Karyawan")
-                    val destination = if (role in functionalRoles) {
-                        Routes.DASHBOARD_KARYAWAN
-                    } else {
-                        Routes.DASHBOARD // Owner (dan role lain yang tidak dikenal)
-                    }
-                    navController.navigate(destination) {
+                    navController.navigate(Routes.dashboardForRole(role)) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 },

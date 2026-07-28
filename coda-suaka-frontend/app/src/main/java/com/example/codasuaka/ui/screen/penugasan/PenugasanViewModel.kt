@@ -134,6 +134,28 @@ class PenugasanViewModel(
         }
     }
 
+    /**
+     * Daftar template yang bisa dipakai sebagai titik awal saat pemilik
+     * membuat tugas khusus (sudah termuat dari [loadData], tanpa panggilan API baru).
+     */
+    val templates: List<PenugasanDto>
+        get() = _uiState.value.penugasans.filter { it.isTemplate == true }
+
+    /**
+     * Isi form tugas dari sebuah template — pemilik masih bisa mengubah
+     * semua field (termasuk judul/deskripsi) sebelum menyimpan sebagai
+     * tugas khusus, jadi template hanya jadi titik awal, bukan nilai tetap.
+     */
+    fun applyTemplate(template: PenugasanDto) {
+        _uiState.update {
+            it.copy(
+                formJudul = template.judul,
+                formDeskripsi = template.deskripsi ?: "",
+                formUrgency = template.urgency ?: "sedang"
+            )
+        }
+    }
+
     fun dismissCreateDialog() {
         _uiState.update { it.copy(showCreateDialog = false) }
     }
@@ -287,6 +309,33 @@ class PenugasanViewModel(
                     it.copy(
                         isProcessing = false,
                         errorMessage = e.message ?: "Gagal menyelesaikan tugas"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Pemilik/manager memvalidasi tugas yang menunggu_validasi.
+     */
+    fun validasiPenugasan(id: Int, disetujui: Boolean) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessing = true, errorMessage = null) }
+            try {
+                penugasanRepository.validasiPenugasan(id, disetujui).getOrThrow()
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        successMessage = if (disetujui) "Tugas disetujui & selesai" else "Tugas dikembalikan ke karyawan"
+                    )
+                }
+                loadData()
+                refreshSelectedPenugasan(id)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isProcessing = false,
+                        errorMessage = e.message ?: "Gagal memvalidasi tugas"
                     )
                 }
             }

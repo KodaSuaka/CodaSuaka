@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
@@ -11,13 +12,22 @@ class LaporanExportService
     /**
      * Generate PDF Buku Kas.
      */
-    public function generateBukuKasPdf(array $transaksis, string $startDate, string $endDate, string $instansiNama = '')
-    {
+    public function generateBukuKasPdf(
+        array $transaksis,
+        string $startDate,
+        string $endDate,
+        string $instansiNama = '',
+        float $totalMasuk = 0,
+        float $totalKeluar = 0
+    ) {
         $data = [
             'judul' => 'Laporan Buku Kas',
             'periode' => "$startDate s/d $endDate",
             'instansi' => $instansiNama,
             'transaksis' => $transaksis,
+            'total_masuk' => $totalMasuk,
+            'total_keluar' => $totalKeluar,
+            'saldo_bersih' => $totalMasuk - $totalKeluar,
             'tanggal_cetak' => now()->isoFormat('DD MMMM YYYY'),
         ];
 
@@ -32,7 +42,7 @@ class LaporanExportService
     public function generateBukuKasExcel(array $transaksis, array $grouped, string $startDate, string $endDate)
     {
         $writer = new Writer;
-        $filename = storage_path("app/public/buku_kas_$startDate.xlsx");
+        $filename = storage_path('app/public/buku_kas_'.$startDate.'_'.Str::random(8).'.xlsx');
 
         $writer->openToFile($filename);
 
@@ -148,7 +158,7 @@ class LaporanExportService
     public function generateArusKasExcel(array $data, string $startDate, string $endDate)
     {
         $writer = new Writer;
-        $filename = storage_path("app/public/arus_kas_$startDate.xlsx");
+        $filename = storage_path('app/public/arus_kas_'.$startDate.'_'.Str::random(8).'.xlsx');
 
         $writer->openToFile($filename);
         $writer->addRow(Row::fromValues(['Aktivitas', 'Kategori', 'Masuk', 'Keluar', 'Bersih']));

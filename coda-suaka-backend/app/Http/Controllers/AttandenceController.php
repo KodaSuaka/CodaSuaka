@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreattandenceRequest;
 use App\Models\attandence;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\PermissionService;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
@@ -17,8 +18,9 @@ class AttandenceController extends Controller
 {
     use ApiResponse;
 
-    public function __construct()
-    {
+    public function __construct(
+        private NotificationService $notificationService,
+    ) {
         $this->authorizeResource(attandence::class, 'attandence');
     }
 
@@ -32,7 +34,7 @@ class AttandenceController extends Controller
 
         // Select kolom yang dibutuhkan + eager loading relasi
         $query = attandence::with([
-            'user' => fn ($q) => $q->select(['id', 'name', 'instansi_id']),
+            'user' => fn ($q) => $q->select(['id', 'name', 'instansi_id', 'outlet_id']),
         ])->select([
             'id', 'user_id', 'tanggal', 'jam_checkin', 'jam_checkout',
             'status', 'keterangan', 'lokasi_checkin',
@@ -109,6 +111,8 @@ class AttandenceController extends Controller
                     ]);
                 }
 
+                $this->notificationService->onPresensi($user->id, 'masuk');
+
                 return $this->success($existing, 'Checkin berhasil — '.$this->labelStatusKeterangan($statusKeterangan));
             });
         } catch (QueryException $e) {
@@ -158,6 +162,8 @@ class AttandenceController extends Controller
                     'jam_checkout' => $jamSekarang->toTimeString(),
                     'status_keterangan' => $statusKeterangan,
                 ]);
+
+                $this->notificationService->onPresensi($user->id, 'pulang');
 
                 return $this->success($presensi, 'Checkout berhasil — '.$this->labelStatusKeterangan($statusKeterangan));
             });
@@ -318,6 +324,7 @@ class AttandenceController extends Controller
                 return [
                     'user_id' => $userId,
                     'nama_lengkap' => $user?->profilKaryawan?->nama_lengkap ?? $user?->name,
+                    'outlet_id' => $user?->outlet_id,
                     'total_hadir' => $hadirCount,
                     'total_izin' => $izinCount,
                     'total_sakit' => $sakitCount,

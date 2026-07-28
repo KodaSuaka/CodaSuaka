@@ -18,8 +18,13 @@ import java.util.concurrent.TimeUnit
  * Gson adapter untuk Int? yang toleran terhadap object JSON.
  * Jika value JSON bukan number (misal object User dari relasi Laravel),
  * return null alih-alih crash dengan "Expected an int but got BEGIN_OBJECT".
+ *
+ * Diterapkan lewat @JsonAdapter hanya pada field `created_by` yang bermasalah
+ * (bukan didaftarkan global untuk semua Int), agar field Int non-null lain
+ * tidak diam-diam menjadi null saat parsing gagal — itu hanya memindahkan
+ * error ke NPE yang lebih jauh dari sumbernya.
  */
-private class NullableIntAdapter : JsonDeserializer<Int?>, JsonSerializer<Int?> {
+internal class NullableIntAdapter : JsonDeserializer<Int?>, JsonSerializer<Int?> {
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Int? {
         return try {
             if (json.isJsonPrimitive && json.asJsonPrimitive.isNumber) json.asInt else null
@@ -53,15 +58,11 @@ val dataModule = module {
             .build()
     }
 
-    // Gson instance dengan adapter toleran untuk Int?
-    // NullableIntAdapter mencegah crash "Expected an int but got BEGIN_OBJECT"
-    // saat field `created_by` dari Laravel masih terlanjur berupa object User.
+    // Gson instance — NullableIntAdapter diterapkan per-field via @JsonAdapter
+    // pada DTO yang membutuhkannya (lihat GenericResponses.kt), bukan di sini,
+    // supaya tidak mempengaruhi semua field Int di seluruh aplikasi.
     single {
-        GsonBuilder()
-            .registerTypeAdapter(Int::class.java, NullableIntAdapter())
-            .registerTypeAdapter(Int::class.javaPrimitiveType, NullableIntAdapter())
-            .registerTypeAdapter(Integer::class.java, NullableIntAdapter())
-            .create()
+        GsonBuilder().create()
     }
 
     // Retrofit instance — menggunakan BASE_URL dari BuildConfig

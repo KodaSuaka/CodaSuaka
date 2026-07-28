@@ -20,7 +20,9 @@ class AttandencePolicy
 
     public function create(User $user): bool
     {
-        return true; // Any authenticated user can check in
+        // Attendance is tenant-scoped; a user with no instansi_id would
+        // create a record permanently invisible to any tenant-scoped listing.
+        return $user->instansi_id !== null;
     }
 
     public function update(User $user, attandence $attandence): bool

@@ -1,5 +1,7 @@
 package com.example.codasuaka.data.remote.dto
 
+import com.example.codasuaka.di.NullableIntAdapter
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
 // ─── Generic Wrapper ───────────────────────────────────────────
@@ -94,6 +96,7 @@ data class OutletDto(
     @SerializedName("alamat_outlet") val alamatOutlet: String?,
     @SerializedName("instansi_id") val instansiId: String?,
     @SerializedName("is_active") val isActive: Boolean?,
+    @SerializedName("karyawans_count") val karyawansCount: Int? = null,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
 )
@@ -137,6 +140,7 @@ data class KaryawanDto(
     @SerializedName("foto_profil") val fotoProfil: String?,
     @SerializedName("outlet_id") val outletId: Int?,
     @SerializedName("sisa_cuti") val sisaCuti: Int?,
+    @SerializedName("tanggal_mulai_kerja") val tanggalMulaiKerja: String?,
     @SerializedName("user") val user: KaryawanUserDto?,
     @SerializedName("outlet") val outlet: OutletDto?
 )
@@ -146,7 +150,8 @@ data class KaryawanUserDto(
     @SerializedName("email") val email: String?,
     @SerializedName("role") val role: RoleDto?,
     @SerializedName("role_id") val roleId: Int?,
-    @SerializedName("name") val name: String?
+    @SerializedName("name") val name: String?,
+    @SerializedName("outlet_id") val outletId: Int? = null
 )
 
 data class CreateKaryawanRequest(
@@ -156,7 +161,8 @@ data class CreateKaryawanRequest(
     @SerializedName("kontak") val kontak: String? = null,
     @SerializedName("alamat") val alamat: String? = null,
     @SerializedName("role_id") val roleId: Int,
-    @SerializedName("outlet_id") val outletId: Int? = null
+    @SerializedName("outlet_id") val outletId: Int? = null,
+    @SerializedName("tanggal_mulai_kerja") val tanggalMulaiKerja: String? = null
 )
 
 data class UpdateKaryawanRequest(
@@ -164,7 +170,8 @@ data class UpdateKaryawanRequest(
     @SerializedName("kontak") val kontak: String? = null,
     @SerializedName("alamat") val alamat: String? = null,
     @SerializedName("outlet_id") val outletId: Int? = null,
-    @SerializedName("sisa_cuti") val sisaCuti: Int? = null
+    @SerializedName("sisa_cuti") val sisaCuti: Int? = null,
+    @SerializedName("tanggal_mulai_kerja") val tanggalMulaiKerja: String? = null
 )
 
 // ─── Divisi DTOs ───────────────────────────────────────────────
@@ -275,6 +282,7 @@ data class RekapKehadiranResponse(
 data class RekapKehadiranDto(
     @SerializedName("user_id") val userId: Int,
     @SerializedName("nama_lengkap") val namaLengkap: String?,
+    @SerializedName("outlet_id") val outletId: Int? = null,
     @SerializedName("total_hadir") val totalHadir: Int,
     @SerializedName("total_izin") val totalIzin: Int,
     @SerializedName("total_sakit") val totalSakit: Int,
@@ -341,6 +349,7 @@ data class JadwalDto(
     @SerializedName("tanggal") val tanggal: String?,
     @SerializedName("kategori") val kategori: String,
     @SerializedName("outlet_id") val outletId: Int?,
+    @JsonAdapter(NullableIntAdapter::class)
     @SerializedName("created_by") val createdBy: Int?,
     @SerializedName("outlet") val outlet: OutletDto?,
     @SerializedName("created_at") val createdAt: String?,
@@ -388,6 +397,7 @@ data class PenugasanDto(
     @SerializedName("poin") val poin: Int?,
     @SerializedName("is_template") val isTemplate: Boolean?,
     @SerializedName("instansi_id") val instansiId: String?,
+    @JsonAdapter(NullableIntAdapter::class)
     @SerializedName("created_by") val createdBy: Int?,
     @SerializedName("accepted_at") val acceptedAt: String?,
     @SerializedName("completed_at") val completedAt: String?,
@@ -522,6 +532,7 @@ data class TransaksiKasDto(
     @SerializedName("keterangan") val keterangan: String?,
     @SerializedName("lampiran_url") val lampiranUrl: String?,
     @SerializedName("dokumen_transaksi_id") val dokumenTransaksiId: Int?,
+    @JsonAdapter(NullableIntAdapter::class)
     @SerializedName("created_by") val createdBy: Int?,
     @SerializedName("created_by_user") val createdByUser: UserData?,
     @SerializedName("kategori_transaksi") val kategoriTransaksi: KategoriTransaksiDto?,
@@ -725,6 +736,7 @@ data class TemplatePenugasanDto(
     @SerializedName("poin") val poin: Int?,
     @SerializedName("is_template") val isTemplate: Boolean?,
     @SerializedName("instansi_id") val instansiId: String?,
+    @JsonAdapter(NullableIntAdapter::class)
     @SerializedName("created_by") val createdBy: Int?,
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?

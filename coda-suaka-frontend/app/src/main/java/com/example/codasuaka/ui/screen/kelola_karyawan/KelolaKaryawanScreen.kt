@@ -217,6 +217,7 @@ fun KelolaKaryawanScreen(
                 password = uiState.formPassword,
                 selectedRoleId = uiState.formRoleId,
                 selectedOutletId = uiState.formOutletId,
+                tanggalMulaiKerja = uiState.formTanggalMulaiKerja,
                 roles = uiState.roles,
                 outlets = uiState.outlets,
                 isSaving = uiState.isSaving,
@@ -227,6 +228,7 @@ fun KelolaKaryawanScreen(
                 onPasswordChange = viewModel::onFormPasswordChange,
                 onRoleChange = viewModel::onFormRoleChange,
                 onOutletChange = viewModel::onFormOutletChange,
+                onTanggalMulaiKerjaChange = viewModel::onFormTanggalMulaiKerjaChange,
                 onSimpan = viewModel::simpanKaryawan,
                 onDismiss = viewModel::closeDialog
             )
@@ -237,6 +239,7 @@ fun KelolaKaryawanScreen(
                 alamat = uiState.formAlamat,
                 selectedOutletId = uiState.formOutletId,
                 sisaCuti = uiState.formSisaCuti,
+                tanggalMulaiKerja = uiState.formTanggalMulaiKerja,
                 outlets = uiState.outlets,
                 roleName = dialog.karyawan.role?.namaRole ?: "-",
                 isSaving = uiState.isSaving,
@@ -245,6 +248,7 @@ fun KelolaKaryawanScreen(
                 onAlamatChange = viewModel::onFormAlamatChange,
                 onOutletChange = viewModel::onFormOutletChange,
                 onSisaCutiChange = viewModel::onFormSisaCutiChange,
+                onTanggalMulaiKerjaChange = viewModel::onFormTanggalMulaiKerjaChange,
                 onSimpan = viewModel::updateKaryawan,
                 onHapus = { viewModel.hapusKaryawan(dialog.karyawan.id) },
                 onDismiss = viewModel::closeDialog
@@ -396,6 +400,14 @@ private fun KaryawanListItem(
                         }
                     }
                 }
+                if (karyawan.masaKerja != null) {
+                    Text(
+                        "Masa kerja: ${karyawan.masaKerja}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
             }
 
             Icon(
@@ -412,6 +424,70 @@ private fun KaryawanListItem(
 // DIALOG — Tambah Karyawan
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * Field tanggal sederhana — tap untuk buka DatePicker Material3 bawaan,
+ * value/onValueChange dalam format yyyy-MM-dd.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SimpleDatePickerField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        singleLine = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showPicker = true },
+        trailingIcon = {
+            Icon(Icons.Default.CalendarMonth, contentDescription = null)
+        },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Primary,
+            unfocusedBorderColor = Neutral,
+            focusedContainerColor = Surface,
+            unfocusedContainerColor = Surface,
+            focusedLabelColor = Primary,
+            unfocusedLabelColor = OnSurfaceVariant,
+            disabledBorderColor = Neutral,
+            disabledLabelColor = OnSurfaceVariant,
+            disabledTextColor = OnSurface
+        ),
+        enabled = false
+    )
+
+    if (showPicker) {
+        val pickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { millis ->
+                        val date = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneOffset.UTC)
+                            .toLocalDate()
+                        onValueChange(date.toString())
+                    }
+                    showPicker = false
+                }) { Text("Pilih") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) { Text("Batal") }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DialogTambahKaryawan(
@@ -421,6 +497,7 @@ private fun DialogTambahKaryawan(
     password: String,
     selectedRoleId: Int,
     selectedOutletId: Int,
+    tanggalMulaiKerja: String,
     roles: List<Role>,
     outlets: List<Outlet>,
     isSaving: Boolean,
@@ -431,6 +508,7 @@ private fun DialogTambahKaryawan(
     onPasswordChange: (String) -> Unit,
     onRoleChange: (Int) -> Unit,
     onOutletChange: (Int) -> Unit,
+    onTanggalMulaiKerjaChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -524,6 +602,13 @@ private fun DialogTambahKaryawan(
                         focusedLabelColor = Primary,
                         unfocusedLabelColor = OnSurfaceVariant
                     )
+                )
+
+                // Tanggal Mulai Kerja
+                SimpleDatePickerField(
+                    label = "Tanggal Mulai Kerja",
+                    value = tanggalMulaiKerja,
+                    onValueChange = onTanggalMulaiKerjaChange
                 )
 
                 // Email (untuk login)
@@ -622,6 +707,7 @@ private fun DialogEditKaryawan(
     alamat: String,
     selectedOutletId: Int,
     sisaCuti: String,
+    tanggalMulaiKerja: String,
     outlets: List<Outlet>,
     roleName: String,
     isSaving: Boolean,
@@ -630,6 +716,7 @@ private fun DialogEditKaryawan(
     onAlamatChange: (String) -> Unit,
     onOutletChange: (Int) -> Unit,
     onSisaCutiChange: (String) -> Unit,
+    onTanggalMulaiKerjaChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onHapus: () -> Unit,
     onDismiss: () -> Unit
@@ -724,6 +811,13 @@ private fun DialogEditKaryawan(
                         focusedLabelColor = Primary,
                         unfocusedLabelColor = OnSurfaceVariant
                     )
+                )
+
+                // Tanggal Mulai Kerja
+                SimpleDatePickerField(
+                    label = "Tanggal Mulai Kerja",
+                    value = tanggalMulaiKerja,
+                    onValueChange = onTanggalMulaiKerjaChange
                 )
 
                 // Role (read-only)

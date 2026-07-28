@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Manajer penyimpanan token dan data pengguna terenkripsi.
@@ -50,6 +53,23 @@ class TokenManager(private val context: Context) {
 
     /** Mengembalikan token dari cache — cocok untuk OkHttp Interceptor. */
     fun getCachedToken(): String? = cachedToken
+
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Emit saat server membalas 401, agar UI bisa kembali ke Login. */
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
+
+    /**
+     * Menghapus token & memberi sinyal session expired.
+     * Dipanggil dari [com.example.codasuaka.data.remote.interceptor.AuthInterceptor]
+     * yang berjalan di thread OkHttp (bukan coroutine), sehingga method ini
+     * sengaja dibuat non-suspend.
+     */
+    fun clearTokenAndNotifyExpired() {
+        prefs.edit().clear().commit()
+        cachedToken = null
+        _sessionExpired.tryEmit(Unit)
+    }
 
     /**
      * Memuat token dari penyimpanan terenkripsi ke cache in-memory.

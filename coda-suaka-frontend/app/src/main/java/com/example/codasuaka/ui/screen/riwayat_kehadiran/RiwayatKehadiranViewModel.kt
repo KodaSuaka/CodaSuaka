@@ -391,7 +391,7 @@ class RiwayatKehadiranViewModel(
                 karyawanId = this.userId ?: 0,
                 namaKaryawan = this.user?.name ?: "",
                 outlet = "",
-                outletId = 0,
+                outletId = this.user?.outletId ?: 0,
                 role = this.user?.role?.namaRole ?: "",
                 jamKehadiran = DateTimeUtil.formatIsoToTime(this.jamCheckin),
                 status = status
@@ -409,7 +409,7 @@ class RiwayatKehadiranViewModel(
                 karyawanId = this.userId,
                 namaKaryawan = this.user?.name ?: "",
                 outlet = "",
-                outletId = 0,
+                outletId = this.user?.outletId ?: 0,
                 alasanIzin = this.keterangan ?: "",
                 tanggal = this.tanggalMulai ?: this.createdAt ?: "",
                 statusPersetujuan = status
@@ -420,6 +420,7 @@ class RiwayatKehadiranViewModel(
             return RekapKaryawan(
                 karyawanId = this.userId,
                 namaKaryawan = this.namaLengkap ?: "",
+                outletId = this.outletId ?: 0,
                 totalHadir = this.totalHadir,
                 totalTerlambat = 0, // tidak tersedia dari API rekap
                 totalIzin = this.totalIzin,

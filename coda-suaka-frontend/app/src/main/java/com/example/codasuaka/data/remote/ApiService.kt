@@ -233,6 +233,12 @@ interface ApiService {
     @PUT("api/penugasans/{id}/complete")
     suspend fun completePenugasan(@Path("id") id: Int): Response<PenugasanSingleResponse>
 
+    @PUT("api/penugasans/{id}/validasi")
+    suspend fun validasiPenugasan(
+        @Path("id") id: Int,
+        @Body body: Map<String, Boolean>
+    ): Response<PenugasanSingleResponse>
+
     // ─── Template Penugasan (maks 10 per instansi) ─────────────
 
     @GET("api/template-penugasans")

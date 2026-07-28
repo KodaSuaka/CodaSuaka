@@ -13,6 +13,7 @@ class ApprovalLog extends Model
 
     protected $fillable = [
         'transaksi_kas_id',
+        'instansi_id',
         'diajukan_oleh',
         'disetujui_oleh',
         'status',

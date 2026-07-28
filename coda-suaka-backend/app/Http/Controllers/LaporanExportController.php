@@ -37,7 +37,28 @@ class LaporanExportController extends Controller
 
         $instansiNama = $user->instansi->nama_instansi ?? '';
 
-        return $this->exportService->generateBukuKasPdf($transaksis, $startDate, $endDate, $instansiNama);
+        // SUG-5: ringkasan total masuk/keluar/saldo supaya laporan lebih jelas
+        $totalMasuk = collect($transaksis)->where('tipe', 'masuk')->sum('nominal');
+        $totalKeluar = collect($transaksis)->where('tipe', 'keluar')->sum('nominal');
+
+        // SUG-7: pisahkan kolom masuk/keluar + saldo berjalan per baris,
+        // supaya arah transaksi jelas tanpa harus baca kolom "Tipe" terpisah.
+        $saldoBerjalan = 0.0;
+        foreach ($transaksis as &$t) {
+            $nominal = (float) ($t['nominal'] ?? 0);
+            $saldoBerjalan += $t['tipe'] === 'masuk' ? $nominal : -$nominal;
+            $t['saldo_berjalan'] = $saldoBerjalan;
+        }
+        unset($t);
+
+        return $this->exportService->generateBukuKasPdf(
+            $transaksis,
+            $startDate,
+            $endDate,
+            $instansiNama,
+            (float) $totalMasuk,
+            (float) $totalKeluar
+        );
     }
 
     /**

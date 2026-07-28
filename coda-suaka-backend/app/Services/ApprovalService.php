@@ -30,6 +30,7 @@ class ApprovalService
         // Buat log approval
         $log = ApprovalLog::create([
             'transaksi_kas_id' => $transaksi->id,
+            'instansi_id' => $transaksi->instansi_id,
             'diajukan_oleh' => $pengaju->id,
             'status' => 'pending',
             'tanggal_diajukan' => Carbon::now(),

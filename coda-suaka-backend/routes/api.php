@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/penugasans', PenugasanController::class);
     Route::put('/penugasans/{penugasan}/accept', [PenugasanController::class, 'accept']);
     Route::put('/penugasans/{penugasan}/complete', [PenugasanController::class, 'complete']);
+    Route::put('/penugasans/{penugasan}/validasi', [PenugasanController::class, 'validasi']);
 
     // ─── Template Penugasan (maks 10 per instansi) ────────────
     Route::apiResource('/template-penugasans', TemplatePenugasanController::class);

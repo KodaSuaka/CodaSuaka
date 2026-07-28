@@ -35,6 +35,7 @@ class UpdatekaryawanRequest extends FormRequest
             ],
             'sisa_cuti' => 'nullable|integer|min:0',
             'foto_profil' => 'nullable|string',
+            'tanggal_mulai_kerja' => 'nullable|date',
         ];
     }
 

@@ -40,7 +40,7 @@ class SendPendingApprovalReminder extends Command
             // yang bisa melakukan approval
             $approvers = User::where('instansi_id', $transaksi->instansi_id)
                 ->whereHas('role.permissions', function ($query) {
-                    $query->where('permission', 'manage:keuangan');
+                    $query->where('permission', 'approve:keuangan');
                 })
                 ->pluck('id')
                 ->toArray();

@@ -13,7 +13,7 @@ class RegisterSuperAdminRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $secret = config('auth.super_admin_secret', env('SUPER_ADMIN_SECRET'));
+        $secret = config('auth.super_admin_secret');
 
         return $secret && $this->input('secret') === $secret;
     }

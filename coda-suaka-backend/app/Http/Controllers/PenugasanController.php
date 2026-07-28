@@ -86,7 +86,7 @@ class PenugasanController extends Controller
         }
 
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            $query->whereIn('status', explode(',', $request->status));
         }
 
         if ($request->has('penanggung_jawab_id')) {
@@ -231,7 +231,8 @@ class PenugasanController extends Controller
 
     /**
      * PUT /api/penugasans/{penugasan}/complete
-     * Karyawan menyelesaikan tugas (proses → selesai)
+     * Karyawan menandai tugas selesai (proses → menunggu_validasi).
+     * Poin baru diberikan setelah pemilik/manager memvalidasi (lihat validasi()).
      */
     public function complete(Request $request, penugasan $penugasan)
     {
@@ -241,20 +242,54 @@ class PenugasanController extends Controller
             return $this->error('Tugas hanya bisa diselesaikan jika status "proses"', 422);
         }
 
-        $urgency = $penugasan->urgency;
         $penugasan->update([
-            'status' => 'selesai',
-            'completed_at' => now(),
-            'poin' => penugasan::getPoinForUrgency($urgency),
+            'status' => 'menunggu_validasi',
             'status_changed_by' => $request->user()->id,
         ]);
 
-        // Kirim notifikasi ke owner/pembuat tugas
+        // Kirim notifikasi ke owner/pembuat tugas untuk validasi manual
         $this->sendPenugasanSelesaiNotification($penugasan, $request->user());
 
         $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
 
-        return $this->success($penugasan, 'Tugas berhasil diselesaikan');
+        return $this->success($penugasan, 'Tugas menunggu validasi pemilik/manager');
+    }
+
+    /**
+     * PUT /api/penugasans/{penugasan}/validasi
+     * Pemilik/manager memvalidasi tugas yang menunggu_validasi.
+     * disetujui=true → selesai (poin diberikan). disetujui=false → kembali ke proses.
+     */
+    public function validasi(Request $request, penugasan $penugasan)
+    {
+        $this->authorize('validasi', $penugasan);
+
+        if ($penugasan->status !== 'menunggu_validasi') {
+            return $this->error('Tugas belum menunggu validasi', 422);
+        }
+
+        $disetujui = $request->boolean('disetujui', true);
+
+        if ($disetujui) {
+            $penugasan->update([
+                'status' => 'selesai',
+                'completed_at' => now(),
+                'poin' => penugasan::getPoinForUrgency($penugasan->urgency),
+                'status_changed_by' => $request->user()->id,
+            ]);
+        } else {
+            $penugasan->update([
+                'status' => 'proses',
+                'status_changed_by' => $request->user()->id,
+            ]);
+        }
+
+        $penugasan->load(['penanggungJawab.user', 'divisi', 'pembuat']);
+
+        return $this->success(
+            $penugasan,
+            $disetujui ? 'Tugas disetujui & selesai' : 'Tugas dikembalikan ke karyawan'
+        );
     }
 
     /**

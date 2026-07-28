@@ -268,14 +268,21 @@ class DivisiViewModel(
             )
             divisiRepository.createDivisi(request).onSuccess { dto ->
                 val newDivisiId = dto.id
-                // Sinkronisasi anggota divisi ke backend
+                // Sinkronisasi anggota divisi ke backend — hanya anggota yang
+                // berhasil disimpan yang dianggap benar-benar bergabung.
+                val successfulAnggota = mutableListOf<Karyawan>()
+                var anggotaError: String? = null
                 for (anggota in state.formAnggota) {
                     divisiRepository.createAnggotaDivisi(
                         CreateAnggotaDivisiRequest(divisiId = newDivisiId, karyawanId = anggota.id)
-                    )
+                    ).onSuccess {
+                        successfulAnggota.add(anggota)
+                    }.onFailure {
+                        anggotaError = anggotaError ?: it.message
+                    }
                 }
                 val newDivisi = dto.toDivisi(state.karyawanList, state.outlets).copy(
-                    anggota = state.formAnggota
+                    anggota = successfulAnggota
                 )
                 _uiState.value = _uiState.value.copy(
                     divisiList = _uiState.value.divisiList + newDivisi,
@@ -287,7 +294,8 @@ class DivisiViewModel(
                     formOutletId = 0,
                     formAnggota = emptyList(),
                     formAvailableKaryawan = emptyList(),
-                    successMessage = "Divisi \"${newDivisi.namaDivisi}\" berhasil ditambahkan."
+                    successMessage = "Divisi \"${newDivisi.namaDivisi}\" berhasil ditambahkan.",
+                    errorMessage = anggotaError?.let { "Sebagian anggota gagal ditambahkan: $it" }
                 )
             }.onFailure {
                 _uiState.value = _uiState.value.copy(
@@ -320,6 +328,8 @@ class DivisiViewModel(
                 outletId = state.formOutletId.takeIf { it > 0 }
             )
             divisiRepository.updateDivisi(id, request).onSuccess {
+                var syncError: String? = null
+
                 // Sinkronisasi anggota divisi: ambil data saat ini dari backend
                 divisiRepository.getAnggotaDivisis().onSuccess { allAnggota ->
                     // Filter anggota yang sesuai dengan divisi ini
@@ -332,15 +342,16 @@ class DivisiViewModel(
                     for (anggota in toAdd) {
                         divisiRepository.createAnggotaDivisi(
                             CreateAnggotaDivisiRequest(divisiId = id, karyawanId = anggota.id)
-                        )
+                        ).onFailure { syncError = syncError ?: it.message }
                     }
 
                     // Hapus anggota yang tidak ada di formAnggota
                     val toRemove = existingAnggota.filter { it.karyawanId !in desiredKaryawanIds }
                     for (anggota in toRemove) {
                         divisiRepository.deleteAnggotaDivisi(anggota.id)
+                            .onFailure { syncError = syncError ?: it.message }
                     }
-                }
+                }.onFailure { syncError = syncError ?: it.message }
 
                 // Reload divisi list
                 divisiRepository.getDivisis().onSuccess { dtos ->
@@ -350,7 +361,8 @@ class DivisiViewModel(
                         dialogMode = DivisiDialogMode.Closed,
                         formAnggota = emptyList(),
                         formAvailableKaryawan = emptyList(),
-                        successMessage = "Divisi berhasil diperbarui."
+                        successMessage = "Divisi berhasil diperbarui.",
+                        errorMessage = syncError?.let { "Sinkronisasi anggota gagal sebagian: $it" }
                     )
                 }.onFailure {
                     // Even if reload fails, consider update successful
@@ -359,7 +371,8 @@ class DivisiViewModel(
                         dialogMode = DivisiDialogMode.Closed,
                         formAnggota = emptyList(),
                         formAvailableKaryawan = emptyList(),
-                        successMessage = "Divisi berhasil diperbarui."
+                        successMessage = "Divisi berhasil diperbarui.",
+                        errorMessage = syncError?.let { "Sinkronisasi anggota gagal sebagian: $it" }
                     )
                 }
             }.onFailure {

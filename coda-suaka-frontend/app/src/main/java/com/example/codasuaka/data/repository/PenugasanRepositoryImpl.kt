@@ -74,4 +74,14 @@ class PenugasanRepositoryImpl(
             throw Exception(msg)
         }
     }
+
+    override suspend fun validasiPenugasan(id: Int, disetujui: Boolean): Result<PenugasanDto> = runCatching {
+        val response = apiService.validasiPenugasan(id, mapOf("disetujui" to disetujui))
+        if (response.isSuccessful && response.body()?.status == "success") {
+            response.body()?.data ?: throw Exception("Gagal memvalidasi penugasan")
+        } else {
+            val msg = response.body()?.message ?: "Gagal memvalidasi penugasan: ${response.code()}"
+            throw Exception(msg)
+        }
+    }
 }

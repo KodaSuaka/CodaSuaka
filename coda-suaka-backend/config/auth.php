@@ -114,4 +114,17 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin Registration Secret
+    |--------------------------------------------------------------------------
+    |
+    | Secret key required to register a Super Admin account via
+    | POST /register-super-admin. Must survive `config:cache`, so it's
+    | read here rather than via a bare env() call in the Request class.
+    |
+    */
+
+    'super_admin_secret' => env('SUPER_ADMIN_SECRET'),
+
 ];

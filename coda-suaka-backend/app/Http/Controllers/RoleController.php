@@ -18,11 +18,9 @@ class RoleController extends Controller
 
     public function index(Request $request)
     {
-        // Semua user authenticated boleh lihat daftar roles (data referensi)
-        // CRUD lainnya tetap dilindungi Gate 'manage-roles'
         $user = $request->user();
         if (! Gate::allows('manage-roles') && ! app(PermissionService::class)->userHasPermission($user, 'manage:karyawan')) {
-            return $this->success([]);
+            return $this->error('Anda tidak memiliki akses untuk melihat daftar role', 403);
         }
         // Exclude role platform-level: Super Admin & Owner
         // Karena pemilik dianggap entitas terpisah, bukan karyawan

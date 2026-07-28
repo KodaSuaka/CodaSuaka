@@ -15,8 +15,8 @@ sealed class AuthState {
     /** Masih memeriksa token — tampilkan loading splash */
     data object Loading : AuthState()
 
-    /** Token valid — langsung navigasi ke dashboard */
-    data object Authenticated : AuthState()
+    /** Token valid — navigasi ke dashboard sesuai [role] saat ini (bukan role basi). */
+    data class Authenticated(val role: String) : AuthState()
 
     /** Token tidak ada / expired — navigasi ke login */
     data object Unauthenticated : AuthState()
@@ -67,7 +67,11 @@ class AuthViewModel(
                 // Verifikasi token via repository (domain layer)
                 val isValid = authRepository.verifyToken()
                 if (isValid) {
-                    _authState.value = AuthState.Authenticated
+                    // Bug: sebelumnya selalu diarahkan ke Dashboard Owner tanpa
+                    // cek role, sehingga Karyawan yang membuka ulang app (tanpa
+                    // logout) mendapat akses ke layar Owner. Ambil role tersimpan
+                    // agar navigasi konsisten dengan alur login.
+                    _authState.value = AuthState.Authenticated(tokenManager.getUserRole() ?: "")
                 } else {
                     // Token invalid/expired → bersihkan
                     tokenManager.clearAuthData()
@@ -78,7 +82,7 @@ class AuthViewModel(
                 // agar user bisa buka offline data atau coba lagi nanti.
                 val token = tokenManager.getCachedToken()
                 _authState.value = if (!token.isNullOrBlank()) {
-                    AuthState.Authenticated
+                    AuthState.Authenticated(tokenManager.getUserRole() ?: "")
                 } else {
                     AuthState.Unauthenticated
                 }

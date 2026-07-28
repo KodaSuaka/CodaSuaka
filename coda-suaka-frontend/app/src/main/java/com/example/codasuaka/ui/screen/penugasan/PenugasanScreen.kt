@@ -181,6 +181,8 @@ fun PenugasanScreen(
         if (uiState.showCreateDialog) {
             CreatePenugasanDialog(
                 uiState = uiState,
+                templates = viewModel.templates,
+                onTemplateSelected = { viewModel.applyTemplate(it) },
                 onDismiss = { viewModel.dismissCreateDialog() },
                 onJudulChange = { viewModel.updateFormJudul(it) },
                 onDeskripsiChange = { viewModel.updateFormDeskripsi(it) },
@@ -199,6 +201,7 @@ fun PenugasanScreen(
                 onBack = { viewModel.hidePenugasanDetail() },
                 onAccept = { viewModel.acceptPenugasan(uiState.selectedPenugasan!!.id) },
                 onComplete = { viewModel.completePenugasan(uiState.selectedPenugasan!!.id) },
+                onValidasi = { disetujui -> viewModel.validasiPenugasan(uiState.selectedPenugasan!!.id, disetujui) },
                 canManage = uiState.canManagePenugasan,
                 isAssigned = viewModel.isAssignedTo(uiState.selectedPenugasan!!),
                 isProcessing = uiState.isProcessing
@@ -291,6 +294,7 @@ private fun PenugasanCard(
     val statusColor = when (penugasan.status) {
         "belum" -> StatusBelum
         "proses" -> StatusProses
+        "menunggu_validasi" -> SedangColor
         "selesai" -> StatusSelesai
         else -> StatusBelum
     }
@@ -359,7 +363,7 @@ private fun PenugasanCard(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = penugasan.status.replaceFirstChar { it.uppercase() },
+                                text = penugasan.status.replace('_', ' ').replaceFirstChar { it.uppercase() },
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -509,6 +513,8 @@ private fun MetadataItem(
 @Composable
 private fun CreatePenugasanDialog(
     uiState: PenugasanUiState,
+    templates: List<com.example.codasuaka.data.remote.dto.PenugasanDto> = emptyList(),
+    onTemplateSelected: (com.example.codasuaka.data.remote.dto.PenugasanDto) -> Unit = {},
     onDismiss: () -> Unit,
     onJudulChange: (String) -> Unit,
     onDeskripsiChange: (String) -> Unit,
@@ -545,6 +551,33 @@ private fun CreatePenugasanDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 8.dp)
             ) {
+                // Mulai dari template (opsional) — mengisi judul/deskripsi/urgency,
+                // pemilik tetap bisa mengubah semuanya sebelum menyimpan.
+                if (templates.isNotEmpty()) {
+                    Column {
+                        Text(
+                            "Mulai dari template (opsional)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Secondary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                        ) {
+                            templates.forEach { template ->
+                                AssistChip(
+                                    onClick = { onTemplateSelected(template) },
+                                    label = { Text(template.judul) }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Judul
                 OutlinedTextField(
                     value = uiState.formJudul,

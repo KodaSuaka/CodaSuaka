@@ -37,6 +37,7 @@ fun PenugasanDetailScreen(
     onBack: () -> Unit,
     onAccept: () -> Unit,
     onComplete: () -> Unit,
+    onValidasi: (disetujui: Boolean) -> Unit = {},
     canManage: Boolean = false,
     isAssigned: Boolean = false,
     isProcessing: Boolean = false
@@ -50,12 +51,14 @@ fun PenugasanDetailScreen(
     val statusColor = when (penugasan.status) {
         "belum" -> StatusBelum
         "proses" -> StatusProses
+        "menunggu_validasi" -> SedangColor
         "selesai" -> StatusSelesai
         else -> StatusBelum
     }
     val statusLabel = when (penugasan.status) {
         "belum" -> "Belum Dikerjakan"
         "proses" -> "Sedang Dikerjakan"
+        "menunggu_validasi" -> "Menunggu Validasi"
         "selesai" -> "Selesai"
         else -> penugasan.status
     }
@@ -331,6 +334,42 @@ fun PenugasanDetailScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            // ── Validasi manual (Owner/Manager) untuk tugas menunggu_validasi ──
+            if (canManage && penugasan.status == "menunggu_validasi") {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedButton(
+                        onClick = { onValidasi(false) },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isProcessing
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Kembalikan")
+                    }
+                    Button(
+                        onClick = { onValidasi(true) },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isProcessing,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                    ) {
+                        if (isProcessing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Icon(Icons.Default.CheckCircle, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Setujui")
                     }
                 }
             }

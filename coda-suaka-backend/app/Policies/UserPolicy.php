@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\user as UserModel;
 use App\Services\PermissionService;
 
 class UserPolicy
@@ -13,7 +12,7 @@ class UserPolicy
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
-    public function view(User $user, UserModel $model): bool
+    public function view(User $user, User $model): bool
     {
         return $user->instansi_id === $model->instansi_id || $user->id === $model->id;
     }
@@ -23,7 +22,7 @@ class UserPolicy
         return true; // Registration
     }
 
-    public function update(User $user, UserModel $model): bool
+    public function update(User $user, User $model): bool
     {
         if ($user->instansi_id !== $model->instansi_id) {
             return false;
@@ -33,7 +32,7 @@ class UserPolicy
         return $user->id === $model->id || app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
-    public function delete(User $user, UserModel $model): bool
+    public function delete(User $user, User $model): bool
     {
         if ($user->instansi_id !== $model->instansi_id) {
             return false;
@@ -42,12 +41,12 @@ class UserPolicy
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
-    public function restore(User $user, UserModel $model): bool
+    public function restore(User $user, User $model): bool
     {
         return false;
     }
 
-    public function forceDelete(User $user, UserModel $model): bool
+    public function forceDelete(User $user, User $model): bool
     {
         return false;
     }

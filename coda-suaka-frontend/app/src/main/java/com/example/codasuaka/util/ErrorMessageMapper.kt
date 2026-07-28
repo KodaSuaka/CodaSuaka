@@ -58,7 +58,7 @@ object ErrorMessageMapper {
         if (codeMatch != null) {
             val code = codeMatch.groupValues[1].toIntOrNull()
             if (code != null) {
-                return mapHttpCode(code, context)
+                return mapHttpCode(code, context, msg)
             }
         }
 
@@ -86,7 +86,7 @@ object ErrorMessageMapper {
     /**
      * Map HTTP status code ke pesan ramah pengguna.
      */
-    private fun mapHttpCode(code: Int, context: String?): MappedMessage {
+    private fun mapHttpCode(code: Int, context: String?, msg: String): MappedMessage {
         return when (code) {
             400 -> MappedMessage(
                 message = "Data yang dikirim tidak valid. Periksa kembali isian Anda.",

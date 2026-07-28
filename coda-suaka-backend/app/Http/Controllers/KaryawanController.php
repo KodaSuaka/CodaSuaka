@@ -115,6 +115,7 @@ class KaryawanController extends Controller
                 'foto_profil' => null,
                 'outlet_id' => $request->outlet_id,
                 'sisa_cuti' => $request->sisa_cuti ?? 0,
+                'tanggal_mulai_kerja' => $request->tanggal_mulai_kerja,
             ]);
 
             $karyawan->load(['user.role', 'outlet']);
@@ -142,7 +143,7 @@ class KaryawanController extends Controller
     {
         // Bug #14: Validasi sisa_cuti tidak boleh negatif
         $data = $request->only([
-            'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil',
+            'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil', 'tanggal_mulai_kerja',
         ]);
 
         if (isset($data['sisa_cuti']) && $data['sisa_cuti'] < 0) {

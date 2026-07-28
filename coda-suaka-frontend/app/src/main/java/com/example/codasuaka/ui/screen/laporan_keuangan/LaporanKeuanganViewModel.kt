@@ -1,5 +1,9 @@
 package com.example.codasuaka.ui.screen.laporan_keuangan
 
+import android.content.ContentValues
+import android.content.Context
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.*
@@ -8,8 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
-import java.io.File
-import java.io.FileOutputStream
+import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -89,7 +92,8 @@ data class LaporanKeuanganUiState(
 )
 
 class LaporanKeuanganViewModel(
-    private val keuanganRepository: KeuanganRepository
+    private val keuanganRepository: KeuanganRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LaporanKeuanganUiState())
@@ -592,40 +596,26 @@ class LaporanKeuanganViewModel(
 
     private fun saveFile(body: ResponseBody, filename: String) {
         try {
-            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
-                android.os.Environment.DIRECTORY_DOWNLOADS
-            )
-            if (!downloadsDir.exists()) downloadsDir.mkdirs()
-            val file = File(downloadsDir, filename)
-            FileOutputStream(file).use { outputStream ->
-                outputStream.write(body.bytes())
+            val resolver = context.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                ?: throw IOException("Gagal membuat entri file di Downloads")
+            resolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(body.bytes())
+            } ?: throw IOException("Gagal membuka output stream")
             _uiState.value = _uiState.value.copy(
                 isExporting = false,
-                exportSuccessPath = file.absolutePath
+                exportSuccessPath = filename
             )
         } catch (e: Exception) {
-            // Fallback: simpan di cache
-            try {
-                val cacheDir = java.io.File(
-                    android.os.Environment.getExternalStorageDirectory(),
-                    "Android/data/com.example.codasuaka/cache"
-                )
-                if (!cacheDir.exists()) cacheDir.mkdirs()
-                val file = File(cacheDir, filename)
-                FileOutputStream(file).use { outputStream ->
-                    outputStream.write(body.bytes())
-                }
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportSuccessPath = file.absolutePath
-                )
-            } catch (e2: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    exportError = "Gagal menyimpan file: ${e2.message}"
-                )
-            }
+            _uiState.value = _uiState.value.copy(
+                isExporting = false,
+                exportError = "Gagal menyimpan file: ${e.message}"
+            )
         }
     }
 

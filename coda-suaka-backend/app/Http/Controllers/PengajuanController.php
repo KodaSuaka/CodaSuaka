@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\RejectPengajuanRequest;
 use App\Http\Requests\StorePengajuanRequest;
 use App\Models\pengajuan;
+use App\Services\NotificationService;
 use App\Services\PermissionService;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
@@ -14,8 +15,9 @@ class PengajuanController extends Controller
 {
     use ApiResponse;
 
-    public function __construct()
-    {
+    public function __construct(
+        private NotificationService $notificationService,
+    ) {
         $this->authorizeResource(pengajuan::class, 'pengajuan');
     }
 
@@ -28,7 +30,7 @@ class PengajuanController extends Controller
 
         // Select kolom yang dibutuhkan + eager loading relasi
         $query = pengajuan::with([
-            'user' => fn ($q) => $q->select(['id', 'name', 'instansi_id']),
+            'user' => fn ($q) => $q->select(['id', 'name', 'instansi_id', 'outlet_id']),
             'user.profilKaryawan' => fn ($q) => $q->select(['id', 'user_id', 'nama_lengkap']),
         ])->select([
             'id', 'user_id', 'jenis', 'tanggal_mulai', 'tanggal_selesai',
@@ -91,6 +93,13 @@ class PengajuanController extends Controller
         ]);
 
         $pengajuan->load(['user.profilKaryawan']);
+
+        $this->notificationService->onPengajuanBaru(
+            $pengajuan->id,
+            $user->id,
+            $pengajuan->user->profilKaryawan->nama_lengkap ?? $user->name,
+            $pengajuan->jenis
+        );
 
         return $this->success($pengajuan, 'Pengajuan berhasil dikirim', 201);
     }
@@ -177,6 +186,13 @@ class PengajuanController extends Controller
             }
         }
 
+        $this->notificationService->onPengajuanStatusChanged(
+            $pengajuan->id,
+            $pengajuan->user_id,
+            'disetujui',
+            $pengajuan->jenis
+        );
+
         return $this->success($pengajuan, 'Pengajuan disetujui');
     }
 
@@ -211,6 +227,13 @@ class PengajuanController extends Controller
             'tanggal_disetujui' => now(),
             'alasan_penolakan' => $request->alasan_penolakan,
         ]);
+
+        $this->notificationService->onPengajuanStatusChanged(
+            $pengajuan->id,
+            $pengajuan->user_id,
+            'ditolak',
+            $pengajuan->jenis
+        );
 
         return $this->success($pengajuan, 'Pengajuan ditolak');
     }

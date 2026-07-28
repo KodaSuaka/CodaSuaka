@@ -162,7 +162,7 @@ class NotificationService
             'Description',
             '#F59E0B',
             $pengajuanId,
-            'App\\Models\\Pengajuan',
+            'App\\Models\\pengajuan',
             [$userId] // Exclude pengaju
         );
     }
@@ -180,7 +180,7 @@ class NotificationService
             $status === 'disetujui' ? 'CheckCircle' : 'Cancel',
             $status === 'disetujui' ? '#10B981' : '#EF4444',
             $pengajuanId,
-            'App\\Models\\Pengajuan'
+            'App\\Models\\pengajuan'
         );
     }
 
@@ -219,15 +219,16 @@ class NotificationService
     }
 
     /**
-     * Notifikasi otomatis saat tugas selesai dikerjakan oleh karyawan.
+     * Notifikasi otomatis saat karyawan menandai tugas selesai — menunggu
+     * validasi manual dari pemilik/manager sebelum benar-benar dianggap selesai.
      */
     public function onPenugasanSelesai(int $penugasanId, int $ownerUserId, string $namaKaryawan, string $judul): void
     {
         $this->create(
             $ownerUserId,
             'penugasan',
-            'Tugas Selesai',
-            "{$namaKaryawan} telah menyelesaikan tugas: {$judul}",
+            'Menunggu Validasi Tugas',
+            "{$namaKaryawan} menandai tugas selesai, menunggu validasi Anda: {$judul}",
             'CheckCircle',
             '#10B981',
             $penugasanId,

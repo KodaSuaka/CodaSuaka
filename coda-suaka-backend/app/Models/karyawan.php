@@ -19,7 +19,15 @@ class karyawan extends Model
         'foto_profil',
         'outlet_id',
         'sisa_cuti',
+        'tanggal_mulai_kerja',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'tanggal_mulai_kerja' => 'date:Y-m-d',
+        ];
+    }
 
     protected static function booted(): void
     {

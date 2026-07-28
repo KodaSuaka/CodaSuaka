@@ -24,8 +24,25 @@ data class Karyawan(
     val fotoProfil: String? = null,
     val role: Role? = null,
     val outlet: Outlet? = null,
-    val sisaCuti: Int? = null
-)
+    val sisaCuti: Int? = null,
+    /** Format yyyy-MM-dd, null jika belum diisi. */
+    val tanggalMulaiKerja: String? = null
+) {
+    /** Masa kerja dihitung on-the-fly dari [tanggalMulaiKerja], contoh: "2 tahun 3 bulan". */
+    val masaKerja: String?
+        get() {
+            val mulai = tanggalMulaiKerja?.let {
+                runCatching { java.time.LocalDate.parse(it) }.getOrNull()
+            } ?: return null
+            val period = java.time.Period.between(mulai, java.time.LocalDate.now())
+            val bagian = buildList {
+                if (period.years > 0) add("${period.years} tahun")
+                if (period.months > 0) add("${period.months} bulan")
+                if (isEmpty() && period.days >= 0) add("${period.days} hari")
+            }
+            return bagian.joinToString(" ")
+        }
+}
 
 data class Role(
     val id: Int = 0,
@@ -62,6 +79,8 @@ data class KelolaKaryawanUiState(
     val formRoleId: Int = 0,
     val formOutletId: Int = 0,
     val formSisaCuti: String = "",
+    /** Format yyyy-MM-dd. */
+    val formTanggalMulaiKerja: String = "",
     val editingKaryawanId: String? = null
 )
 
@@ -163,6 +182,7 @@ class KelolaKaryawanViewModel(
             formPassword = "",
             formRoleId = 0,
             formOutletId = 0,
+            formTanggalMulaiKerja = "",
             editingKaryawanId = null,
             errorMessage = null,
             successMessage = null
@@ -179,6 +199,7 @@ class KelolaKaryawanViewModel(
             formRoleId = karyawan.role?.id ?: 0,
             formOutletId = karyawan.outlet?.id ?: 0,
             formSisaCuti = karyawan.sisaCuti?.toString() ?: "",
+            formTanggalMulaiKerja = karyawan.tanggalMulaiKerja ?: "",
             editingKaryawanId = karyawan.id,
             errorMessage = null,
             successMessage = null
@@ -229,6 +250,10 @@ class KelolaKaryawanViewModel(
         _uiState.value = _uiState.value.copy(formSisaCuti = value, errorMessage = null)
     }
 
+    fun onFormTanggalMulaiKerjaChange(value: String) {
+        _uiState.value = _uiState.value.copy(formTanggalMulaiKerja = value, errorMessage = null)
+    }
+
     // ─── Actions ───
 
     /**
@@ -275,7 +300,8 @@ class KelolaKaryawanViewModel(
                 password = state.formPassword,
                 alamat = state.formAlamat.trim(),
                 roleId = state.formRoleId,
-                outletId = outletId
+                outletId = outletId,
+                tanggalMulaiKerja = state.formTanggalMulaiKerja.ifBlank { null }
             )
 
             karyawanRepository.createKaryawan(request).onSuccess { dto ->
@@ -324,7 +350,8 @@ class KelolaKaryawanViewModel(
                 namaLengkap = state.formNama.trim(),
                 alamat = state.formAlamat.trim(),
                 outletId = state.formOutletId.takeIf { it > 0 },
-                sisaCuti = state.formSisaCuti.toIntOrNull()
+                sisaCuti = state.formSisaCuti.toIntOrNull(),
+                tanggalMulaiKerja = state.formTanggalMulaiKerja.ifBlank { null }
             )
 
             karyawanRepository.updateKaryawan(id, request).onSuccess {
@@ -407,7 +434,8 @@ class KelolaKaryawanViewModel(
                 fotoProfil = this.fotoProfil,
                 role = role,
                 outlet = outlet,
-                sisaCuti = this.sisaCuti
+                sisaCuti = this.sisaCuti,
+                tanggalMulaiKerja = this.tanggalMulaiKerja
             )
         }
     }

@@ -39,6 +39,7 @@ class StorekaryawanRequest extends FormRequest
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
             ],
             'sisa_cuti' => 'nullable|integer|min:0',
+            'tanggal_mulai_kerja' => 'nullable|date',
         ];
     }
 

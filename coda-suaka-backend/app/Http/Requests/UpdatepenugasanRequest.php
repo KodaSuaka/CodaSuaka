@@ -51,7 +51,7 @@ class UpdatepenugasanRequest extends FormRequest
                 },
             ],
             'tenggat' => 'nullable|date',
-            'status' => 'sometimes|in:belum,proses,selesai,batal',
+            'status' => 'sometimes|in:belum,proses,menunggu_validasi,selesai,batal',
         ];
     }
 

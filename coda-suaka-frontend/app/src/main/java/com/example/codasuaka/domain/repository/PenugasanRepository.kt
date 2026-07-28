@@ -17,4 +17,5 @@ interface PenugasanRepository {
     suspend fun deletePenugasan(id: Int): Result<Unit>
     suspend fun acceptPenugasan(id: Int): Result<PenugasanDto>
     suspend fun completePenugasan(id: Int): Result<PenugasanDto>
+    suspend fun validasiPenugasan(id: Int, disetujui: Boolean): Result<PenugasanDto>
 }

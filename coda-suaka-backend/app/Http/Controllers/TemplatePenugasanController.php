@@ -17,6 +17,11 @@ class TemplatePenugasanController extends Controller
      */
     private const MAX_TEMPLATE = 10;
 
+    public function __construct()
+    {
+        $this->authorizeResource(penugasan::class, 'templatePenugasan');
+    }
+
     /**
      * GET /api/template-penugasans
      *

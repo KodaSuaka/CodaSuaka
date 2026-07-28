@@ -98,6 +98,19 @@ class PenugasanPolicy
         return $this->accept($user, $penugasan);
     }
 
+    /**
+     * Hanya Owner/Manager (manage:penugasan) yang boleh memvalidasi tugas
+     * yang menunggu_validasi — karyawan tidak boleh memvalidasi tugasnya sendiri.
+     */
+    public function validasi(User $user, penugasan $penugasan): bool
+    {
+        if (! $this->isSameTenant($user, $penugasan)) {
+            return false;
+        }
+
+        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
+    }
+
     public function restore(User $user, penugasan $penugasan): bool
     {
         return false;

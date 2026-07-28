@@ -199,7 +199,7 @@ class KelolaOutletViewModel(
             id = this.id,
             namaOutlet = this.namaOutlet,
             alamatOutlet = this.alamatOutlet ?: "",
-            jumlahKaryawan = 0
+            jumlahKaryawan = this.karyawansCount ?: 0
         )
     }
 }

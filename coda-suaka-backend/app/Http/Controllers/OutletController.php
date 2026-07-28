@@ -25,7 +25,8 @@ class OutletController extends Controller
     {
         // TenantScope global sudah otomatis memfilter berdasarkan instansi_id user,
         // sehingga tidak perlu WHERE instansi_id eksplisit di sini.
-        $outlets = outlet::orderBy('nama_outlet')
+        $outlets = outlet::withCount('karyawans')
+            ->orderBy('nama_outlet')
             ->get();
 
         return $this->success($outlets);

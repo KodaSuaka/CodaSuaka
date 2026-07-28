@@ -23,15 +23,15 @@ import com.example.codasuaka.ui.theme.Tertiary
 @Composable
 fun AuthScreen(
     viewModel: AuthViewModel,
-    onAuthenticated: () -> Unit,
+    onAuthenticated: (role: String) -> Unit,
     onUnauthenticated: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
 
     // ── Efek navigasi berdasarkan state autentikasi ──
     LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Authenticated -> onAuthenticated()
+        when (val state = authState) {
+            is AuthState.Authenticated -> onAuthenticated(state.role)
             is AuthState.Unauthenticated -> onUnauthenticated()
             is AuthState.Loading -> { /* tetap tampilkan splash */ }
         }
