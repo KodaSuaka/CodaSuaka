@@ -200,49 +200,44 @@ fun PenugasanDetailScreen(
                             }
                         }
                     }
-                }
-            }
-<<<<<<< HEAD
 
-            // ── Validasi manual (Owner/Manager) untuk tugas menunggu_validasi ──
-            if (canManage && penugasan.status == "menunggu_validasi") {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedButton(
-                        onClick = { onValidasi(false) },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isProcessing
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Kembalikan")
-                    }
-                    Button(
-                        onClick = { onValidasi(true) },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isProcessing,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
-                    ) {
-                        if (isProcessing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                    // ── Validasi manual (Owner/Manager) untuk tugas menunggu_validasi ──
+                    if (canManage && penugasan.status == "menunggu_validasi") {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedButton(
+                                onClick = { onValidasi(false) },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isProcessing
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Kembalikan")
+                            }
+                            Button(
+                                onClick = { onValidasi(true) },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isProcessing,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                            ) {
+                                if (isProcessing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Icon(Icons.Default.CheckCircle, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Setujui")
+                            }
                         }
-                        Icon(Icons.Default.CheckCircle, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Setujui")
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-=======
->>>>>>> 5102bb9d7567199e04b14c0dda80ed50d665d211
         }
     }
 }

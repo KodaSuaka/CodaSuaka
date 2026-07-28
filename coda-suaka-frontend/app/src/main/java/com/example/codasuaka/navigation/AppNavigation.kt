@@ -1,11 +1,8 @@
 package com.example.codasuaka.navigation
 
-<<<<<<< HEAD
 import androidx.activity.compose.BackHandler
-=======
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
->>>>>>> 5102bb9d7567199e04b14c0dda80ed50d665d211
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue

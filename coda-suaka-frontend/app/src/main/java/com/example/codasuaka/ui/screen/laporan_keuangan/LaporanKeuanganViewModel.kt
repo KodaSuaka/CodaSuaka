@@ -468,7 +468,6 @@ class LaporanKeuanganViewModel(
 
     private fun saveFile(body: ResponseBody, filename: String) {
         try {
-<<<<<<< HEAD
             val resolver = context.contentResolver
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
@@ -489,17 +488,6 @@ class LaporanKeuanganViewModel(
                 isExporting = false,
                 exportError = "Gagal menyimpan file: ${e.message}"
             )
-=======
-            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
-                android.os.Environment.DIRECTORY_DOWNLOADS
-            )
-            if (!downloadsDir.exists()) downloadsDir.mkdirs()
-            val file = File(downloadsDir, filename)
-            FileOutputStream(file).use { it.write(body.bytes()) }
-            _uiState.update { it.copy(isExporting = false, exportSuccessPath = file.absolutePath) }
-        } catch (e: Exception) {
-            _uiState.update { it.copy(isExporting = false, exportError = "Gagal menyimpan file: ${e.message}") }
->>>>>>> 5102bb9d7567199e04b14c0dda80ed50d665d211
         }
     }
 
