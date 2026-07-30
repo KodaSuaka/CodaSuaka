@@ -247,7 +247,7 @@ fun LaporanKeuanganScreen(
                 
                 MaterialTheme(colorScheme = lightColorScheme(
                     surface = Color.White,
-                    onSurface = Color.Black,
+                    onSurface = Secondary,
                     primary = Primary,
                     onPrimary = Color.White,
                     secondary = Secondary
@@ -264,7 +264,7 @@ fun LaporanKeuanganScreen(
                                     viewModel.setFilterDateRange(ld.toString(), ld.toString())
                                 }
                                 showRangePicker = false
-                            }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
+                            }) { Text("Pilih", color = Secondary, fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
                             TextButton(onClick = { showRangePicker = false }) {
@@ -287,13 +287,6 @@ fun LaporanKeuanganScreen(
                                         set(java.util.Calendar.YEAR, year)
                                     }
                                     datePickerState.displayedMonthMillis = cal.timeInMillis
-                                    
-                                    val selCal = java.util.Calendar.getInstance(tz).apply {
-                                        timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                                        set(java.util.Calendar.YEAR, year)
-                                    }
-                                    datePickerState.selectedDateMillis = selCal.timeInMillis
-                                    
                                     showYearPicker = false
                                 },
                                 onDismiss = { showYearPicker = false }

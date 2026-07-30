@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.domain.repository.DashboardRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -23,6 +26,7 @@ data class DashboardUiState(
     val presensiHariIni: Int = 0,
     val pengajuanPending: Int = 0,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val isDrawerOpen: Boolean = false,
     val errorMessage: String? = null,
     val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Tugas Tim, 2 = Pesan, 3 = Divisi,
@@ -134,6 +138,46 @@ class DashboardViewModel(
                         errorMessage = error.message
                     )
                 }
+        }
+    }
+
+    fun refreshDashboard() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+            try {
+                coroutineScope {
+                    val dashboardDef = async { dashboardRepository.getDashboard() }
+                    val omsetDef = async {
+                        val now = java.time.LocalDate.now()
+                        dashboardRepository.getOmset(now.withDayOfMonth(1).toString(), now.toString())
+                    }
+                    
+                    val dashboardRes = dashboardDef.await()
+                    val omsetRes = omsetDef.await()
+                    
+                    _uiState.update { currentState ->
+                        var newState = currentState
+                        
+                        dashboardRes.onSuccess { data ->
+                            newState = newState.copy(
+                                totalKaryawan = data.totalKaryawan,
+                                totalOutlet = data.totalOutlet,
+                                totalDivisi = data.totalDivisi,
+                                presensiHariIni = data.presensiHariIni,
+                                pengajuanPending = data.pengajuanPending
+                            )
+                        }
+                        
+                        omsetRes.onSuccess { data ->
+                            newState = newState.copy(omsetTotal = data.totalOmset)
+                        }
+                        
+                        newState
+                    }
+                }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
+            }
         }
     }
 

@@ -104,10 +104,8 @@ fun YearPickerDialog(
     onYearSelected: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val startYear = 2026
     val currentYear = java.time.LocalDate.now().year
-    val endYear = maxOf(currentYear + 10, 2035)
-    val years = (startYear..endYear).toList()
+    val years = (currentYear - 20..currentYear + 10).toList() // Expanded range
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
