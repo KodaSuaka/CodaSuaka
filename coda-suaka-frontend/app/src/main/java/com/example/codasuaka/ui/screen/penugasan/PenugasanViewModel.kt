@@ -316,15 +316,22 @@ class PenugasanViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isProcessing = true, errorMessage = null) }
             try {
-                penugasanRepository.acceptPenugasan(id).getOrThrow()
+                // Catatan: utk template, backend membuat task BARU (id berbeda,
+                // status "proses") supaya template tetap tersedia utk karyawan lain.
+                // Jadi pakai Dto hasil response sbg detail, bukan refresh id lama,
+                // agar detail langsung tampil status "proses" dan tidak bisa
+                // diterima ulang (sebelumnya: refresh id template → detail masih
+                // "belum" → bisa terima lagi → duplikasi).
+                val accepted = penugasanRepository.acceptPenugasan(id).getOrThrow()
                 _uiState.update {
                     it.copy(
                         isProcessing = false,
-                        successMessage = "Tugas berhasil diterima"
+                        successMessage = "Tugas berhasil diterima",
+                        selectedPenugasan = accepted
                     )
                 }
+                // Refresh daftar: template + task baru langsung tampil sesuai filter
                 loadData()
-                refreshSelectedPenugasan(id)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(

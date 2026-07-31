@@ -108,16 +108,14 @@ class JamOperasionalViewModel(
             _uiState.update { it.copy(isSaving = true, errorMessage = null, successMessage = null) }
             try {
                 val state = _uiState.value
-                
-                // Pastikan format jam memiliki detik (:00) agar diterima oleh database (HH:mm:ss)
-                val formatJamBuka = if (state.jamBuka.length == 5) "${state.jamBuka}:00" else state.jamBuka
-                val formatJamTutup = if (state.jamTutup.length == 5) "${state.jamTutup}:00" else state.jamTutup
 
+                // Kirim format HH:mm (5 karakter) — backend UpdateInstansiRequest memvalidasi max:5.
+                // Jangan tambah detik (:00): string "08:00:00" (8 char) ditolak validasi server → 422.
                 val request = UpdateInstansiRequest(
                     namaInstansi = state.namaInstansi, // Sertakan nama agar validasi server terpenuhi
                     jamOperasional = mapOf(
-                        "jam_buka" to formatJamBuka,
-                        "jam_tutup" to formatJamTutup,
+                        "jam_buka" to state.jamBuka,
+                        "jam_tutup" to state.jamTutup,
                         "hari_operasional" to state.hariOperasional.toList()
                     )
                 )

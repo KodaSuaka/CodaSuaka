@@ -143,11 +143,10 @@ fun KalenderScreen(
                 CalendarSection(
                     currentMonth = uiState.currentMonth,
                     events = uiState.events,
+                    selectedDate = uiState.selectedDate,
                     onPrevMonth = viewModel::prevMonth,
                     onNextMonth = viewModel::nextMonth,
-                    onDateClick = { _ ->
-                        // Filter events for this date
-                    },
+                    onDateClick = viewModel::selectDate,
                     onYearSelect = viewModel::selectYear
                 )
             }
@@ -155,6 +154,11 @@ fun KalenderScreen(
             // ══════════════════════════════════════════════════
             // SECTION TENGAH — Daftar Event
             // ══════════════════════════════════════════════════
+            // ── Filter aktif: header + chip untuk hapus filter ──
+            val filteredEvents = uiState.selectedDate?.let { selected ->
+                uiState.events.filter { it.tanggal == selected }
+            } ?: uiState.events
+
             item {
                 Row(
                     modifier = Modifier
@@ -164,25 +168,54 @@ fun KalenderScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Daftar Event",
+                        if (uiState.selectedDate != null) {
+                            "Event ${uiState.selectedDate!!.dayOfMonth} ${uiState.selectedDate!!.month.getDisplayName(TextStyle.SHORT, Locale("id", "ID"))} ${uiState.selectedDate!!.year}"
+                        } else {
+                            "Daftar Event"
+                        },
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = OnSurfaceVariant
                     )
-                    Surface(shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.1f)) {
-                        Text(
-                            "${uiState.events.size} event",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = Primary
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (uiState.selectedDate != null) {
+                            FilterChip(
+                                selected = true,
+                                onClick = viewModel::clearSelectedDate,
+                                label = { Text("Semua", fontWeight = FontWeight.Medium, color = Color.White, fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Primary,
+                                    containerColor = Primary
+                                ),
+                                trailingIcon = {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Hapus filter",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color.White
+                                    )
+                                },
+                                border = null
+                            )
+                        }
+                        Surface(shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.1f)) {
+                            Text(
+                                "${filteredEvents.size} event",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = Primary
+                            )
+                        }
                     }
                 }
             }
 
             // Event list
-            if (uiState.events.isEmpty()) {
+            if (filteredEvents.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -192,15 +225,23 @@ fun KalenderScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Default.EventBusy, null, tint = Neutral, modifier = Modifier.size(48.dp))
-                            Text("Belum ada event", style = MaterialTheme.typography.bodyLarge, color = OnSurfaceVariant)
-                            Text("Tekan tombol + untuk menambahkan event baru.", style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariant)
+                            Text(
+                                if (uiState.selectedDate != null) "Tidak ada event pada tanggal ini" else "Belum ada event",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = OnSurfaceVariant
+                            )
+                            Text(
+                                if (uiState.selectedDate != null) "Klik tanggal lain untuk melihat eventnya." else "Tekan tombol + untuk menambahkan event baru.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariant
+                            )
                         }
                     }
                 }
             }
 
             // Kelompok event per tanggal
-            val eventsGrouped = uiState.events.sortedBy { it.tanggal }
+            val eventsGrouped = filteredEvents.sortedBy { it.tanggal }
             items(eventsGrouped, key = { it.id }) { event ->
                 EventListItem(
                     event = event,
@@ -247,6 +288,7 @@ fun KalenderScreen(
 private fun CalendarSection(
     currentMonth: YearMonth,
     events: List<KalenderEvent>,
+    selectedDate: LocalDate?,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onDateClick: (LocalDate) -> Unit,
@@ -333,10 +375,12 @@ private fun CalendarSection(
 
                             // Cek apakah hari ini
                             val isToday = date == LocalDate.now()
+                            val isSelected = date == selectedDate
 
                             DateCell(
                                 dayNumber = dayNumber,
                                 isToday = isToday,
+                                isSelected = isSelected,
                                 dotColor = dotColor,
                                 onClick = { onDateClick(date) }
                             )
@@ -366,17 +410,28 @@ private fun CalendarSection(
 private fun RowScope.DateCell(
     dayNumber: Int,
     isToday: Boolean,
+    isSelected: Boolean,
     dotColor: Color?,
     onClick: () -> Unit
 ) {
+    val backgroundColor = when {
+        isSelected -> Primary
+        isToday -> Primary.copy(alpha = 0.15f)
+        else -> Color.Transparent
+    }
+    val textColor = when {
+        isSelected -> Color.White
+        isToday -> Secondary
+        else -> OnSurface
+    }
     Box(
         modifier = Modifier
             .weight(1f)
             .aspectRatio(1f)
             .clip(CircleShape)
-            .background(if (isToday) Primary.copy(alpha = 0.15f) else Color.Transparent)
+            .background(backgroundColor)
             .then(
-                if (isToday) Modifier.border(1.5.dp, Primary.copy(alpha = 0.5f), CircleShape) else Modifier
+                if (isToday && !isSelected) Modifier.border(1.5.dp, Primary.copy(alpha = 0.5f), CircleShape) else Modifier
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -389,7 +444,7 @@ private fun RowScope.DateCell(
                 text = dayNumber.toString(),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Medium,
-                color = if (isToday) Secondary else OnSurface
+                color = textColor
             )
             if (dotColor != null) {
                 Spacer(modifier = Modifier.height(2.dp))

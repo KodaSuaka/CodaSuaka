@@ -304,7 +304,7 @@ private fun FilterSection(
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Primary,
                         selectedLabelColor = Color.White,
-                        containerColor = Tertiary,
+                        containerColor = Neutral.copy(alpha = 0.7f),
                         labelColor = OnSurfaceVariant
                     )
                 )
@@ -412,7 +412,8 @@ private fun NotaCard(
     val badgeLabel = if (isPembelian) "Pembelian" else "Penjualan"
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)

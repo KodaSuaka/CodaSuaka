@@ -48,6 +48,8 @@ sealed class KalenderDialogMode {
  */
 data class KalenderUiState(
     val currentMonth: YearMonth = YearMonth.now(),
+    /** Tanggal yang sedang difilter di kalender (null = tampilkan semua event bulan ini). */
+    val selectedDate: LocalDate? = null,
     val events: List<KalenderEvent> = emptyList(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
@@ -78,14 +80,16 @@ class KalenderViewModel(
 
     fun nextMonth() {
         _uiState.value = _uiState.value.copy(
-            currentMonth = _uiState.value.currentMonth.plusMonths(1)
+            currentMonth = _uiState.value.currentMonth.plusMonths(1),
+            selectedDate = null
         )
         loadEvents()
     }
 
     fun prevMonth() {
         _uiState.value = _uiState.value.copy(
-            currentMonth = _uiState.value.currentMonth.minusMonths(1)
+            currentMonth = _uiState.value.currentMonth.minusMonths(1),
+            selectedDate = null
         )
         loadEvents()
     }
@@ -100,9 +104,28 @@ class KalenderViewModel(
         // Hanya reload jika tahun benar-benar berubah
         if (clampedYear == currentMonth.year) return
         _uiState.value = _uiState.value.copy(
-            currentMonth = currentMonth.withYear(clampedYear)
+            currentMonth = currentMonth.withYear(clampedYear),
+            selectedDate = null
         )
         loadEvents()
+    }
+
+    /**
+     * Pilih tanggal di kalender untuk memfilter daftar event.
+     * Klik lagi tanggal yang sama untuk menghapus filter.
+     */
+    fun selectDate(date: LocalDate) {
+        val current = _uiState.value.selectedDate
+        _uiState.value = _uiState.value.copy(
+            selectedDate = if (current == date) null else date
+        )
+    }
+
+    /**
+     * Hapus filter tanggal (tampilkan semua event di bulan aktif).
+     */
+    fun clearSelectedDate() {
+        _uiState.value = _uiState.value.copy(selectedDate = null)
     }
 
     /**
