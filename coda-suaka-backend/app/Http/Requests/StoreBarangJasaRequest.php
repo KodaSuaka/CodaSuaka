@@ -25,6 +25,7 @@ class StoreBarangJasaRequest extends FormRequest
         return [
             'nama' => 'required|string|max:150',
             'jenis' => 'required|in:barang,jasa',
+            'kategori' => 'nullable|string|max:50',
             'satuan' => 'required|string|max:50',
             'harga_jual' => 'required|numeric|min:0',
             'harga_beli' => 'nullable|numeric|min:0',

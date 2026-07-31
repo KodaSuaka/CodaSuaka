@@ -20,6 +20,7 @@ class BarangJasa extends Model
         'instansi_id',
         'nama',
         'jenis',
+        'kategori',
         'satuan',
         'harga_jual',
         'harga_beli',

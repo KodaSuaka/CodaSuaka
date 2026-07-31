@@ -25,6 +25,7 @@ class UpdateBarangJasaRequest extends FormRequest
         return [
             'nama' => 'sometimes|required|string|max:150',
             'jenis' => 'sometimes|required|in:barang,jasa',
+            'kategori' => 'sometimes|nullable|string|max:50',
             'satuan' => 'sometimes|required|string|max:50',
             'harga_jual' => 'sometimes|required|numeric|min:0',
             'harga_beli' => 'sometimes|nullable|numeric|min:0',
