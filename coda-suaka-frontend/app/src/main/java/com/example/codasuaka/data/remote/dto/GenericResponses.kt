@@ -790,3 +790,111 @@ data class NotificationDto(
     @SerializedName("created_at") val createdAt: String?,
     @SerializedName("updated_at") val updatedAt: String?
 )
+
+// ─── Kasir: Barang/Jasa ─────────────────────────────────────────
+
+data class BarangJasaDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("instansi_id") val instansiId: String,
+    @SerializedName("nama") val nama: String,
+    @SerializedName("jenis") val jenis: String, // "barang" / "jasa"
+    @SerializedName("kategori") val kategori: String?,
+    @SerializedName("satuan") val satuan: String,
+    @SerializedName("harga_jual") val hargaJual: Double,
+    @SerializedName("harga_beli") val hargaBeli: Double?,
+    @SerializedName("stok") val stok: Int?,
+    @SerializedName("is_active") val isActive: Boolean,
+    @SerializedName("keterangan") val keterangan: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class BarangJasaListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<BarangJasaDto>,
+    @SerializedName("meta") val meta: PaginationMeta?
+)
+
+data class BarangJasaSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: BarangJasaDto?
+)
+
+data class BarangJasaRequest(
+    @SerializedName("nama") val nama: String,
+    @SerializedName("jenis") val jenis: String,
+    @SerializedName("kategori") val kategori: String? = null,
+    @SerializedName("satuan") val satuan: String,
+    @SerializedName("harga_jual") val hargaJual: Double,
+    @SerializedName("harga_beli") val hargaBeli: Double? = null,
+    @SerializedName("stok") val stok: Int? = null,
+    @SerializedName("is_active") val isActive: Boolean? = null,
+    @SerializedName("keterangan") val keterangan: String? = null
+)
+
+// ─── Kasir: Nota ─────────────────────────────────────────────────
+
+data class NotaItemDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("nota_id") val notaId: Int,
+    @SerializedName("barang_jasa_id") val barangJasaId: Int?,
+    @SerializedName("nama_item") val namaItem: String,
+    @SerializedName("jenis") val jenis: String,
+    @SerializedName("kuantitas") val kuantitas: Double,
+    @SerializedName("satuan") val satuan: String,
+    @SerializedName("harga_satuan") val hargaSatuan: Double,
+    @SerializedName("subtotal") val subtotal: Double,
+    @SerializedName("barang_jasa") val barangJasa: BarangJasaDto?
+)
+
+data class NotaDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("instansi_id") val instansiId: String,
+    @SerializedName("outlet_id") val outletId: Int?,
+    @SerializedName("kategori_transaksi_id") val kategoriTransaksiId: Int?,
+    @SerializedName("transaksi_kas_id") val transaksiKasId: Int?,
+    @SerializedName("tipe") val tipe: String, // "penjualan" / "pembelian"
+    @SerializedName("nomor_nota") val nomorNota: String,
+    @SerializedName("tanggal") val tanggal: String,
+    @SerializedName("pihak_terkait") val pihakTerkait: String?,
+    @SerializedName("metode_pembayaran") val metodePembayaran: String?,
+    @SerializedName("total") val total: Double,
+    @SerializedName("status") val status: String,
+    @SerializedName("lampiran_url") val lampiranUrl: String?,
+    @SerializedName("catatan") val catatan: String?,
+    @SerializedName("items") val items: List<NotaItemDto>?,
+    @SerializedName("created_at") val createdAt: String?
+)
+
+data class NotaListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<NotaDto>,
+    @SerializedName("meta") val meta: PaginationMeta?
+)
+
+data class NotaSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: NotaDto?
+)
+
+data class NotaItemRequest(
+    @SerializedName("barang_jasa_id") val barangJasaId: Int? = null,
+    @SerializedName("nama_item") val namaItem: String? = null,
+    @SerializedName("jenis") val jenis: String? = null,
+    @SerializedName("kuantitas") val kuantitas: Double,
+    @SerializedName("satuan") val satuan: String? = null,
+    @SerializedName("harga_satuan") val hargaSatuan: Double
+)
+
+data class CreateNotaRequest(
+    @SerializedName("tipe") val tipe: String,
+    @SerializedName("tanggal") val tanggal: String,
+    @SerializedName("outlet_id") val outletId: Int? = null,
+    @SerializedName("kategori_transaksi_id") val kategoriTransaksiId: Int? = null,
+    @SerializedName("pihak_terkait") val pihakTerkait: String? = null,
+    @SerializedName("metode_pembayaran") val metodePembayaran: String? = null,
+    @SerializedName("catatan") val catatan: String? = null,
+    @SerializedName("items") val items: List<NotaItemRequest>
+)

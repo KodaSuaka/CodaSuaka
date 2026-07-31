@@ -269,9 +269,15 @@ coda-suaka-frontend/
 ### 📊 Poin Kinerja
 - **Skor Kinerja** — poin dari penugasan yang diselesaikan
 
+### 🛒 Kasir (POS) — _belum diimplementasi di app_
+- **Status:** API backend sudah tersedia & terhubung ke Keuangan (`/api/notas`, `/api/barang-jasas` — lihat [README backend](../coda-suaka-backend/README.md)), tetapi **layar Android-nya belum dibuat**. Modul ini masuk roadmap; belum ada `NotaScreen`/`BarangJasaScreen` di codebase frontend.
+
 ---
 
 ## Layar Aplikasi
+
+> Kasir (POS) tidak tercantum di bawah — API-nya sudah siap di backend, tetapi layar Android-nya belum diimplementasi.
+
 
 | Screen | ViewModel | Deskripsi |
 |--------|-----------|-----------|

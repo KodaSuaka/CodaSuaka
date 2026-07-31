@@ -149,6 +149,13 @@ coda-suaka-backend/
 - **Saldo** — perhitungan saldo per outlet & global
 - **Laba Rugi** — laporan laba/rugi
 
+### 🛒 Kasir (POS)
+- **Barang/Jasa** — katalog item dengan stok, harga jual/beli, status aktif
+- **Nota** — nota penjualan & pembelian multi-item (dari katalog atau item lepas)
+- **Impor Pembelian** — impor nota pembelian massal via Excel + lampiran
+- **Cetak Nota** — export nota ke PDF (DomPDF)
+- **Integrasi Keuangan** — tiap nota otomatis membuat `TransaksiKas` yang tertaut (`nota.transaksi_kas_id`): penjualan → kas masuk (tanpa approval), pembelian → kas keluar via `ApprovalService` (alur approval yang sama dengan input kas manual). Stok berkurang/bertambah atomik; hapus nota mengembalikan stok + menghapus entri kas terkait.
+
 ### 📊 Laporan & Ekspor
 - **Arus Kas** — laporan arus kas per periode
 - **Ringkasan Keuangan** — ringkasan tahunan
@@ -202,7 +209,10 @@ coda-suaka-backend/
 | [`Paket`](app/Models/paket.php) | Paket layanan | → TransaksiPaket |
 | [`TransaksiPaket`](app/Models/transaksi_paket.php) | Penjualan paket | → Paket, Karyawan |
 | [`KategoriTransaksi`](app/Models/KategoriTransaksi.php) | Kategori keuangan | → TransaksiKas |
-| [`TransaksiKas`](app/Models/TransaksiKas.php) | Transaksi buku kas | → KategoriTransaksi, Outlet |
+| [`TransaksiKas`](app/Models/TransaksiKas.php) | Transaksi buku kas | → KategoriTransaksi, Outlet, Nota |
+| [`BarangJasa`](app/Models/BarangJasa.php) | Katalog barang/jasa + stok | → NotaItem |
+| [`Nota`](app/Models/Nota.php) | Nota penjualan/pembelian | → NotaItem, TransaksiKas, KategoriTransaksi, Outlet |
+| [`NotaItem`](app/Models/NotaItem.php) | Baris item pada nota | → Nota, BarangJasa |
 | [`Chat`](app/Models/Chat.php) | Pesan internal | → Users |
 | [`Notification`](app/Models/Notification.php) | Notifikasi | → User |
 | [`AuditLog`](app/Models/AuditLog.php) | Log aktivitas | — |
@@ -303,6 +313,16 @@ php artisan permission:sync --force    # Skip konfirmasi
 | GET/POST/PUT/DELETE | `/api/transaksi-kas` | Kelola transaksi kas |
 | GET | `/api/transaksi-kas/saldo` | Lihat saldo |
 | GET | `/api/transaksi-kas/laporan/laba-rugi` | Laporan laba rugi |
+
+### Kasir (POS)
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| CRUD | `/api/barang-jasas` | Kelola katalog barang/jasa + stok |
+| GET/POST | `/api/notas` | Daftar & buat nota penjualan/pembelian |
+| POST | `/api/notas/import` | Impor nota pembelian massal via Excel |
+| GET | `/api/notas/{nota}` | Detail nota beserta item |
+| GET | `/api/notas/{nota}/pdf` | Cetak nota PDF |
+| DELETE | `/api/notas/{nota}` | Hapus nota (kembalikan stok + entri kas) |
 
 ### Laporan & Ekspor
 | Method | Endpoint | Deskripsi |

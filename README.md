@@ -63,9 +63,10 @@ CodaSuaka adalah aplikasi **manajemen bisnis terpadu** yang dirancang untuk memb
 | **Penugasan**     | Tugas dengan penanggung jawab, status (belum/proses/selesai), tenggat |
 | **Paket & Transaksi Paket** | Kelola paket layanan dan transaksinya |
 | **Keuangan**      | Buku Kas (pemasukan/pengeluaran), Kategori Transaksi, multi-outlet, multi-metode pembayaran |
+| **Kasir (POS)**   | Nota penjualan & pembelian dengan item (barang/jasa), katalog Barang/Jasa + stok, impor pembelian via Excel, cetak nota PDF. **Terhubung otomatis ke Keuangan**: tiap nota membuat entri Buku Kas (penjualan → masuk, pembelian → keluar lewat alur approval) |
 | **Laporan**       | Ringkasan keuangan grafik bulanan, Arus Kas (Operasi/Investasi/Pendanaan) |
-| **Export**        | PDF (Buku Kas, Laba Rugi, Arus Kas) & Excel (Buku Kas, Arus Kas) |
-| **Approval Workflow** | Transaksi kas keluar nominal ≥ threshold otomatis perlu approval atasan |
+| **Export**        | PDF (Buku Kas, Laba Rugi, Arus Kas, Nota) & Excel (Buku Kas, Arus Kas) |
+| **Approval Workflow** | Transaksi kas keluar nominal ≥ threshold otomatis perlu approval atasan (termasuk pembelian dari Kasir) |
 | **Chat**          | Chat internal antar pengguna dalam satu instansi |
 | **Super Admin**   | Panel khusus untuk mengelola seluruh instansi, owner, dan paket secara terpusat |
 
@@ -121,7 +122,7 @@ cd coda-suaka-backend
 cp .env.example .env
 
 # Atur koneksi database di file .env
-# DB_DATABASE=codasuaka
+# DB_DATABASE=codasuaka   # nama DB lokal (dev)
 # DB_USERNAME=root
 # DB_PASSWORD=
 
@@ -134,7 +135,7 @@ php artisan key:generate
 # Jalankan migrasi & seeder
 php artisan migrate --seed
 
-# (Opsional) Symlink storage
+# Symlink storage (WAJIB — lampiran impor Kasir disimpan di disk publik)
 php artisan storage:link
 
 # Jalankan server
@@ -142,6 +143,28 @@ php artisan serve
 
 # (Opsional) Jalankan queue worker
 php artisan queue:listen
+```
+
+> **⚠️ Nama database berbeda per environment (disengaja, bukan salah ketik):**
+> **dev = `codasuaka`** (huruf **c**), **produksi = `kodasuaka`** (huruf **k**).
+> Perintah deploy/backup di server produksi harus menargetkan `kodasuaka`.
+
+### Deploy ke Produksi (ringkas)
+
+```bash
+# 1. Backup dulu (produksi memakai TCP, bukan socket)
+mysqldump --protocol=TCP -h 127.0.0.1 -P 3306 -u <DB_USERNAME> -p kodasuaka > backup_$(date +%F_%H%M).sql
+
+# 2. Tarik kode & dependency produksi
+git pull origin main && composer install --no-dev --optimize-autoloader
+
+# 3. Migrasi (aditif — JANGAN pernah migrate:fresh di produksi)
+php artisan migrate --force
+
+# 4. Symlink storage + rebuild cache + restart worker
+php artisan storage:link
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+php artisan queue:restart
 ```
 
 ### Development Mode (All-in-One)
@@ -994,6 +1017,65 @@ Accept: application/json
 | `harga` | numeric | ✅ | Harga paket |
 | `durasi_hari` | int | ✅ | Masa berlaku paket (hari) |
 | `fitur` | json | ⬜ | Daftar fitur yang termasuk |
+
+---
+
+### 23. Kasir — Barang / Jasa (Katalog)
+
+> Katalog item yang dijual/dibeli, lengkap dengan stok. Membutuhkan permission Kasir (`view/manage:kasir`).
+
+#### `GET /api/barang-jasas` — Daftar barang/jasa (paginated, filter `jenis`, `is_active`, `q`)
+#### `POST /api/barang-jasas` — Tambah barang/jasa
+#### `GET /api/barang-jasas/{barang_jasa}` — Detail
+#### `PUT /api/barang-jasas/{barang_jasa}` — Update
+#### `DELETE /api/barang-jasas/{barang_jasa}` — Hapus (ditolak jika item sudah dipakai di nota)
+
+**Request Body (POST):**
+
+| Field | Tipe | Required | Deskripsi |
+|-------|------|----------|-----------|
+| `nama` | string | ✅ | Nama barang/jasa |
+| `jenis` | string | ✅ | `barang` \| `jasa` |
+| `satuan` | string | ✅ | Satuan (pcs, kg, jam, …) |
+| `harga_jual` | numeric | ✅ | Harga jual |
+| `harga_beli` | numeric | ⬜ | Harga beli |
+| `stok` | int | ⬜ | Stok awal (hanya relevan untuk `barang`) |
+| `is_active` | boolean | ⬜ | Aktif/nonaktif (default true) |
+| `keterangan` | string | ⬜ | Catatan |
+
+---
+
+### 24. Kasir — Nota (Penjualan & Pembelian)
+
+> Nota transaksi dengan banyak item. **Setiap nota otomatis membuat entri Buku Kas** yang tertaut dua arah (`nota.transaksi_kas_id`): penjualan → kas **masuk** (tanpa approval), pembelian → kas **keluar** (mengikuti alur approval bila ≥ threshold). Menghapus nota mengembalikan stok dan menghapus entri kas terkait.
+
+#### `GET /api/notas` — Daftar nota (paginated, filter `tipe`, `outlet_id`, rentang `tanggal`)
+#### `POST /api/notas` — Buat nota penjualan/pembelian
+#### `POST /api/notas/import` — Impor nota pembelian massal via Excel (+ lampiran)
+#### `GET /api/notas/{nota}` — Detail nota beserta item
+#### `GET /api/notas/{nota}/pdf` — Cetak nota sebagai PDF
+#### `DELETE /api/notas/{nota}` — Hapus nota (ditolak jika pembelian sudah disetujui approval)
+
+**Request Body (POST):**
+
+| Field | Tipe | Required | Deskripsi |
+|-------|------|----------|-----------|
+| `tipe` | string | ✅ | `penjualan` \| `pembelian` |
+| `tanggal` | date | ✅ | Tanggal nota (≤ hari ini) |
+| `outlet_id` | int | ⬜ | Outlet terkait |
+| `kategori_transaksi_id` | int | ⬜ | Kategori kas; jika kosong, dipilih/dibuat default sesuai tipe |
+| `pihak_terkait` | string | ⬜ | Nama pelanggan/pemasok |
+| `metode_pembayaran` | string | ⬜ | Tunai, Transfer, dll. |
+| `catatan` | string | ⬜ | Catatan nota |
+| `items` | array | ✅ | Minimal 1 item |
+| `items.*.barang_jasa_id` | int | ⬜* | ID katalog; jika kosong, wajib isi `nama_item` + `jenis` |
+| `items.*.nama_item` | string | ⬜* | Nama item (jika bukan dari katalog) |
+| `items.*.jenis` | string | ⬜* | `barang` \| `jasa` (jika bukan dari katalog) |
+| `items.*.kuantitas` | numeric | ✅ | Jumlah (> 0) |
+| `items.*.satuan` | string | ⬜ | Satuan |
+| `items.*.harga_satuan` | numeric | ✅ | Harga per unit |
+
+> Total nota dihitung server dari `Σ(kuantitas × harga_satuan)`. Untuk item `barang` dari katalog, stok berkurang (penjualan) / bertambah (pembelian) secara atomik; penjualan gagal bila stok tidak cukup.
 
 ---
 

@@ -133,4 +133,9 @@ val dataModule = module {
     single<NotificationRepository> {
         NotificationRepositoryImpl(apiService = get())
     }
+
+    // Kasir
+    single<KasirRepository> {
+        KasirRepositoryImpl(apiService = get())
+    }
 }

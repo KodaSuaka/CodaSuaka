@@ -1,6 +1,8 @@
 package com.example.codasuaka.data.remote
 
 import com.example.codasuaka.data.remote.dto.*
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -470,4 +472,61 @@ interface ApiService {
     suspend fun deleteNotification(
         @Path("id") id: Int
     ): Response<ApiStatusResponse>
+
+    // ─── Kasir: Barang/Jasa ───────────────────────────────────────
+
+    @GET("api/barang-jasas")
+    suspend fun getBarangJasaList(
+        @Query("page") page: Int? = null,
+        @Query("jenis") jenis: String? = null,
+        @Query("is_active") isActive: Boolean? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<BarangJasaListResponse>
+
+    @POST("api/barang-jasas")
+    suspend fun createBarangJasa(@Body request: BarangJasaRequest): Response<BarangJasaSingleResponse>
+
+    @PUT("api/barang-jasas/{id}")
+    suspend fun updateBarangJasa(@Path("id") id: Int, @Body request: BarangJasaRequest): Response<BarangJasaSingleResponse>
+
+    @DELETE("api/barang-jasas/{id}")
+    suspend fun deleteBarangJasa(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    // ─── Kasir: Nota ──────────────────────────────────────────────
+
+    @GET("api/notas")
+    suspend fun getNotaList(
+        @Query("page") page: Int? = null,
+        @Query("tipe") tipe: String? = null,
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("status") status: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<NotaListResponse>
+
+    @POST("api/notas")
+    suspend fun createNota(@Body request: CreateNotaRequest): Response<NotaSingleResponse>
+
+    @GET("api/notas/{id}")
+    suspend fun getNotaDetail(@Path("id") id: Int): Response<NotaSingleResponse>
+
+    @DELETE("api/notas/{id}")
+    suspend fun deleteNota(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    @GET("api/notas/{id}/pdf")
+    @Streaming
+    suspend fun getNotaPdf(@Path("id") id: Int): Response<ResponseBody>
+
+    @Multipart
+    @POST("api/notas/import")
+    suspend fun importNotaPembelian(
+        @Part file: MultipartBody.Part,
+        @Part("tanggal") tanggal: RequestBody,
+        @Part("outlet_id") outletId: RequestBody? = null,
+        @Part("pihak_terkait") pihakTerkait: RequestBody? = null,
+        @Part("metode_pembayaran") metodePembayaran: RequestBody? = null,
+        @Part("kategori_transaksi_id") kategoriTransaksiId: RequestBody? = null,
+        @Part("catatan") catatan: RequestBody? = null
+    ): Response<NotaSingleResponse>
 }

@@ -114,7 +114,7 @@ val viewModelModule = module {
     viewModel { JamOperasionalViewModel(apiService = get()) }
 
     // Kasir
-    viewModel { KasirViewModel() }
+    viewModel { KasirViewModel(kasirRepository = get()) }
 
     // Notifikasi
     viewModel { NotificationViewModel(notificationRepository = get()) }

@@ -19,8 +19,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,7 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.codasuaka.data.remote.dto.BarangJasaDto
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.ErrorMessageMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +43,27 @@ fun KasirScreen(
     viewModel: KasirViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // ─── Snackbar ───
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(uiState.loadError) {
+        uiState.loadError?.let {
+            snackbarHostState.showSnackbar(ErrorMessageMapper.map(it, "memuat produk").message)
+            viewModel.clearLoadError()
+        }
+    }
+    LaunchedEffect(uiState.checkoutError) {
+        uiState.checkoutError?.let {
+            snackbarHostState.showSnackbar(ErrorMessageMapper.map(it, "checkout").message)
+            viewModel.clearCheckoutError()
+        }
+    }
+    LaunchedEffect(uiState.checkoutSuccessNota) {
+        uiState.checkoutSuccessNota?.let { nota ->
+            snackbarHostState.showSnackbar("Nota ${nota.nomorNota} berhasil dibuat")
+            viewModel.clearCheckoutSuccess()
+        }
+    }
 
     // ─── Force Light Theme ───
     MaterialTheme(
@@ -54,20 +80,21 @@ fun KasirScreen(
         )
     ) {
         Scaffold(
+            snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { 
+                    title = {
                         Text(
-                            text = "Kasir", 
-                            fontWeight = FontWeight.ExtraBold, 
-                            color = Secondary 
-                        ) 
+                            text = "Kasir",
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Secondary
+                        )
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = "Kembali", 
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Kembali",
                                 tint = Secondary
                             )
                         }
@@ -84,11 +111,16 @@ fun KasirScreen(
                         searchQuery = uiState.searchQuery,
                         onSearchChange = { viewModel.onSearchQueryChange(it) },
                         selectedCategory = uiState.selectedCategory,
-                        onCategorySelect = { viewModel.onCategorySelect(it) }
+                        onCategorySelect = { viewModel.onCategorySelect(it) },
+                        categories = uiState.categories
                     )
 
                     // ── Product Grid ──
-                    if (uiState.filteredProducts.isEmpty()) {
+                    if (uiState.isLoading && uiState.allProducts.isEmpty()) {
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Primary)
+                        }
+                    } else if (uiState.filteredProducts.isEmpty()) {
                         EmptyStateKasir()
                     } else {
                         LazyVerticalGrid(
@@ -121,8 +153,9 @@ fun KasirScreen(
                     CartSummaryBar(
                         totalItems = uiState.totalItems,
                         totalPrice = uiState.totalPrice,
+                        isCheckingOut = uiState.isCheckingOut,
                         onClick = { viewModel.toggleCartSheet(true) },
-                        onCheckout = { /* Next Stage */ }
+                        onCheckout = { viewModel.checkout() }
                     )
                 }
             }
@@ -133,10 +166,11 @@ fun KasirScreen(
             CartDetailsSheet(
                 cartItems = uiState.cartItems.values.toList(),
                 totalPrice = uiState.totalPrice,
+                isCheckingOut = uiState.isCheckingOut,
                 onDismiss = { viewModel.toggleCartSheet(false) },
                 onAdd = { viewModel.addToCart(it) },
                 onRemove = { viewModel.removeFromCart(it) },
-                onCheckout = { /* Next Stage */ }
+                onCheckout = { viewModel.checkout() }
             )
         }
     }
@@ -147,10 +181,9 @@ private fun HeaderKasir(
     searchQuery: String,
     onSearchChange: (String) -> Unit,
     selectedCategory: String,
-    onCategorySelect: (String) -> Unit
+    onCategorySelect: (String) -> Unit,
+    categories: List<String>
 ) {
-    val categories = listOf("Semua", "Minuman", "Makanan", "Camilan", "Jasa")
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -188,16 +221,9 @@ private fun HeaderKasir(
         ) {
             categories.forEach { category ->
                 val isSelected = category == selectedCategory
-                
-                // Racikan Warna Dinamis
-                val categoryColor = when (category) {
-                    "Semua" -> Primary
-                    "Minuman" -> BlueSchedule
-                    "Makanan" -> OrangeManage
-                    "Camilan" -> PurpleLog
-                    "Jasa" -> TealStatus
-                    else -> Secondary
-                }
+
+                // Racikan Warna Dinamis (hash kategori bebas teks ke palet warna)
+                val categoryColor = if (category == "Semua") Primary else categoryColorFor(category)
 
                 if (category == "Semua") {
                     // Style ala Buku Kas (Minimalist Outlined)
@@ -253,18 +279,12 @@ private fun HeaderKasir(
 
 @Composable
 private fun ProductCard(
-    produk: Produk,
+    produk: BarangJasaDto,
     quantity: Int,
     onAdd: () -> Unit,
     onRemove: () -> Unit
 ) {
-    val categoryColor = when (produk.kategori) {
-        "Minuman" -> BlueSchedule
-        "Makanan" -> OrangeManage
-        "Camilan" -> PurpleLog
-        "Jasa" -> TealStatus
-        else -> Secondary
-    }
+    val categoryColor = categoryColorFor(produk.kategori)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -281,7 +301,7 @@ private fun ProductCard(
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text(
-                    text = produk.kategori,
+                    text = produk.kategori ?: "Lainnya",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
@@ -326,7 +346,7 @@ private fun ProductCard(
             )
 
             Text(
-                text = formatRupiahKasir(produk.harga),
+                text = formatRupiahKasir(produk.hargaJual),
                 style = MaterialTheme.typography.titleMedium,
                 color = OnSurface,
                 fontWeight = FontWeight.ExtraBold
@@ -383,6 +403,7 @@ private fun ProductCard(
 private fun CartSummaryBar(
     totalItems: Int,
     totalPrice: Double,
+    isCheckingOut: Boolean,
     onClick: () -> Unit,
     onCheckout: () -> Unit
 ) {
@@ -437,18 +458,32 @@ private fun CartSummaryBar(
             }
 
             Button(
-                onClick = { 
+                onClick = {
                     // To prevent immediate navigation, let's open the sheet first
                     onClick()
                 },
+                enabled = !isCheckingOut,
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Success),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Success,
+                    disabledContainerColor = Success.copy(alpha = 0.5f)
+                ),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
-                Text("Bayar", fontWeight = FontWeight.Black, fontSize = 15.sp)
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp))
+                if (isCheckingOut) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Memproses...", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                } else {
+                    Text("Bayar", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp))
+                }
             }
         }
     }
@@ -459,9 +494,10 @@ private fun CartSummaryBar(
 private fun CartDetailsSheet(
     cartItems: List<CartItem>,
     totalPrice: Double,
+    isCheckingOut: Boolean,
     onDismiss: () -> Unit,
-    onAdd: (Produk) -> Unit,
-    onRemove: (Produk) -> Unit,
+    onAdd: (BarangJasaDto) -> Unit,
+    onRemove: (BarangJasaDto) -> Unit,
     onCheckout: () -> Unit
 ) {
     ModalBottomSheet(
@@ -535,25 +571,41 @@ private fun CartDetailsSheet(
 
             // Action
             Button(
-                onClick = { 
-                    onDismiss()
-                    onCheckout()
-                },
+                onClick = { onCheckout() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
+                enabled = !isCheckingOut,
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Success),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Success,
+                    disabledContainerColor = Success.copy(alpha = 0.5f)
+                ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
-                Text(
-                    text = "Konfirmasi & Bayar",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(24.dp))
+                if (isCheckingOut) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Memproses...",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        text = "Konfirmasi & Bayar",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(24.dp))
+                }
             }
         }
     }
@@ -565,13 +617,7 @@ private fun CartItemRow(
     onAdd: () -> Unit,
     onRemove: () -> Unit
 ) {
-    val categoryColor = when (item.produk.kategori) {
-        "Minuman" -> BlueSchedule
-        "Makanan" -> OrangeManage
-        "Camilan" -> PurpleLog
-        "Jasa" -> TealStatus
-        else -> Secondary
-    }
+    val categoryColor = categoryColorFor(item.produk.kategori)
 
     Row(
         modifier = Modifier
@@ -613,7 +659,7 @@ private fun CartItemRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = formatRupiahKasir(item.produk.harga),
+                text = formatRupiahKasir(item.produk.hargaJual),
                 style = MaterialTheme.typography.bodySmall,
                 color = OnSurfaceVariant,
                 fontWeight = FontWeight.Bold
@@ -683,6 +729,15 @@ private fun EmptyStateKasir() {
             Text("Produk tidak ditemukan", color = OnSurfaceVariant)
         }
     }
+}
+
+// Palet warna untuk kategori bebas-teks: dipilih via hash nama kategori supaya
+// konsisten per kategori tanpa perlu daftar `when` yang di-maintain manual.
+private val categoryColorPalette = listOf(BlueSchedule, OrangeManage, PurpleLog, TealStatus)
+
+private fun categoryColorFor(kategori: String?): Color {
+    if (kategori.isNullOrBlank()) return Secondary
+    return categoryColorPalette[Math.floorMod(kategori.hashCode(), categoryColorPalette.size)]
 }
 
 private fun formatRupiahKasir(amount: Double): String {
