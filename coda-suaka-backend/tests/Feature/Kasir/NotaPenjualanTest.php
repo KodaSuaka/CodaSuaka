@@ -11,6 +11,7 @@ use App\Models\role;
 use App\Models\role_permission;
 use App\Models\TransaksiKas;
 use App\Models\User;
+use App\Services\KasirService;
 use App\Services\NotaExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -210,5 +211,48 @@ class NotaPenjualanTest extends TestCase
         $this->assertSame(10, $barangJasa->fresh()->stok);
         $this->assertNull(Nota::find($notaId));
         $this->assertNull(TransaksiKas::find($transaksiKasId));
+    }
+
+    public function test_nomor_nota_bentrok_saat_dibuat_retry_berhasil_dengan_nomor_berbeda()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => 10,
+            'harga_jual' => 20000,
+        ]);
+
+        $nomorYangAkanBentrok = 'PJL-'.now()->format('Ymd').'-0001';
+
+        // Simulasikan race dua checkout bersamaan: nomor yang akan
+        // di-generate KasirService pada percobaan pertama (count nota
+        // penjualan hari ini = 0 -> "0001") sudah "diambil" duluan.
+        // Tipe dibuat beda ('pembelian') supaya tidak ikut ke-hitung oleh
+        // filter count tipe=penjualan, tapi tetap bentrok di
+        // unique(['instansi_id', 'nomor_nota']) — persis seperti race
+        // antara dua transaksi tipe apa pun pada instansi yang sama.
+        Nota::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'tipe' => 'pembelian',
+            'nomor_nota' => $nomorYangAkanBentrok,
+        ]);
+
+        $nota = app(KasirService::class)->buatNotaPenjualan([
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Tunai',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'kuantitas' => 3,
+                    'harga_satuan' => 20000,
+                ],
+            ],
+        ], $this->user);
+
+        // Berhasil dibuat (tidak melempar QueryException) dan mendapat
+        // nomor BERBEDA dari yang sudah dipakai duluan — bukti retry jalan.
+        $this->assertNotSame($nomorYangAkanBentrok, $nota->nomor_nota);
+        $this->assertSame('PJL-'.now()->format('Ymd').'-0002', $nota->nomor_nota);
+        $this->assertNotNull(Nota::find($nota->id));
     }
 }

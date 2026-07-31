@@ -8,6 +8,7 @@ use App\Models\Nota;
 use App\Services\KasirService;
 use App\Services\NotaExportService;
 use App\Traits\ApiResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -78,6 +79,10 @@ class NotaController extends Controller
             return $this->success($nota, 'Nota pembelian berhasil dibuat', 201);
         } catch (ValidationException $e) {
             return $this->error(collect($e->errors())->flatten()->first() ?? $e->getMessage(), 422);
+        } catch (QueryException $e) {
+            // Backstop jika retry nomor_nota di KasirService tetap habis (lihat
+            // KasirService::buatNotaDenganNomorUnik()) — seharusnya nyaris tidak pernah kejadian.
+            return $this->error('Terjadi konflik saat membuat nomor nota, silakan coba lagi.', 500);
         }
     }
 
@@ -94,6 +99,10 @@ class NotaController extends Controller
             return $this->success($nota->load('items'), 'Nota pembelian berhasil diimpor', 201);
         } catch (ValidationException $e) {
             return $this->error(collect($e->errors())->flatten()->first() ?? $e->getMessage(), 422);
+        } catch (QueryException $e) {
+            // Backstop jika retry nomor_nota di KasirService tetap habis (lihat
+            // KasirService::buatNotaDenganNomorUnik()) — seharusnya nyaris tidak pernah kejadian.
+            return $this->error('Terjadi konflik saat membuat nomor nota, silakan coba lagi.', 500);
         }
     }
 
