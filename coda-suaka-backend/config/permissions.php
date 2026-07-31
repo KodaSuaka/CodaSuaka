@@ -163,6 +163,18 @@ return [
                 'manage:attendance' => 'Mengelola kehadiran (legacy)',
             ],
         ],
+
+        // ─── Kasir (Transaksi UMKM) ────────────────────────────────
+        'kasir' => [
+            'label' => 'Kasir (Transaksi UMKM)',
+            'permissions' => [
+                'view:kasir' => 'Melihat data kasir (barang/jasa & nota transaksi)',
+                'manage:kasir' => 'Mengelola barang/jasa & membuat nota penjualan/pembelian',
+                'delete:kasir' => 'Menghapus nota & data barang/jasa',
+                'export:kasir' => 'Mengekspor/mencetak nota ke PDF',
+                'import:kasir' => 'Mengimpor data nota pembelian dari file',
+            ],
+        ],
     ],
 
     /*
@@ -225,6 +237,13 @@ return [
 
             // Instansi / Perusahaan
             'manage:instansi',
+
+            // Kasir
+            'view:kasir',
+            'manage:kasir',
+            'delete:kasir',
+            'export:kasir',
+            'import:kasir',
         ],
 
         'Keuangan' => [
@@ -241,6 +260,13 @@ return [
 
             // Penugasan (read-only untuk melihat tugas)
             'view:penugasan',
+
+            // Kasir (tanpa delete:kasir — pola sama dengan Keuangan yang
+            // juga tidak punya delete:keuangan)
+            'view:kasir',
+            'manage:kasir',
+            'export:kasir',
+            'import:kasir',
         ],
 
         'Manager' => [
