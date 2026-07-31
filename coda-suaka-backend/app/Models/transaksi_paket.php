@@ -20,8 +20,8 @@ class transaksi_paket extends Model
     protected function casts(): array
     {
         return [
-            'tanggal_mulai' => 'date',
-            'tanggal_berakhir' => 'date',
+            'tanggal_mulai' => 'date:Y-m-d',
+            'tanggal_berakhir' => 'date:Y-m-d',
             'total_harga' => 'decimal:2',
         ];
     }

@@ -36,12 +36,16 @@ class TransaksiKas extends Model
         'lampiran_url',
         'dokumen_transaksi_id',
         'created_by',
+        'status_approval',
     ];
 
     protected function casts(): array
     {
         return [
-            'tanggal' => 'date',
+            // Format eksplisit: tanpa ini cast 'date' diserialisasi ke ISO-8601
+            // UTC, sehingga tanggal mundur satu hari untuk timezone app +UTC
+            // (Asia/Jakarta) di seluruh response JSON.
+            'tanggal' => 'date:Y-m-d',
             'nominal' => 'decimal:2',
             'status_approval' => 'string',
         ];

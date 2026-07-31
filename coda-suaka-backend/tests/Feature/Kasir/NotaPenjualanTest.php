@@ -63,7 +63,7 @@ class NotaPenjualanTest extends TestCase
             'harga_jual' => 20000,
         ]);
 
-        $response = $this->actingAs($this->user)->postJson('/api/nota', [
+        $response = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'penjualan',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
@@ -102,7 +102,7 @@ class NotaPenjualanTest extends TestCase
         $notaCountBefore = Nota::count();
         $transaksiKasCountBefore = TransaksiKas::count();
 
-        $response = $this->actingAs($this->user)->postJson('/api/nota', [
+        $response = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'penjualan',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
@@ -153,7 +153,7 @@ class NotaPenjualanTest extends TestCase
 
     public function test_item_tanpa_barang_jasa_id_berhasil_tanpa_menyentuh_stok()
     {
-        $response = $this->actingAs($this->user)->postJson('/api/nota', [
+        $response = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'penjualan',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
@@ -187,7 +187,7 @@ class NotaPenjualanTest extends TestCase
             'harga_jual' => 20000,
         ]);
 
-        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+        $createResponse = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'penjualan',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
@@ -205,7 +205,7 @@ class NotaPenjualanTest extends TestCase
         $transaksiKasId = $nota->transaksi_kas_id;
         $this->assertSame(10 - 3, $barangJasa->fresh()->stok);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+        $response = $this->actingAs($this->user)->deleteJson("/api/notas/{$notaId}");
 
         $response->assertStatus(200);
         $this->assertSame(10, $barangJasa->fresh()->stok);

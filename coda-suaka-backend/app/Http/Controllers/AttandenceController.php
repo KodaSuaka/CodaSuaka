@@ -227,21 +227,28 @@ class AttandenceController extends Controller
         $bulan = $request->get('bulan', now($tz)->month);
         $tahun = $request->get('tahun', now($tz)->year);
 
-        // Karyawan dalam instansi — eager load users to avoid N+1
-        $userIds = User::where('instansi_id', $user->instansi_id)->pluck('id');
-
-        // Load all users with their karyawan profile in one query
-        $users = User::whereIn('id', $userIds)
+        // Karyawan dalam instansi — satu query saja (dulu 2 query terpisah
+        // untuk ambil id lalu ambil user by id, padahal bisa sekaligus).
+        $users = User::where('instansi_id', $user->instansi_id)
             ->with('profilKaryawan')
             ->get()
             ->keyBy('id');
+        $userIds = $users->keys();
 
         // Bug #5: Ambil pengajuan yang sudah disetujui di bulan ini
         // untuk cross-reference agar karyawan yang sudah izin/cuti/sakit
         // tidak dihitung sebagai alpha
+        // Batas bulan rekap dihitung sekali. Sebelumnya cabang "mencakup
+        // seluruh bulan" memakai string "$tahun-$bulan-31" — hari ke-31
+        // di-hardcode dan bulan tanpa zero-pad. MySQL memaafkan itu (DATE
+        // hanya divalidasi rentangnya, bukan kalendernya), tapi Postgres
+        // menolak '2026-02-31' dan query akan error.
+        $bulanStart = \Carbon\Carbon::create($tahun, $bulan, 1)->toDateString();
+        $bulanEnd = \Carbon\Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
+
         $pengajuansDisetujui = \App\Models\pengajuan::whereIn('user_id', $userIds)
             ->where('status', 'disetujui')
-            ->where(function ($q) use ($tahun, $bulan) {
+            ->where(function ($q) use ($tahun, $bulan, $bulanStart, $bulanEnd) {
                 // Pengajuan yang overlap dengan bulan rekap
                 $q->where(function ($q2) use ($tahun, $bulan) {
                     $q2->whereYear('tanggal_mulai', $tahun)
@@ -249,10 +256,10 @@ class AttandenceController extends Controller
                 })->orWhere(function ($q2) use ($tahun, $bulan) {
                     $q2->whereYear('tanggal_selesai', $tahun)
                         ->whereMonth('tanggal_selesai', $bulan);
-                })->orWhere(function ($q2) use ($tahun, $bulan) {
+                })->orWhere(function ($q2) use ($bulanStart, $bulanEnd) {
                     // Pengajuan yang mencakup seluruh bulan
-                    $q2->where('tanggal_mulai', '<=', "$tahun-$bulan-01")
-                        ->where('tanggal_selesai', '>=', "$tahun-$bulan-31");
+                    $q2->where('tanggal_mulai', '<=', $bulanStart)
+                        ->where('tanggal_selesai', '>=', $bulanEnd);
                 });
             })
             ->get()
@@ -269,7 +276,12 @@ class AttandenceController extends Controller
                 // Hitung jumlah hari kerja di bulan ini (exclude Minggu)
                 $startDate = \Carbon\Carbon::create($tahun, $bulan, 1);
                 $endDate = $startDate->copy()->endOfMonth();
-                $totalDaysInMonth = $startDate->diffInDays($endDate) + 1;
+                // daysInMonth, bukan diffInDays($endDate)+1: sejak Carbon 3
+                // diffInDays mengembalikan float, dan endOfMonth() bernilai
+                // 23:59:59.999999 sehingga hasilnya 27.999...+1 = 28.999...
+                // untuk Februari. Efeknya hari_kerja (dan total_alpha) selalu
+                // kelebihan satu hari dan terkirim sebagai pecahan ke client.
+                $totalDaysInMonth = $startDate->daysInMonth;
                 $mingguCount = 0;
                 for ($d = $startDate->copy(); $d->lte($endDate); $d->addDay()) {
                     if ($d->dayOfWeek === \Carbon\Carbon::SUNDAY) {

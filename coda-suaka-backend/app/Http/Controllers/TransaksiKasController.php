@@ -10,6 +10,7 @@ use App\Services\ApprovalService;
 use App\Services\AuditService;
 use App\Services\NotificationService;
 use App\Traits\ApiResponse;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class TransaksiKasController extends Controller
@@ -28,6 +29,29 @@ class TransaksiKasController extends Controller
         $this->auditService = $auditService;
         $this->notificationService = $notificationService;
         $this->authorizeResource(TransaksiKas::class, 'transaksi_kas');
+    }
+
+    /**
+     * Terapkan filter rentang tanggal ke query transaksi kas.
+     *
+     * Kolom `tanggal` bertipe DATE, jadi whereDate() hanya membungkusnya
+     * dengan DATE() tanpa guna — dan membuat query non-sargable sehingga
+     * index (instansi_id, tanggal) tidak terpakai. Perbandingan langsung
+     * memakai index yang sama sebagai range scan.
+     */
+    private function applyDateRange($query, Request $request): void
+    {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
+        if ($request->filled('start_date')) {
+            $query->where('tanggal', '>=', Carbon::parse($request->start_date)->toDateString());
+        }
+        if ($request->filled('end_date')) {
+            $query->where('tanggal', '<=', Carbon::parse($request->end_date)->toDateString());
+        }
     }
 
     /**
@@ -66,12 +90,7 @@ class TransaksiKasController extends Controller
         }
 
         // Filter by date range
-        if ($request->has('start_date')) {
-            $query->whereDate('tanggal', '>=', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('tanggal', '<=', $request->end_date);
-        }
+        $this->applyDateRange($query, $request);
 
         // Filter by status_approval
         if ($request->has('status_approval')) {
@@ -246,12 +265,7 @@ class TransaksiKasController extends Controller
         }
 
         // Filter by date range
-        if ($request->has('start_date')) {
-            $query->whereDate('tanggal', '>=', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('tanggal', '<=', $request->end_date);
-        }
+        $this->applyDateRange($query, $request);
 
         $totalMasuk = (float) $query->clone()->where('tipe', 'masuk')->sum('nominal');
         $totalKeluar = (float) $query->clone()->where('tipe', 'keluar')->sum('nominal');
@@ -287,12 +301,7 @@ class TransaksiKasController extends Controller
         }
 
         // Filter by date range
-        if ($request->has('start_date')) {
-            $query->whereDate('tanggal', '>=', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('tanggal', '<=', $request->end_date);
-        }
+        $this->applyDateRange($query, $request);
 
         // ─── Aggregate ───
         $totalPendapatan = (float) (clone $query)

@@ -88,7 +88,7 @@ class NotaPembelianTest extends TestCase
             'harga_beli' => 10000,
         ]);
 
-        $response = $this->actingAs($this->user)->postJson('/api/nota', [
+        $response = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'pembelian',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
@@ -132,7 +132,7 @@ class NotaPembelianTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
-        $response = $this->actingAs($this->user)->postJson('/api/nota', [
+        $response = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'pembelian',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Transfer',
@@ -197,7 +197,7 @@ class NotaPembelianTest extends TestCase
 
         $file = new UploadedFile($tmpPath, 'nota-pembelian.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
-        $response = $this->actingAs($this->user)->post('/api/nota/import', [
+        $response = $this->actingAs($this->user)->post('/api/notas/import', [
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
             'file' => $file,
@@ -230,7 +230,7 @@ class NotaPembelianTest extends TestCase
 
         $notaCountBefore = Nota::count();
 
-        $response = $this->actingAs($this->user)->post('/api/nota/import', [
+        $response = $this->actingAs($this->user)->post('/api/notas/import', [
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
             'file' => $file,
@@ -251,7 +251,7 @@ class NotaPembelianTest extends TestCase
             'harga_beli' => 10000,
         ]);
 
-        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+        $createResponse = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'pembelian',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Tunai',
@@ -271,7 +271,7 @@ class NotaPembelianTest extends TestCase
         $this->assertSame(0, ApprovalLog::where('transaksi_kas_id', $transaksiKasId)->count());
         $this->assertSame(5 + 3, $barangJasa->fresh()->stok);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+        $response = $this->actingAs($this->user)->deleteJson("/api/notas/{$notaId}");
 
         $response->assertStatus(200);
         $this->assertSame(5, $barangJasa->fresh()->stok);
@@ -288,7 +288,7 @@ class NotaPembelianTest extends TestCase
             'harga_beli' => 15000,
         ]);
 
-        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+        $createResponse = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'pembelian',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Transfer',
@@ -316,7 +316,7 @@ class NotaPembelianTest extends TestCase
 
         $stokSebelum = $barangJasa->fresh()->stok;
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+        $response = $this->actingAs($this->user)->deleteJson("/api/notas/{$notaId}");
 
         $response->assertStatus(422);
         $this->assertNotNull(Nota::find($notaId));
@@ -333,7 +333,7 @@ class NotaPembelianTest extends TestCase
             'harga_beli' => 15000,
         ]);
 
-        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+        $createResponse = $this->actingAs($this->user)->postJson('/api/notas', [
             'tipe' => 'pembelian',
             'tanggal' => now()->format('Y-m-d'),
             'metode_pembayaran' => 'Transfer',
@@ -354,7 +354,7 @@ class NotaPembelianTest extends TestCase
         $this->assertSame('pending', ApprovalLog::where('transaksi_kas_id', $transaksiKasId)->value('status'));
         $this->assertSame(5 + 100, $barangJasa->fresh()->stok);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+        $response = $this->actingAs($this->user)->deleteJson("/api/notas/{$notaId}");
 
         $response->assertStatus(200);
         $this->assertSame(5, $barangJasa->fresh()->stok);

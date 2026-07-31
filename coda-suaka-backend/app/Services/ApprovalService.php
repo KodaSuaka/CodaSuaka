@@ -80,6 +80,7 @@ class ApprovalService
             'transaksiKas' => fn ($q) => $q->select([
                 'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
                 'keterangan', 'status_approval', 'created_by', 'outlet_id',
+                'kategori_transaksi_id',
             ]),
             'transaksiKas.kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori']),
             'transaksiKas.outlet' => fn ($q) => $q->select(['id', 'nama_outlet']),
@@ -96,11 +97,13 @@ class ApprovalService
                 if (! empty($filters['outlet_id'])) {
                     $q->where('outlet_id', $filters['outlet_id']);
                 }
+                // Perbandingan langsung (bukan whereDate) supaya index
+                // (instansi_id, tanggal) di transaksi_kas tetap terpakai.
                 if (! empty($filters['start_date'])) {
-                    $q->whereDate('tanggal', '>=', $filters['start_date']);
+                    $q->where('tanggal', '>=', Carbon::parse($filters['start_date'])->toDateString());
                 }
                 if (! empty($filters['end_date'])) {
-                    $q->whereDate('tanggal', '<=', $filters['end_date']);
+                    $q->where('tanggal', '<=', Carbon::parse($filters['end_date'])->toDateString());
                 }
             })
             ->where('status', 'pending')
@@ -117,6 +120,7 @@ class ApprovalService
             'transaksiKas' => fn ($q) => $q->select([
                 'id', 'tanggal', 'tipe', 'nominal', 'metode_pembayaran',
                 'keterangan', 'status_approval', 'created_by', 'outlet_id',
+                'kategori_transaksi_id',
             ]),
             'transaksiKas.kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori']),
             'transaksiKas.outlet' => fn ($q) => $q->select(['id', 'nama_outlet']),
@@ -135,11 +139,13 @@ class ApprovalService
                 if (! empty($filters['outlet_id'])) {
                     $q->where('outlet_id', $filters['outlet_id']);
                 }
+                // Perbandingan langsung (bukan whereDate) supaya index
+                // (instansi_id, tanggal) di transaksi_kas tetap terpakai.
                 if (! empty($filters['start_date'])) {
-                    $q->whereDate('tanggal', '>=', $filters['start_date']);
+                    $q->where('tanggal', '>=', Carbon::parse($filters['start_date'])->toDateString());
                 }
                 if (! empty($filters['end_date'])) {
-                    $q->whereDate('tanggal', '<=', $filters['end_date']);
+                    $q->where('tanggal', '<=', Carbon::parse($filters['end_date'])->toDateString());
                 }
             });
 

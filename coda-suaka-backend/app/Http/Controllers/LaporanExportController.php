@@ -33,16 +33,6 @@ class LaporanExportController extends Controller
             ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id))
             ->orderBy('tanggal')
             ->get()
-            ->map(function ($t) {
-                $arr = $t->toArray();
-                // toArray()/toJson() serialisasi tanggal (cast 'date') dengan
-                // konversi ke UTC, yang bisa menggeser tanggal mundur satu hari
-                // untuk timezone app +UTC (mis. Asia/Jakarta). format() di sini
-                // tidak melakukan konversi timezone, jadi tanggal tetap benar.
-                $arr['tanggal'] = $t->tanggal->format('Y-m-d');
-
-                return $arr;
-            })
             ->toArray();
 
         $instansiNama = $user->instansi->nama_instansi ?? '';

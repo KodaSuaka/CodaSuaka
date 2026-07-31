@@ -29,7 +29,7 @@ class penugasan extends Model
     protected function casts(): array
     {
         return [
-            'tenggat' => 'date',
+            'tenggat' => 'date:Y-m-d',
             'poin' => 'integer',
             'is_template' => 'boolean',
             'accepted_at' => 'datetime',

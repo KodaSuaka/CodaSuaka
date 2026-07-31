@@ -122,10 +122,20 @@ class LaporanController extends Controller
             return $this->error('Anda tidak memiliki akses ke laporan keuangan.', 403);
         }
 
-        $tahun = $request->tahun ?? Carbon::now()->year;
+        // Cast ke int: dari query string nilainya string ("2026") sedangkan
+        // dari default-nya int, jadi field 'tahun' di response bisa berganti
+        // tipe tergantung ada/tidaknya parameter — client bertipe ketat
+        // (React/TS) akan tersandung.
+        $tahun = (int) ($request->tahun ?: Carbon::now()->year);
+
+        // Range biasa, bukan whereYear(): membungkus kolom dalam fungsi
+        // membuat query non-sargable sehingga index (instansi_id, tanggal)
+        // tidak terpakai.
+        $awalTahun = Carbon::create($tahun, 1, 1)->toDateString();
+        $akhirTahun = Carbon::create($tahun, 12, 31)->toDateString();
 
         $series = TransaksiKas::where('instansi_id', $user->instansi_id)
-            ->whereYear('tanggal', $tahun)
+            ->whereBetween('tanggal', [$awalTahun, $akhirTahun])
             ->selectRaw(
                 "DATE_FORMAT(tanggal, '%Y-%m') as bulan,
                  COALESCE(SUM(CASE WHEN tipe = 'masuk' THEN nominal ELSE 0 END), 0) as pendapatan,

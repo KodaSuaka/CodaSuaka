@@ -135,7 +135,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/barang-jasas', BarangJasaController::class);
 
     // ─── Kasir: Nota Penjualan/Pembelian ───────────────────────
-    Route::prefix('nota')->group(function () {
+    // 'notas' (jamak) supaya konsisten dengan barang-jasas, penugasans,
+    // presensis, transaksi-kas. Aman diganti: belum ada client yang memakai
+    // endpoint kasir.
+    Route::prefix('notas')->group(function () {
         Route::get('/', [NotaController::class, 'index']);
         Route::post('/', [NotaController::class, 'store']);
         Route::post('/import', [NotaController::class, 'import']);

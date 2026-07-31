@@ -22,7 +22,7 @@ class attandence extends Model
     protected function casts(): array
     {
         return [
-            'tanggal' => 'date',
+            'tanggal' => 'date:Y-m-d',
             'jam_checkin' => 'datetime:H:i:s',
             'jam_checkout' => 'datetime:H:i:s',
         ];

@@ -40,6 +40,11 @@ class ApprovalController extends Controller
             return $this->error('Anda tidak memiliki izin untuk melihat daftar approval', 403);
         }
 
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
         $filters = $request->only(['outlet_id', 'start_date', 'end_date', 'per_page']);
         $approvals = $this->approvalService->getPendingApprovals($user, $filters);
 
@@ -57,6 +62,11 @@ class ApprovalController extends Controller
         if (! Gate::allows('approve-keuangan')) {
             return $this->error('Anda tidak memiliki izin untuk melihat riwayat approval', 403);
         }
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
 
         $filters = $request->only(['outlet_id', 'start_date', 'end_date', 'status', 'per_page']);
         $riwayat = $this->approvalService->getRiwayatApproval($user, $filters);
