@@ -141,6 +141,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/import', [NotaController::class, 'import']);
         Route::get('/{nota}', [NotaController::class, 'show']);
         Route::get('/{nota}/pdf', [NotaController::class, 'cetak']);
+        Route::delete('/{nota}', [NotaController::class, 'destroy']);
     });
 
     // ─── Keuangan: Buku Kas (Transaksi Kas) ───────────────────

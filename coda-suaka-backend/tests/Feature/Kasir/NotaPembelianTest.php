@@ -241,4 +241,124 @@ class NotaPembelianTest extends TestCase
 
         @unlink($tmpPath);
     }
+
+    public function test_hapus_nota_pembelian_kecil_stok_kembali()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => 5,
+            'harga_beli' => 10000,
+        ]);
+
+        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+            'tipe' => 'pembelian',
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Tunai',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'jenis' => 'barang',
+                    'kuantitas' => 3,
+                    'harga_satuan' => 10000,
+                ],
+            ],
+        ]);
+
+        $notaId = $createResponse->json('data.id');
+        $nota = Nota::findOrFail($notaId);
+        $transaksiKasId = $nota->transaksi_kas_id;
+        $this->assertSame(0, ApprovalLog::where('transaksi_kas_id', $transaksiKasId)->count());
+        $this->assertSame(5 + 3, $barangJasa->fresh()->stok);
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+
+        $response->assertStatus(200);
+        $this->assertSame(5, $barangJasa->fresh()->stok);
+        $this->assertNull(Nota::find($notaId));
+        $this->assertNull(TransaksiKas::find($transaksiKasId));
+    }
+
+    public function test_hapus_nota_pembelian_besar_yang_sudah_disetujui_diblokir()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => 5,
+            'harga_beli' => 15000,
+        ]);
+
+        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+            'tipe' => 'pembelian',
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Transfer',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'jenis' => 'barang',
+                    'kuantitas' => 100,
+                    'harga_satuan' => 15000,
+                ],
+            ],
+        ]);
+
+        $notaId = $createResponse->json('data.id');
+        $nota = Nota::findOrFail($notaId);
+        $transaksiKasId = $nota->transaksi_kas_id;
+
+        // Simulasikan approver sungguhan menyetujui lewat alur approval —
+        // ini yang harus memblokir hapus, bukan status_approval saja.
+        ApprovalLog::where('transaksi_kas_id', $transaksiKasId)->update([
+            'status' => 'disetujui',
+            'disetujui_oleh' => $this->buatApprover()->id,
+            'tanggal_diproses' => now(),
+        ]);
+
+        $stokSebelum = $barangJasa->fresh()->stok;
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+
+        $response->assertStatus(422);
+        $this->assertNotNull(Nota::find($notaId));
+        $this->assertNotNull(TransaksiKas::find($transaksiKasId));
+        $this->assertSame($stokSebelum, $barangJasa->fresh()->stok);
+    }
+
+    public function test_hapus_nota_pembelian_besar_yang_masih_pending_diizinkan()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => 5,
+            'harga_beli' => 15000,
+        ]);
+
+        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+            'tipe' => 'pembelian',
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Transfer',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'jenis' => 'barang',
+                    'kuantitas' => 100,
+                    'harga_satuan' => 15000,
+                ],
+            ],
+        ]);
+
+        $notaId = $createResponse->json('data.id');
+        $nota = Nota::findOrFail($notaId);
+        $transaksiKasId = $nota->transaksi_kas_id;
+
+        $this->assertSame('pending', ApprovalLog::where('transaksi_kas_id', $transaksiKasId)->value('status'));
+        $this->assertSame(5 + 100, $barangJasa->fresh()->stok);
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+
+        $response->assertStatus(200);
+        $this->assertSame(5, $barangJasa->fresh()->stok);
+        $this->assertNull(Nota::find($notaId));
+        $this->assertNull(TransaksiKas::find($transaksiKasId));
+    }
 }

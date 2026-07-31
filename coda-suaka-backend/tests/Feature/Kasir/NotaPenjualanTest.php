@@ -176,4 +176,39 @@ class NotaPenjualanTest extends TestCase
         $this->assertSame('Cuci Mobil', $item->nama_item);
         $this->assertSame(0, BarangJasa::count());
     }
+
+    public function test_hapus_nota_penjualan_stok_kembali_dan_transaksi_kas_ikut_terhapus()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => 10,
+            'harga_jual' => 20000,
+        ]);
+
+        $createResponse = $this->actingAs($this->user)->postJson('/api/nota', [
+            'tipe' => 'penjualan',
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Tunai',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'kuantitas' => 3,
+                    'harga_satuan' => 20000,
+                ],
+            ],
+        ]);
+
+        $notaId = $createResponse->json('data.id');
+        $nota = Nota::findOrFail($notaId);
+        $transaksiKasId = $nota->transaksi_kas_id;
+        $this->assertSame(10 - 3, $barangJasa->fresh()->stok);
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/nota/{$notaId}");
+
+        $response->assertStatus(200);
+        $this->assertSame(10, $barangJasa->fresh()->stok);
+        $this->assertNull(Nota::find($notaId));
+        $this->assertNull(TransaksiKas::find($transaksiKasId));
+    }
 }

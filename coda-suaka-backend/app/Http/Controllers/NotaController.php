@@ -118,4 +118,20 @@ class NotaController extends Controller
 
         return $this->notaExportService->generateNotaPdf($nota);
     }
+
+    /**
+     * DELETE /api/nota/{nota}
+     */
+    public function destroy(Nota $nota)
+    {
+        $this->authorize('delete', $nota);
+
+        try {
+            $this->kasirService->hapusNota($nota);
+
+            return $this->success(null, 'Nota berhasil dihapus');
+        } catch (ValidationException $e) {
+            return $this->error(collect($e->errors())->flatten()->first() ?? $e->getMessage(), 422);
+        }
+    }
 }

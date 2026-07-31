@@ -290,4 +290,41 @@ class KasirService
 
         return $this->buatNotaPembelian(array_merge($header, ['items' => $items]), $user, $file);
     }
+
+    /**
+     * Hapus Nota: balikkan stok, hapus TransaksiKas terkait, lalu hapus Nota.
+     *
+     * Guard TIDAK boleh meniru TransaksiKasController::destroy() secara
+     * harfiah (blok jika status_approval === 'disetujui') — transaksi masuk
+     * (penjualan) selalu default 'disetujui' tanpa pernah lewat approval,
+     * jadi guard itu akan membuat semua nota penjualan permanen tidak bisa
+     * dihapus. Aturan yang benar: blok hanya jika ada ApprovalLog dengan
+     * status 'disetujui' yang sungguhan dibuat lewat alur approval manusia.
+     */
+    public function hapusNota(Nota $nota): void
+    {
+        $sudahDisetujuiManusia = $nota->transaksiKas
+            ?->approvalLogs()
+            ->where('status', 'disetujui')
+            ->exists() ?? false;
+
+        if ($sudahDisetujuiManusia) {
+            throw ValidationException::withMessages([
+                'nota' => 'Nota ini sudah disetujui melalui alur approval dan tidak bisa dihapus langsung.',
+            ]);
+        }
+
+        DB::transaction(function () use ($nota) {
+            foreach ($nota->items as $item) {
+                if ($item->barangJasa && $item->jenis === 'barang' && $item->barangJasa->stok !== null) {
+                    $delta = $nota->tipe === 'penjualan' ? $item->kuantitas : -$item->kuantitas;
+                    $item->barangJasa->increment('stok', $delta);
+                }
+            }
+            $nota->transaksiKas?->delete();
+            $user = auth()->user();
+            app(AuditService::class)->deleted($nota, $user);
+            $nota->delete(); // cascade ke nota_items via FK
+        });
+    }
 }
