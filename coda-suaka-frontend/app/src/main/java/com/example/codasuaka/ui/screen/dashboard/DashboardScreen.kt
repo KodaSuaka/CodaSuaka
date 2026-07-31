@@ -244,6 +244,9 @@ fun DashboardScreen(
                         userRole = uiState.userRole,
                         items = listOf(
                             MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
+                            MenuItem("Kelola Produk", Icons.Default.Inventory2, TealStatus, allowedRoles = listOf("Owner", "Keuangan")),
+                            MenuItem("Nota Pembelian", Icons.Default.Receipt, GreenFinance, allowedRoles = listOf("Owner", "Keuangan")),
+                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, Color(0xFF7C3AED)),
                             MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
                             MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
                             MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus)
@@ -251,6 +254,9 @@ fun DashboardScreen(
                         onItemClick = { label ->
                             when (label) {
                                 "Kelola Outlet" -> onNavigateTo("kelola_outlet")
+                                "Kelola Produk" -> onNavigateTo("kelola_barang_jasa")
+                                "Nota Pembelian" -> onNavigateTo("nota_pembelian")
+                                "Riwayat Nota" -> onNavigateTo("riwayat_nota")
                                 "Penugasan" -> onNavigateTo("penugasan")
                                 "Jadwal" -> onNavigateTo("kalender")
                                 "Log Absensi" -> onNavigateTo("log_absensi")

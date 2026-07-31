@@ -22,7 +22,7 @@ class KasirRepositoryImpl(
         if (response.isSuccessful) {
             response.body()?.data ?: emptyList()
         } else {
-            throw Exception("Gagal memuat barang/jasa: ${response.code()}")
+            throw Exception(parseErrorMessage(response, "Gagal memuat barang/jasa: ${response.code()}"))
         }
     }
 
@@ -31,7 +31,7 @@ class KasirRepositoryImpl(
         if (response.isSuccessful) {
             response.body()?.data ?: throw Exception("Gagal membuat barang/jasa")
         } else {
-            throw Exception("Gagal membuat barang/jasa: ${response.code()}")
+            throw Exception(parseErrorMessage(response, "Gagal membuat barang/jasa: ${response.code()}"))
         }
     }
 
@@ -40,14 +40,41 @@ class KasirRepositoryImpl(
         if (response.isSuccessful) {
             response.body()?.data ?: throw Exception("Gagal mengupdate barang/jasa")
         } else {
-            throw Exception("Gagal mengupdate barang/jasa: ${response.code()}")
+            throw Exception(parseErrorMessage(response, "Gagal mengupdate barang/jasa: ${response.code()}"))
         }
     }
 
     override suspend fun deleteBarangJasa(id: Int): Result<Unit> = runCatching {
         val response = apiService.deleteBarangJasa(id)
         if (!response.isSuccessful) {
-            throw Exception("Gagal menghapus barang/jasa: ${response.code()}")
+            throw Exception(parseErrorMessage(response, "Gagal menghapus barang/jasa: ${response.code()}"))
+        }
+    }
+
+    /**
+     * Ekstrak pesan error asli dari body response (mis. pesan 422 kustom dari
+     * backend seperti "Barang/jasa sudah dipakai di nota, tidak bisa dihapus.")
+     * supaya tidak hilang jadi cuma kode HTTP generik.
+     */
+    private fun parseErrorMessage(response: retrofit2.Response<*>, fallback: String): String {
+        val body = response.errorBody()?.string()
+        if (body.isNullOrBlank()) return fallback
+        return try {
+            val json = org.json.JSONObject(body)
+            val errors = json.optJSONObject("errors")
+            if (errors != null && errors.length() > 0) {
+                val messages = mutableListOf<String>()
+                errors.keys().forEach { key ->
+                    errors.optJSONArray(key)?.let { arr ->
+                        if (arr.length() > 0) messages.add(arr.getString(0))
+                    }
+                }
+                messages.joinToString("\n").ifBlank { json.optString("message", fallback) }
+            } else {
+                json.optString("message", fallback)
+            }
+        } catch (e: Exception) {
+            fallback
         }
     }
 
@@ -56,9 +83,21 @@ class KasirRepositoryImpl(
     override suspend fun getNotaList(
         tipe: String?,
         status: String?,
-        page: Int
+        page: Int,
+        outletId: Int?,
+        startDate: String?,
+        endDate: String?,
+        perPage: Int?
     ): Result<Pair<List<NotaDto>, PaginationMeta?>> = runCatching {
-        val response = apiService.getNotaList(page = page, tipe = tipe, status = status)
+        val response = apiService.getNotaList(
+            page = page,
+            tipe = tipe,
+            outletId = outletId,
+            startDate = startDate,
+            endDate = endDate,
+            status = status,
+            perPage = perPage
+        )
         if (response.isSuccessful) {
             val body = response.body()
             Pair(body?.data ?: emptyList(), body?.meta)

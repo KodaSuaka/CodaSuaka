@@ -22,7 +22,11 @@ interface KasirRepository {
     suspend fun getNotaList(
         tipe: String? = null,
         status: String? = null,
-        page: Int = 1
+        page: Int = 1,
+        outletId: Int? = null,
+        startDate: String? = null,
+        endDate: String? = null,
+        perPage: Int? = null
     ): Result<Pair<List<NotaDto>, PaginationMeta?>>
 
     suspend fun createNota(request: CreateNotaRequest): Result<NotaDto>

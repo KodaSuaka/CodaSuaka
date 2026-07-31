@@ -24,6 +24,8 @@ import com.example.codasuaka.ui.screen.divisi.DivisiScreen
 import com.example.codasuaka.ui.screen.divisi.DivisiViewModel
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletScreen
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletViewModel
+import com.example.codasuaka.ui.screen.kelola_barang_jasa.KelolaBarangJasaScreen
+import com.example.codasuaka.ui.screen.kelola_barang_jasa.KelolaBarangJasaViewModel
 import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanScreen
 import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranScreen
@@ -51,6 +53,12 @@ import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalScreen
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
 import com.example.codasuaka.ui.screen.kasir.KasirScreen
 import com.example.codasuaka.ui.screen.kasir.KasirViewModel
+import com.example.codasuaka.ui.screen.nota_pembelian.NotaPembelianScreen
+import com.example.codasuaka.ui.screen.nota_pembelian.NotaPembelianViewModel
+import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaScreen
+import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaViewModel
+import com.example.codasuaka.ui.screen.nota_detail.NotaDetailScreen
+import com.example.codasuaka.ui.screen.nota_detail.NotaDetailViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -81,11 +89,17 @@ object Routes {
     const val PENUGASAN = "penugasan"
     const val JAM_OPERASIONAL = "jam_operasional"
     const val KASIR = "kasir"
+    const val KELOLA_BARANG_JASA = "kelola_barang_jasa"
+    const val NOTA_PEMBELIAN = "nota_pembelian"
+    const val RIWAYAT_NOTA = "riwayat_nota"
+    const val NOTA_DETAIL = "nota_detail/{notaId}"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
         return "chat_detail/$userId/$encodedName"
     }
+
+    fun notaDetail(notaId: Int): String = "nota_detail/$notaId"
 
     /**
      * Dashboard tujuan berdasarkan role — dipakai baik oleh alur login baru
@@ -253,6 +267,15 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
+        // ── Kelola Barang/Jasa ──
+        composable(Routes.KELOLA_BARANG_JASA) {
+            val kelolaBarangJasaViewModel: KelolaBarangJasaViewModel = koinViewModel()
+            KelolaBarangJasaScreen(
+                onBack = { safePopBackStack() },
+                viewModel = kelolaBarangJasaViewModel
+            )
+        }
+
         // ── Kelola Karyawan ──
         composable(Routes.KELOLA_KARYAWAN) {
             val kelolaKaryawanViewModel: KelolaKaryawanViewModel = koinViewModel()
@@ -400,7 +423,53 @@ fun AppNavigation(navController: NavHostController) {
             val kasirViewModel: KasirViewModel = koinViewModel()
             KasirScreen(
                 onBack = { safePopBackStack() },
+                onNavigateTo = { route -> safeNavigate(route) },
                 viewModel = kasirViewModel
+            )
+        }
+
+        // ── Nota Pembelian ──
+        composable(Routes.NOTA_PEMBELIAN) {
+            val notaPembelianViewModel: NotaPembelianViewModel = koinViewModel()
+            NotaPembelianScreen(
+                onBack = { safePopBackStack() },
+                viewModel = notaPembelianViewModel
+            )
+        }
+
+        // ── Riwayat Nota ──
+        composable(Routes.RIWAYAT_NOTA) {
+            val riwayatNotaViewModel: RiwayatNotaViewModel = koinViewModel()
+            RiwayatNotaScreen(
+                onBack = { safePopBackStack() },
+                onNotaClick = { notaId ->
+                    if (ClickHelper.canClick()) {
+                        navController.navigate(Routes.notaDetail(notaId))
+                    }
+                },
+                viewModel = riwayatNotaViewModel
+            )
+        }
+
+        // ── Detail Nota ──
+        composable(
+            route = Routes.NOTA_DETAIL,
+            arguments = listOf(
+                navArgument("notaId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val notaId = backStackEntry.arguments?.getInt("notaId") ?: return@composable
+            val notaDetailViewModel: NotaDetailViewModel = koinViewModel(
+                parameters = { parametersOf(notaId) }
+            )
+            NotaDetailScreen(
+                onBack = { safePopBackStack() },
+                onDeleted = {
+                    if (ClickHelper.canClick()) {
+                        navController.popBackStack()
+                    }
+                },
+                viewModel = notaDetailViewModel
             )
         }
 

@@ -40,6 +40,7 @@ import com.example.codasuaka.util.ErrorMessageMapper
 @Composable
 fun KasirScreen(
     onBack: () -> Unit,
+    onNavigateTo: (String) -> Unit = {},
     viewModel: KasirViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -95,6 +96,15 @@ fun KasirScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Kembali",
+                                tint = Secondary
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { onNavigateTo("riwayat_nota") }) {
+                            Icon(
+                                imageVector = Icons.Default.ReceiptLong,
+                                contentDescription = "Riwayat Nota",
                                 tint = Secondary
                             )
                         }

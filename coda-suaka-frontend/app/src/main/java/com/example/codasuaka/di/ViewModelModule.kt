@@ -12,6 +12,7 @@ import com.example.codasuaka.ui.screen.divisi.DivisiViewModel
 import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
 import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletViewModel
+import com.example.codasuaka.ui.screen.kelola_barang_jasa.KelolaBarangJasaViewModel
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
@@ -22,6 +23,9 @@ import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
 import com.example.codasuaka.ui.screen.kasir.KasirViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
+import com.example.codasuaka.ui.screen.nota_pembelian.NotaPembelianViewModel
+import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaViewModel
+import com.example.codasuaka.ui.screen.nota_detail.NotaDetailViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -115,6 +119,24 @@ val viewModelModule = module {
 
     // Kasir
     viewModel { KasirViewModel(kasirRepository = get()) }
+
+    // Kelola Barang/Jasa
+    viewModel { KelolaBarangJasaViewModel(kasirRepository = get()) }
+
+    // Nota Pembelian
+    viewModel { NotaPembelianViewModel(kasirRepository = get(), outletRepository = get()) }
+
+    // Riwayat Nota
+    viewModel { RiwayatNotaViewModel(kasirRepository = get(), outletRepository = get()) }
+
+    // Detail Nota
+    viewModel { params ->
+        NotaDetailViewModel(
+            notaId = params.get(),
+            kasirRepository = get(),
+            context = androidContext()
+        )
+    }
 
     // Notifikasi
     viewModel { NotificationViewModel(notificationRepository = get()) }
