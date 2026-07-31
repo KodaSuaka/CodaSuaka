@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.PengajuanDto
 import com.example.codasuaka.data.remote.dto.PresensiDto
 import com.example.codasuaka.data.remote.dto.RekapKehadiranDto
-import com.example.codasuaka.data.remote.dto.RejectPengajuanRequest
 import com.example.codasuaka.domain.repository.OutletRepository
 import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PresensiRepository
@@ -13,420 +12,118 @@ import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.util.DateTimeUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.YearMonth
 
-// ─── Enums ───
+enum class TabRiwayat(val label: String) { LOG_PRESENSI("Log Presensi"), PERSETUJUAN("Persetujuan") }
+enum class StatusKehadiran(val label: String) { HADIR("Hadir"), TERLAMBAT("Terlambat"), IZIN("Izin"), SAKIT("Sakit"), ALPHA("Alpha") }
+enum class StatusPersetujuan(val label: String) { PENDING("Pending"), DISETUJUI("Disetujui"), DITOLAK("Ditolak") }
 
-enum class TabRiwayat(val label: String) {
-    LOG_PRESENSI("Log Presensi"),
-    PERSETUJUAN("Persetujuan")
-}
-
-enum class StatusKehadiran(val label: String) {
-    HADIR("Hadir"),
-    TERLAMBAT("Terlambat"),
-    IZIN("Izin"),
-    SAKIT("Sakit"),
-    ALPHA("Alpha")
-}
-
-enum class StatusPersetujuan(val label: String) {
-    PENDING("Pending"),
-    DISETUJUI("Disetujui"),
-    DITOLAK("Ditolak")
-}
-
-// ─── Data Models ───
-
-data class Presensi(
-    val id: String = "",
-    val karyawanId: Int = 0,
-    val namaKaryawan: String = "",
-    val outlet: String = "",
-    val outletId: Int = 0,
-    val role: String = "",
-    val jamKehadiran: String = "",
-    val status: StatusKehadiran = StatusKehadiran.HADIR
-)
-
-data class PengajuanPersetujuan(
-    val id: String = "",
-    val karyawanId: Int = 0,
-    val namaKaryawan: String = "",
-    val outlet: String = "",
-    val outletId: Int = 0,
-    val alasanIzin: String = "",
-    val tanggal: String = "",
-    val statusPersetujuan: StatusPersetujuan = StatusPersetujuan.PENDING
-)
-
-data class RekapKaryawan(
-    val karyawanId: Int = 0,
-    val namaKaryawan: String = "",
-    val role: String = "",
-    val outlet: String = "",
-    val outletId: Int = 0,
-    val totalHadir: Int = 0,
-    val totalTerlambat: Int = 0,
-    val totalIzin: Int = 0,
-    val totalSakit: Int = 0,
-    val totalAlpha: Int = 0
-) {
-    val totalKehadiran: Int
-        get() = totalHadir + totalTerlambat + totalIzin + totalSakit + totalAlpha
-}
-
-data class RekapBulanan(
-    val tahun: Int = 2026,
-    val bulan: Int = 0, // 0-based
-    val rekapKaryawan: List<RekapKaryawan> = emptyList(),
-    val totalHadir: Int = 0,
-    val totalTerlambat: Int = 0,
-    val totalIzin: Int = 0,
-    val totalSakit: Int = 0,
-    val totalAlpha: Int = 0
-)
-
-// ─── UI State ───
+data class Presensi(val id: String = "", val karyawanId: Int = 0, val namaKaryawan: String = "", val outlet: String = "", val outletId: Int = 0, val role: String = "", val jamKehadiran: String = "", val status: StatusKehadiran = StatusKehadiran.HADIR)
+data class PengajuanPersetujuan(val id: String = "", val karyawanId: Int = 0, val namaKaryawan: String = "", val outlet: String = "", val outletId: Int = 0, val alasanIzin: String = "", val tanggal: String = "", val statusPersetujuan: StatusPersetujuan = StatusPersetujuan.PENDING)
+data class RekapKaryawan(val karyawanId: Int = 0, val namaKaryawan: String = "", val role: String = "", val outlet: String = "", val outletId: Int = 0, val totalHadir: Int = 0, val totalTerlambat: Int = 0, val totalIzin: Int = 0, val totalSakit: Int = 0, val totalAlpha: Int = 0)
+data class RekapBulanan(val tahun: Int = 2026, val bulan: Int = 0, val rekapKaryawan: List<RekapKaryawan> = emptyList(), val totalHadir: Int = 0, val totalTerlambat: Int = 0, val totalIzin: Int = 0, val totalSakit: Int = 0, val totalAlpha: Int = 0)
 
 data class RiwayatKehadiranUiState(
     val selectedTab: TabRiwayat = TabRiwayat.LOG_PRESENSI,
     val outlets: List<Outlet> = emptyList(),
     val selectedOutletId: Int? = null,
-    val selectedDate: String = "", // format: yyyy-MM-dd
+    val selectedDate: String = "",
     val isLoading: Boolean = false,
     val isApproving: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-
-    // ── Tab: Log Presensi ──
     val presensiList: List<Presensi> = emptyList(),
-
-    // ── Tab: Persetujuan ──
     val persetujuanList: List<PengajuanPersetujuan> = emptyList(),
-
-    // ── Rekap Bulanan ──
     val rekapBulanan: RekapBulanan = RekapBulanan(),
-    val recapMonthOffset: Int = 0 // 0 = bulan saat ini
+    val currentRecapMonth: YearMonth = YearMonth.now()
 )
 
-// ─── ViewModel ───
-
-/**
- * ViewModel untuk halaman Riwayat Kehadiran.
- */
 class RiwayatKehadiranViewModel(
     private val presensiRepository: PresensiRepository,
     private val pengajuanRepository: PengajuanRepository,
     private val outletRepository: OutletRepository
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(RiwayatKehadiranUiState())
     val uiState: StateFlow<RiwayatKehadiranUiState> = _uiState
 
-    init {
-        loadInitialData()
-    }
-
-    // ─── Load Initial Data ───
+    init { loadInitialData() }
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
-            var loadedOutlets = emptyList<Outlet>()
-            var errorMsg: String? = null
-
+            _uiState.update { it.copy(isLoading = true) }
             outletRepository.getOutlets().onSuccess { dtos ->
-                loadedOutlets = dtos.map { Outlet(id = it.id, namaOutlet = it.namaOutlet, alamatOutlet = it.alamatOutlet ?: "") }
-            }.onFailure {
-                errorMsg = it.message
+                val loaded = dtos.map { Outlet(it.id, it.namaOutlet, it.alamatOutlet ?: "") }
+                _uiState.update { it.copy(outlets = loaded, selectedOutletId = loaded.firstOrNull()?.id, selectedDate = java.time.LocalDate.now().toString(), isLoading = false) }
+                loadPresensi(); loadPersetujuan(); loadRekapBulanan()
             }
-
-            // Set default date (hari ini)
-            val today = java.time.LocalDate.now().toString()
-
-            _uiState.value = _uiState.value.copy(
-                outlets = loadedOutlets,
-                selectedOutletId = loadedOutlets.firstOrNull()?.id,
-                selectedDate = today,
-                isLoading = false,
-                errorMessage = errorMsg
-            )
-
-            // Muat data default
-            loadPresensi()
-            loadPersetujuan()
-            loadRekapBulanan()
         }
     }
 
-    // ─── Tab Selection ───
+    fun onTabSelected(tab: TabRiwayat) = _uiState.update { it.copy(selectedTab = tab) }
+    fun onOutletSelected(id: Int?) { _uiState.update { it.copy(selectedOutletId = id) }; loadPresensi(); loadPersetujuan(); loadRekapBulanan() }
+    fun onDateSelected(date: String) { _uiState.update { it.copy(selectedDate = date) }; loadPresensi() }
 
-    fun onTabSelected(tab: TabRiwayat) {
-        _uiState.value = _uiState.value.copy(selectedTab = tab, errorMessage = null)
-    }
+    fun onRecapPrevMonth() { _uiState.update { it.copy(currentRecapMonth = it.currentRecapMonth.minusMonths(1)) }; loadRekapBulanan() }
+    fun onRecapNextMonth() { _uiState.update { it.copy(currentRecapMonth = it.currentRecapMonth.plusMonths(1)) }; loadRekapBulanan() }
+    fun onRecapMonthYearSelected(m: Int, y: Int) { _uiState.update { it.copy(currentRecapMonth = YearMonth.of(y, m + 1)) }; loadRekapBulanan() }
 
-    // ─── Outlet Filter ───
-
-    fun onOutletSelected(outletId: Int?) {
-        _uiState.value = _uiState.value.copy(selectedOutletId = outletId, errorMessage = null)
-        loadPresensi()
-        loadPersetujuan()
-        loadRekapBulanan()
-    }
-
-    // ─── Date Filter ───
-
-    fun onDateSelected(date: String) {
-        _uiState.value = _uiState.value.copy(selectedDate = date, errorMessage = null)
-        loadPresensi()
-    }
-
-    // ─── Recap Month Navigation ───
-
-    fun onRecapPrevMonth() {
-        val current = _uiState.value.recapMonthOffset
-        _uiState.value = _uiState.value.copy(recapMonthOffset = current - 1)
-        loadRekapBulanan()
-    }
-
-    fun onRecapNextMonth() {
-        val current = _uiState.value.recapMonthOffset
-        _uiState.value = _uiState.value.copy(recapMonthOffset = current + 1)
-        loadRekapBulanan()
-    }
-
-    fun onRecapMonthYearSelected(month: Int, year: Int) {
-        val now = java.time.LocalDate.now()
-        val target = java.time.YearMonth.of(year, month + 1).atDay(1)
-        val currentMonth = java.time.YearMonth.from(now).atDay(1)
-
-        val offset = java.time.temporal.ChronoUnit.MONTHS.between(currentMonth, target).toInt()
-
-        _uiState.value = _uiState.value.copy(recapMonthOffset = offset)
-        loadRekapBulanan()
-    }
-
-    // ─── Load Presensi ───
-
-    /**
-     * Memuat daftar presensi berdasarkan outlet & tanggal terpilih dari API.
-     */
     private fun loadPresensi() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
-            val state = _uiState.value
-            val result = presensiRepository.getPresensis(tanggal = state.selectedDate.ifEmpty { null })
-
-            result.onSuccess { dtos ->
+            val date = _uiState.value.selectedDate
+            presensiRepository.getPresensis(if (date.isEmpty()) null else date).onSuccess { dtos ->
                 val mapped = dtos.map { it.toPresensi() }
-                val filtered = if (state.selectedOutletId != null) {
-                    mapped.filter { it.outletId == state.selectedOutletId }
-                } else {
-                    mapped
-                }
-                _uiState.value = _uiState.value.copy(
-                    presensiList = filtered,
-                    isLoading = false
-                )
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = it.message ?: "Gagal memuat presensi"
-                )
+                val filtered = if (_uiState.value.selectedOutletId != null) mapped.filter { it.outletId == _uiState.value.selectedOutletId } else mapped
+                _uiState.update { it.copy(presensiList = filtered, isLoading = false) }
             }
         }
     }
 
-    // ─── Load Persetujuan ───
-
-    /**
-     * Memuat daftar pengajuan persetujuan dari API.
-     */
     private fun loadPersetujuan() {
         viewModelScope.launch {
-            val state = _uiState.value
-
-            val result = pengajuanRepository.getPengajuans()
-            result.onSuccess { dtos ->
+            pengajuanRepository.getPengajuans().onSuccess { dtos ->
                 val mapped = dtos.map { it.toPengajuanPersetujuan() }
-                val filtered = if (state.selectedOutletId != null) {
-                    mapped.filter { it.outletId == state.selectedOutletId }
-                } else {
-                    mapped
-                }
-                _uiState.value = _uiState.value.copy(persetujuanList = filtered)
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = it.message ?: "Gagal memuat persetujuan"
-                )
+                val filtered = if (_uiState.value.selectedOutletId != null) mapped.filter { it.outletId == _uiState.value.selectedOutletId } else mapped
+                _uiState.update { it.copy(persetujuanList = filtered) }
             }
         }
     }
 
-    // ─── Load Rekap Bulanan ───
-
-    /**
-     * Memuat rekap bulanan dari API.
-     */
     private fun loadRekapBulanan() {
         viewModelScope.launch {
-            val state = _uiState.value
-            val offset = state.recapMonthOffset
-            val now = java.time.LocalDate.now()
-            val targetDate = now.plusMonths(offset.toLong())
-            val tahun = targetDate.year
-            val bulan = targetDate.monthValue // 1-based
-
-            val result = presensiRepository.getRekapKehadiran(bulan = bulan, tahun = tahun)
-            result.onSuccess { dtos ->
+            val date = _uiState.value.currentRecapMonth
+            presensiRepository.getRekapKehadiran(date.monthValue, date.year).onSuccess { dtos ->
                 val mapped = dtos.map { it.toRekapKaryawan() }
-                val filtered = if (state.selectedOutletId != null) {
-                    mapped.filter { it.outletId == state.selectedOutletId }
-                } else {
-                    mapped
-                }
-
-                val totalHadir = filtered.sumOf { it.totalHadir }
-                val totalTerlambat = filtered.sumOf { it.totalTerlambat }
-                val totalIzin = filtered.sumOf { it.totalIzin }
-                val totalSakit = filtered.sumOf { it.totalSakit }
-                val totalAlpha = filtered.sumOf { it.totalAlpha }
-
-                _uiState.value = _uiState.value.copy(
-                    rekapBulanan = RekapBulanan(
-                        tahun = tahun,
-                        bulan = bulan - 1, // 0-based for display
-                        rekapKaryawan = filtered,
-                        totalHadir = totalHadir,
-                        totalTerlambat = totalTerlambat,
-                        totalIzin = totalIzin,
-                        totalSakit = totalSakit,
-                        totalAlpha = totalAlpha
-                    )
-                )
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = it.message ?: "Gagal memuat rekap bulanan"
-                )
+                val filtered = if (_uiState.value.selectedOutletId != null) mapped.filter { it.outletId == _uiState.value.selectedOutletId } else mapped
+                _uiState.update { it.copy(rekapBulanan = RekapBulanan(date.year, date.monthValue - 1, filtered, filtered.sumOf { it.totalHadir }, 0, filtered.sumOf { it.totalIzin }, filtered.sumOf { it.totalSakit }, filtered.sumOf { it.totalAlpha })) }
             }
         }
     }
 
-    // ─── Approve / Reject ───
-
-    /**
-     * Menyetujui pengajuan izin via API.
-     */
     fun setujuiPersetujuan(id: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isApproving = true)
-
-            pengajuanRepository.approvePengajuan(id.toIntOrNull() ?: return@launch)
-                .onSuccess {
-                    val updatedList = _uiState.value.persetujuanList.map {
-                        if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DISETUJUI)
-                        else it
-                    }
-                    _uiState.value = _uiState.value.copy(
-                        persetujuanList = updatedList,
-                        isApproving = false,
-                        successMessage = "Pengajuan berhasil disetujui."
-                    )
-                }.onFailure {
-                    _uiState.value = _uiState.value.copy(
-                        isApproving = false,
-                        errorMessage = it.message ?: "Gagal menyetujui pengajuan"
-                    )
-                }
+            pengajuanRepository.approvePengajuan(id.toInt()).onSuccess {
+                _uiState.update { s -> s.copy(persetujuanList = s.persetujuanList.map { if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DISETUJUI) else it }, successMessage = "Berhasil disetujui") }
+            }
         }
     }
 
-    /**
-     * Menolak pengajuan izin via API.
-     */
     fun tolakPersetujuan(id: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isApproving = true)
-
-            pengajuanRepository.rejectPengajuan(
-                id = id.toIntOrNull() ?: return@launch,
-                alasan = "Ditolak oleh admin"
-            ).onSuccess {
-                val updatedList = _uiState.value.persetujuanList.map {
-                    if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DITOLAK)
-                    else it
-                }
-                _uiState.value = _uiState.value.copy(
-                    persetujuanList = updatedList,
-                    isApproving = false,
-                    successMessage = "Pengajuan berhasil ditolak."
-                )
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(
-                    isApproving = false,
-                    errorMessage = it.message ?: "Gagal menolak pengajuan"
-                )
+            pengajuanRepository.rejectPengajuan(id.toInt(), "Ditolak admin").onSuccess {
+                _uiState.update { s -> s.copy(persetujuanList = s.persetujuanList.map { if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DITOLAK) else it }, successMessage = "Berhasil ditolak") }
             }
         }
     }
 
-    fun clearMessages() {
-        _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
-    }
+    fun clearMessages() = _uiState.update { it.copy(errorMessage = null, successMessage = null) }
+    fun clearError() = _uiState.update { it.copy(errorMessage = null) }
+    fun clearSuccess() = _uiState.update { it.copy(successMessage = null) }
 
     companion object {
-        fun PresensiDto.toPresensi(): Presensi {
-            val status = when (this.status?.lowercase()) {
-                "terlambat" -> StatusKehadiran.TERLAMBAT
-                "izin" -> StatusKehadiran.IZIN
-                "sakit" -> StatusKehadiran.SAKIT
-                "alpha" -> StatusKehadiran.ALPHA
-                else -> StatusKehadiran.HADIR
-            }
-            return Presensi(
-                id = this.id.toString(),
-                karyawanId = this.userId ?: 0,
-                namaKaryawan = this.user?.name ?: "",
-                outlet = "",
-                outletId = this.user?.outletId ?: 0,
-                role = this.user?.role?.namaRole ?: "",
-                jamKehadiran = DateTimeUtil.formatIsoToTime(this.jamCheckin),
-                status = status
-            )
-        }
-
-        fun PengajuanDto.toPengajuanPersetujuan(): PengajuanPersetujuan {
-            val status = when (this.status.lowercase()) {
-                "disetujui" -> StatusPersetujuan.DISETUJUI
-                "ditolak" -> StatusPersetujuan.DITOLAK
-                else -> StatusPersetujuan.PENDING
-            }
-            return PengajuanPersetujuan(
-                id = this.id.toString(),
-                karyawanId = this.userId,
-                namaKaryawan = this.user?.name ?: "",
-                outlet = "",
-                outletId = this.user?.outletId ?: 0,
-                alasanIzin = this.keterangan ?: "",
-                tanggal = this.tanggalMulai ?: this.createdAt ?: "",
-                statusPersetujuan = status
-            )
-        }
-
-        fun RekapKehadiranDto.toRekapKaryawan(): RekapKaryawan {
-            return RekapKaryawan(
-                karyawanId = this.userId,
-                namaKaryawan = this.namaLengkap ?: "",
-                outletId = this.outletId ?: 0,
-                totalHadir = this.totalHadir,
-                totalTerlambat = 0, // tidak tersedia dari API rekap
-                totalIzin = this.totalIzin,
-                totalSakit = this.totalSakit,
-                totalAlpha = this.totalAlpha
-            )
-        }
+        fun PresensiDto.toPresensi() = Presensi(id.toString(), userId ?: 0, user?.name ?: "", "", user?.outletId ?: 0, user?.role?.namaRole ?: "", DateTimeUtil.formatIsoToTime(jamCheckin), when (status?.lowercase()) { "terlambat" -> StatusKehadiran.TERLAMBAT; "izin" -> StatusKehadiran.IZIN; "sakit" -> StatusKehadiran.SAKIT; "alpha" -> StatusKehadiran.ALPHA; else -> StatusKehadiran.HADIR })
+        fun PengajuanDto.toPengajuanPersetujuan() = PengajuanPersetujuan(id.toString(), userId, user?.name ?: "", "", user?.outletId ?: 0, keterangan ?: "", tanggalMulai ?: createdAt ?: "", when (status.lowercase()) { "disetujui" -> StatusPersetujuan.DISETUJUI; "ditolak" -> StatusPersetujuan.DITOLAK; else -> StatusPersetujuan.PENDING })
+        fun RekapKehadiranDto.toRekapKaryawan() = RekapKaryawan(userId, namaLengkap ?: "", "", "", outletId ?: 0, totalHadir, 0, totalIzin, totalSakit, totalAlpha)
     }
 }

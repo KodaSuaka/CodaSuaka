@@ -30,6 +30,7 @@ import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -181,8 +182,7 @@ fun RiwayatKehadiranScreen(
             // ═════════════════════════════════════
             item {
                 RecapSection(
-                    rekap = uiState.rekapBulanan,
-                    recapMonthOffset = uiState.recapMonthOffset,
+                    uiState = uiState,
                     onPrevMonth = viewModel::onRecapPrevMonth,
                     onNextMonth = viewModel::onRecapNextMonth,
                     onMonthYearSelected = viewModel::onRecapMonthYearSelected
@@ -319,7 +319,7 @@ private fun DatePickerField(
                 primary = Primary,
                 onPrimary = OnPrimary,
                 surface = Color.White,
-                onSurface = Color.Black,
+                onSurface = Secondary,
                 onSurfaceVariant = Color.Gray,
                 secondary = Secondary
             )
@@ -338,7 +338,7 @@ private fun DatePickerField(
                             showDatePicker = false
                         }
                     ) {
-                        Text("Pilih", color = Primary, fontWeight = FontWeight.ExtraBold)
+                        Text("Pilih", color = Secondary, fontWeight = FontWeight.ExtraBold)
                     }
                 },
                 dismissButton = {
@@ -364,13 +364,6 @@ private fun DatePickerField(
                                 set(java.util.Calendar.YEAR, year)
                             }
                             datePickerState.displayedMonthMillis = cal.timeInMillis
-                            
-                            val selCal = java.util.Calendar.getInstance(tz).apply {
-                                timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                                set(java.util.Calendar.YEAR, year)
-                            }
-                            datePickerState.selectedDateMillis = selCal.timeInMillis
-                            
                             showYearPicker = false
                         },
                         onDismiss = { showYearPicker = false }
@@ -805,18 +798,18 @@ private val CustomWarning = Color(0xFFD69E2E)
 
 @Composable
 private fun RecapSection(
-    rekap: RekapBulanan,
-    recapMonthOffset: Int,
+    uiState: RiwayatKehadiranUiState,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onMonthYearSelected: (Int, Int) -> Unit
 ) {
     var showMonthYearPicker by remember { mutableStateOf(false) }
+    val rekap = uiState.rekapBulanan
 
     if (showMonthYearPicker) {
         MonthYearPickerDialog(
-            initialMonth = rekap.bulan,
-            initialYear = rekap.tahun,
+            initialMonth = uiState.currentRecapMonth.monthValue - 1,
+            initialYear = uiState.currentRecapMonth.year,
             onMonthYearSelected = { m, y ->
                 onMonthYearSelected(m, y)
                 showMonthYearPicker = false
@@ -826,16 +819,16 @@ private fun RecapSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        val monthName = try {
-            val month = java.time.Month.of(rekap.bulan + 1)
-            "${month.getDisplayName(java.time.format.TextStyle.FULL, Locale("id", "ID"))} ${rekap.tahun}"
-        } catch (_: Exception) {
-            "Bulan ${rekap.tahun}"
+        // Use currentRecapMonth directly for the title to ensure it's reactive
+        val monthName = remember(uiState.currentRecapMonth) {
+            uiState.currentRecapMonth.format(
+                java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("id-ID"))
+            )
         }
 
         SectionHeaderNavigation(
             title = "📊 Rekap Bulanan",
-            monthYearText = monthName,
+            monthYearText = monthName.replaceFirstChar { it.uppercase() },
             onPrevClick = onPrevMonth,
             onNextClick = onNextMonth,
             onMonthYearClick = { showMonthYearPicker = true }

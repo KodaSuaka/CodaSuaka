@@ -33,7 +33,7 @@ fun MonthYearPickerDialog(
     var selectedYear by remember { mutableStateOf(initialYear) }
     
     val currentYear = java.time.LocalDate.now().year
-    val years = (currentYear - 5..currentYear + 1).toList()
+    val years = (currentYear - 20..currentYear + 10).toList()
     val months = Month.values()
 
     Dialog(onDismissRequest = onDismiss) {
@@ -80,7 +80,7 @@ fun MonthYearPickerDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = month.getDisplayName(TextStyle.FULL, Locale.of("id", "ID")),
+                                text = month.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("id-ID")),
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) OnPrimary else OnSurface,
                                 style = MaterialTheme.typography.bodySmall

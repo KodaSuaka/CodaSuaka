@@ -14,17 +14,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.NotificationBannerStatic
+import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 import com.example.codasuaka.util.ErrorMessageMapper
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -436,6 +445,7 @@ private fun SimpleDatePickerField(
     onValueChange: (String) -> Unit
 ) {
     var showPicker by remember { mutableStateOf(false) }
+    var showYearPicker by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         value = value,
@@ -447,7 +457,7 @@ private fun SimpleDatePickerField(
             .fillMaxWidth()
             .clickable { showPicker = true },
         trailingIcon = {
-            Icon(Icons.Default.CalendarMonth, contentDescription = null)
+            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Primary)
         },
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
@@ -465,25 +475,118 @@ private fun SimpleDatePickerField(
     )
 
     if (showPicker) {
-        val pickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { millis ->
-                        val date = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneOffset.UTC)
-                            .toLocalDate()
-                        onValueChange(date.toString())
+        val datePickerState = rememberDatePickerState()
+        val locale = remember { Locale("id", "ID") }
+        val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+
+        MaterialTheme(colorScheme = lightColorScheme(
+            surface = Color.White,
+            onSurface = Secondary,
+            primary = Primary,
+            onPrimary = Color.White,
+            secondary = Secondary
+        )) {
+            DatePickerDialog(
+                onDismissRequest = { showPicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            onValueChange(date.toString())
+                        }
+                        showPicker = false
+                    }) { Text("Pilih", color = Secondary, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPicker = false }) {
+                        Text("Batal", color = OnSurfaceVariant)
                     }
-                    showPicker = false
-                }) { Text("Pilih") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Batal") }
+                },
+                colors = DatePickerDefaults.colors(containerColor = Color.White)
+            ) {
+                if (showYearPicker) {
+                    val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(java.time.ZoneId.of("UTC"))
+                        .toLocalDate()
+
+                    YearPickerDialog(
+                        selectedYear = displayMonth.year,
+                        onYearSelected = { year ->
+                            val tz = java.util.TimeZone.getTimeZone("UTC")
+                            val cal = java.util.Calendar.getInstance(tz).apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                set(java.util.Calendar.YEAR, year)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            showYearPicker = false
+                        },
+                        onDismiss = { showYearPicker = false }
+                    )
+                }
+
+                Column(modifier = Modifier.padding(top = 16.dp)) {
+                    val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(java.time.ZoneId.of("UTC"))
+                        .toLocalDate()
+
+                    val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+
+                    CustomCalendarNavigation(
+                        title = monthTitle.replaceFirstChar { it.uppercase() },
+                        onPrevClick = {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, -1)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onNextClick = {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, 1)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onTitleClick = { showYearPicker = true },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp)
+                            .clipToBounds()
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            title = null,
+                            headline = null,
+                            showModeToggle = false,
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.White,
+                                titleContentColor = Secondary,
+                                headlineContentColor = Secondary,
+                                weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                yearContentColor = Secondary.copy(alpha = 0.7f),
+                                currentYearContentColor = Primary,
+                                selectedYearContentColor = Color.White,
+                                selectedYearContainerColor = Primary,
+                                dayContentColor = OnSurface,
+                                selectedDayContentColor = Color.White,
+                                selectedDayContainerColor = Primary,
+                                todayContentColor = Secondary,
+                                todayDateBorderColor = Primary
+                            ),
+                            modifier = Modifier.offset(y = (-48).dp)
+                        )
+                    }
+                }
             }
-        ) {
-            DatePicker(state = pickerState)
         }
     }
 }

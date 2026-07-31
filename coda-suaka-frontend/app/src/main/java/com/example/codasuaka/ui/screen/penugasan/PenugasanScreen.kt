@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +31,15 @@ import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.DivisiDto
 import com.example.codasuaka.data.remote.dto.KaryawanDto
 import com.example.codasuaka.data.remote.dto.PenugasanDto
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.NotificationBannerStatic
+import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.util.DateTimeUtil
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 // ─── Colors ────────────────────────────────────────────────
 private val UrgentColor = Color(0xFFEF4444)
@@ -52,10 +58,9 @@ fun PenugasanScreen(
     viewModel: PenugasanViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showDeleteConfirmByDetail by remember { mutableStateOf<Int?>(null) }
 
-    // Muat ulang setiap kali layar ini kembali terlihat (buka pertama kali,
-    // kembali dari layar lain, atau app di-resume) — supaya daftar tugas
-    // tidak basi setelah pergantian hari selagi app tetap terbuka.
+    // Muat ulang setiap kali layar ini kembali terlihat
     com.example.codasuaka.util.OnResumeEffect { viewModel.loadData() }
 
     // ─── Force Light Theme for this screen ───
@@ -220,10 +225,33 @@ fun PenugasanScreen(
                 onAccept = { viewModel.acceptPenugasan(uiState.selectedPenugasan!!.id) },
                 onComplete = { viewModel.completePenugasan(uiState.selectedPenugasan!!.id) },
                 onValidasi = { disetujui -> viewModel.validasiPenugasan(uiState.selectedPenugasan!!.id, disetujui) },
+                onEdit = { 
+                    viewModel.showEditDialog(uiState.selectedPenugasan!!)
+                    viewModel.hidePenugasanDetail()
+                },
+                onDelete = { 
+                    showDeleteConfirmByDetail = uiState.selectedPenugasan!!.id
+                    viewModel.hidePenugasanDetail()
+                },
                 canManage = uiState.canManagePenugasan,
                 isAssigned = viewModel.isAssignedTo(uiState.selectedPenugasan!!),
                 isProcessing = uiState.isProcessing
             )
+        }
+
+        // ── Delete Confirmation for Detail Popup ──
+        if (showDeleteConfirmByDetail != null) {
+            val taskToDelete = uiState.penugasans.find { it.id == showDeleteConfirmByDetail }
+            if (taskToDelete != null) {
+                DeleteTaskDialog(
+                    taskTitle = taskToDelete.judul,
+                    onDismiss = { showDeleteConfirmByDetail = null },
+                    onConfirm = {
+                        viewModel.deletePenugasan(taskToDelete.id)
+                        showDeleteConfirmByDetail = null
+                    }
+                )
+            }
         }
     }
 }
@@ -236,13 +264,12 @@ private fun FilterChipRow(
     onStatusSelected: (String?) -> Unit
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp), // Spasi antar chip diperlebar
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 4.dp, vertical = 12.dp) // Padding luar diperbaiki
+            .padding(horizontal = 4.dp, vertical = 12.dp)
     ) {
-        // --- Chip SEMUA ---
         val isSemuaSelected = selectedStatus == null
         FilterChip(
             selected = isSemuaSelected,
@@ -252,17 +279,16 @@ private fun FilterChipRow(
                     text = "Semua", 
                     fontSize = 13.sp, 
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isSemuaSelected) Color.White else Secondary // Paksa warna teks
+                    color = if (isSemuaSelected) Color.White else Secondary
                 ) 
             },
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = Primary,
-                containerColor = Neutral.copy(alpha = 0.8f) // Background unselected lebih tegas
+                containerColor = Neutral.copy(alpha = 0.8f)
             ),
             border = null
         )
 
-        // --- Chip Status Lainnya ---
         listOf("belum", "proses", "selesai").forEach { status ->
             val isSelected = selectedStatus == status
             val selectedColor = when (status) {
@@ -279,12 +305,12 @@ private fun FilterChipRow(
                         text = status.replaceFirstChar { it.uppercase() },
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = if (isSelected) Color.White else Secondary // Paksa warna teks
+                        color = if (isSelected) Color.White else Secondary
                     ) 
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = selectedColor,
-                    containerColor = Neutral.copy(alpha = 0.8f) // Background unselected lebih tegas
+                    containerColor = Neutral.copy(alpha = 0.8f)
                 ),
                 border = null
             )
@@ -299,7 +325,6 @@ private fun PenugasanCard(
     penugasan: PenugasanDto,
     onCardClick: () -> Unit = {}
 ) {
-
     val urgencyColor = when (penugasan.urgency) {
         "urgent" -> UrgentColor
         "sedang" -> SedangColor
@@ -318,131 +343,113 @@ private fun PenugasanCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCardClick() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp), // More rounded
         colors = CardDefaults.cardColors(containerColor = Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Neutral)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(24.dp), // Increased padding
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ── Header: Judul & Action ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = penugasan.judul,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Secondary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        // Template Badge
-                        if (penugasan.isTemplate == true) {
-                            Surface(
-                                color = Primary.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = "📋 Template",
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Primary
-                                )
-                            }
-                        }
-                        // Urgency Badge
-                        Surface(
-                            color = urgencyColor.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = penugasan.urgency?.replaceFirstChar { it.uppercase() } ?: "-",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = urgencyColor
-                            )
-                        }
-                        // Status Badge
-                        Surface(
-                            color = statusColor.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = penugasan.status.replace('_', ' ').replaceFirstChar { it.uppercase() },
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = statusColor
-                            )
-                        }
+            // ── Header: Judul & Badges ──
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = penugasan.judul,
+                    style = MaterialTheme.typography.titleLarge, // Slightly larger
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Secondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 26.sp
+                )
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (penugasan.isTemplate == true) {
+                        BadgeSurface(text = "📋 Template", color = Primary)
                     }
-                }
-
+                    BadgeSurface(
+                        text = penugasan.urgency?.replaceFirstChar { it.uppercase() } ?: "-",
+                        color = urgencyColor
+                    )
+                    BadgeSurface(
+                        text = penugasan.status.replace('_', ' ').replaceFirstChar { it.uppercase() },
+                        color = statusColor
+                    )
                 }
             }
 
             // ── Deskripsi ──
             if (!penugasan.deskripsi.isNullOrBlank()) {
-                Surface(
-                    color = Neutral.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = penugasan.deskripsi,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = OnSurface.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(12.dp),
-                        lineHeight = 16.sp
-                    )
-                }
+                Text(
+                    text = penugasan.deskripsi,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Secondary.copy(alpha = 0.7f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 22.sp
+                )
             }
 
             HorizontalDivider(color = Neutral, thickness = 1.dp)
 
-            // ── Metadata Row (Grid-like) ──
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Baris PJ & Divisi
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // ── Metadata Row ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // PJ & Divisi Group
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     if (penugasan.penanggungJawab != null) {
                         MetadataItem(
                             icon = Icons.Default.Person,
-                            text = penugasan.penanggungJawab.namaLengkap,
-                            modifier = Modifier.weight(1f)
+                            text = penugasan.penanggungJawab.namaLengkap
                         )
                     }
                     if (penugasan.divisi != null) {
                         MetadataItem(
                             icon = Icons.Default.Groups,
-                            text = penugasan.divisi.namaDivisi,
-                            modifier = Modifier.weight(1f)
+                            text = penugasan.divisi.namaDivisi
                         )
                     }
                 }
                 
-                // Baris Tenggat
+                // Tenggat
                 if (!penugasan.tenggat.isNullOrBlank()) {
                     MetadataItem(
                         icon = Icons.AutoMirrored.Filled.EventNote,
-                        text = "Tenggat: ${DateTimeUtil.formatIsoToLocal(penugasan.tenggat)}",
+                        text = DateTimeUtil.formatIsoToLocal(penugasan.tenggat),
                         iconColor = Primary
                     )
                 }
             }
         }
     }
+}
 
-
+@Composable
+private fun BadgeSurface(text: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
 
 @Composable
 private fun MetadataItem(
@@ -467,9 +474,47 @@ private fun MetadataItem(
             style = MaterialTheme.typography.labelMedium,
             color = Secondary.copy(alpha = 0.8f),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 120.dp) // Prevent metadata from pushing others
         )
     }
+}
+
+// ─── Delete Confirmation Dialog ───
+
+@Composable
+private fun DeleteTaskDialog(
+    taskTitle: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Default.Warning, null, tint = Coral)
+                Text("Hapus Tugas", fontWeight = FontWeight.ExtraBold, color = Secondary)
+            }
+        },
+        text = {
+            Text("Yakin ingin menghapus tugas \"$taskTitle\"? Tindakan ini permanen.")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = Coral),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", color = OnSurfaceVariant)
+            }
+        }
+    )
 }
 
 // ─── Create/Edit Dialog ────────────────────────────────────────
@@ -492,10 +537,12 @@ private fun AssignmentFormDialog(
     var expandedKaryawan by remember { mutableStateOf(false) }
     var expandedDivisi by remember { mutableStateOf(false) }
     var expandedUrgency by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showYearPicker by remember { mutableStateOf(false) }
 
     val urgencyOptions = listOf("rendah", "sedang", "urgent")
     val titleText = if (uiState.isEditing) "Edit Tugas" else "Buat Tugas Baru"
-    val buttonText = if (uiState.isEditing) "Simpan Perubahan" else "Buat Tugas"
+    val buttonText = if (uiState.isEditing) "Simpan" else "Buat Tugas"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -523,8 +570,6 @@ private fun AssignmentFormDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                // Mulai dari template (opsional) — mengisi judul/deskripsi/urgency,
-                // pemilik tetap bisa mengubah semuanya sebelum menyimpan.
                 if (templates.isNotEmpty()) {
                     Column {
                         Text(
@@ -543,14 +588,30 @@ private fun AssignmentFormDialog(
                             templates.forEach { template ->
                                 AssistChip(
                                     onClick = { onTemplateSelected(template) },
-                                    label = { Text(template.judul) }
+                                    label = { 
+                                        Text(
+                                            template.judul,
+                                            color = Secondary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        ) 
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = Primary.copy(alpha = 0.1f),
+                                        labelColor = Secondary
+                                    ),
+                                    border = AssistChipDefaults.assistChipBorder(
+                                        enabled = true,
+                                        borderColor = Primary.copy(alpha = 0.2f),
+                                        borderWidth = 1.dp
+                                    ),
+                                    shape = RoundedCornerShape(10.dp)
                                 )
                             }
                         }
                     }
                 }
 
-                // Judul
                 OutlinedTextField(
                     value = uiState.formJudul,
                     onValueChange = onJudulChange,
@@ -565,7 +626,6 @@ private fun AssignmentFormDialog(
                     )
                 )
 
-                // Deskripsi
                 OutlinedTextField(
                     value = uiState.formDeskripsi,
                     onValueChange = onDeskripsiChange,
@@ -581,7 +641,6 @@ private fun AssignmentFormDialog(
                     )
                 )
 
-                // Penanggung Jawab (Dropdown)
                 ExposedDropdownMenuBox(
                     expanded = expandedKaryawan,
                     onExpandedChange = { expandedKaryawan = !expandedKaryawan }
@@ -617,7 +676,6 @@ private fun AssignmentFormDialog(
                     }
                 }
 
-                // Divisi (Dropdown)
                 ExposedDropdownMenuBox(
                     expanded = expandedDivisi,
                     onExpandedChange = { expandedDivisi = !expandedDivisi }
@@ -660,24 +718,148 @@ private fun AssignmentFormDialog(
                     }
                 }
 
-                // Tenggat
                 OutlinedTextField(
                     value = uiState.formTenggat,
-                    onValueChange = onTenggatChange,
+                    onValueChange = {},
+                    readOnly = true,
                     label = { Text("Tenggat (YYYY-MM-DD)", fontWeight = FontWeight.Bold) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
+                    enabled = false,
                     placeholder = { Text("Contoh: 2026-12-31") },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = NeutralBorder,
-                        focusedLabelColor = Primary
+                        disabledBorderColor = NeutralBorder,
+                        disabledLabelColor = Secondary,
+                        disabledTextColor = OnSurface,
+                        disabledTrailingIconColor = Primary
                     ),
                     trailingIcon = { Icon(Icons.Default.CalendarToday, null, tint = Primary, modifier = Modifier.size(20.dp)) }
                 )
 
-                // Urgency (Dropdown)
+                if (showDatePicker) {
+                    val datePickerState = rememberDatePickerState()
+                    val locale = remember { Locale("id", "ID") }
+                    val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+                    
+                    MaterialTheme(colorScheme = lightColorScheme(
+                        surface = Color.White,
+                        onSurface = Color.Black,
+                        primary = Primary,
+                        onPrimary = Color.White,
+                        secondary = Secondary
+                    )) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    datePickerState.selectedDateMillis?.let {
+                                        val ld = Instant.ofEpochMilli(it)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                        onTenggatChange(ld.toString())
+                                    }
+                                    showDatePicker = false
+                                }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("Batal", color = OnSurfaceVariant)
+                                }
+                            },
+                            colors = DatePickerDefaults.colors(containerColor = Color.White)
+                        ) {
+                            if (showYearPicker) {
+                                val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                    .atZone(ZoneId.of("UTC"))
+                                    .toLocalDate()
+                                    
+                                YearPickerDialog(
+                                    selectedYear = displayMonth.year,
+                                    onYearSelected = { year ->
+                                        val tz = java.util.TimeZone.getTimeZone("UTC")
+                                        val cal = java.util.Calendar.getInstance(tz).apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                            set(java.util.Calendar.YEAR, year)
+                                        }
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        
+                                        val selCal = java.util.Calendar.getInstance(tz).apply {
+                                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                            set(java.util.Calendar.YEAR, year)
+                                        }
+                                        datePickerState.selectedDateMillis = selCal.timeInMillis
+                                        
+                                        showYearPicker = false
+                                    },
+                                    onDismiss = { showYearPicker = false }
+                                )
+                            }
+
+                            Column(modifier = Modifier.padding(top = 16.dp)) {
+                                val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                    .atZone(ZoneId.of("UTC"))
+                                    .toLocalDate()
+                                
+                                val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+                                
+                                CustomCalendarNavigation(
+                                    title = monthTitle.replaceFirstChar { it.uppercase() },
+                                    onPrevClick = {
+                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                            add(java.util.Calendar.MONTH, -1)
+                                        }
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    },
+                                    onNextClick = {
+                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                            timeInMillis = datePickerState.displayedMonthMillis
+                                            add(java.util.Calendar.MONTH, 1)
+                                        }
+                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    },
+                                    onTitleClick = { showYearPicker = true },
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(340.dp)
+                                        .clipToBounds()
+                                ) {
+                                    DatePicker(
+                                        state = datePickerState,
+                                        title = null,
+                                        headline = null,
+                                        showModeToggle = false,
+                                        colors = DatePickerDefaults.colors(
+                                            containerColor = Color.White,
+                                            titleContentColor = Secondary,
+                                            headlineContentColor = Secondary,
+                                            weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                            subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                            yearContentColor = Secondary.copy(alpha = 0.7f),
+                                            currentYearContentColor = Primary,
+                                            selectedYearContentColor = Color.White,
+                                            selectedYearContainerColor = Primary,
+                                            dayContentColor = OnSurface,
+                                            selectedDayContentColor = Color.White,
+                                            selectedDayContainerColor = Primary,
+                                            todayContentColor = Secondary,
+                                            todayDateBorderColor = Primary
+                                        ),
+                                        modifier = Modifier.offset(y = (-48).dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 ExposedDropdownMenuBox(
                     expanded = expandedUrgency,
                     onExpandedChange = { expandedUrgency = !expandedUrgency }

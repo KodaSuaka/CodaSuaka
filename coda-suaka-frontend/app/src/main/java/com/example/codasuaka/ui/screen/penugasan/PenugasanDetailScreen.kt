@@ -41,6 +41,8 @@ fun PenugasanDetailScreen(
     onAccept: () -> Unit,
     onComplete: () -> Unit,
     onValidasi: (disetujui: Boolean) -> Unit = {},
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
     canManage: Boolean = false,
     isAssigned: Boolean = false,
     isProcessing: Boolean = false
@@ -118,11 +120,63 @@ fun PenugasanDetailScreen(
                                 lineHeight = 26.sp
                             )
                         }
-                        IconButton(
-                            onClick = onBack,
-                            modifier = Modifier.size(32.dp).background(Neutral, CircleShape)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Secondary, modifier = Modifier.size(18.dp))
+                        
+                        // Action Menu (Three Dots) - Simplified header
+                        var showMenu by remember { mutableStateOf(false) }
+                        
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(Neutral.copy(alpha = 0.5f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Opsi",
+                                    tint = Secondary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                modifier = Modifier.background(Color.White)
+                            ) {
+                                // Edit & Delete only for Managers/Owner
+                                if (canManage && penugasan.isTemplate != true) {
+                                    DropdownMenuItem(
+                                        text = { Text("Edit Tugas", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showMenu = false
+                                            onEdit()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.Edit, null, tint = Primary, modifier = Modifier.size(18.dp)) }
+                                    )
+                                    
+                                    DropdownMenuItem(
+                                        text = { Text("Hapus Tugas", fontWeight = FontWeight.Medium, color = Coral) },
+                                        onClick = {
+                                            showMenu = false
+                                            onDelete()
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.Delete, null, tint = Coral, modifier = Modifier.size(18.dp)) }
+                                    )
+                                    
+                                    HorizontalDivider(color = Neutral, modifier = Modifier.padding(vertical = 4.dp))
+                                }
+                                
+                                // Close Action
+                                DropdownMenuItem(
+                                    text = { Text("Tutup", fontWeight = FontWeight.Medium, color = Secondary) },
+                                    onClick = {
+                                        showMenu = false
+                                        onBack()
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Close, null, tint = Secondary, modifier = Modifier.size(18.dp)) }
+                                )
+                            }
                         }
                     }
 
@@ -135,7 +189,6 @@ fun PenugasanDetailScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Badges Row
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             BadgeItem(text = urgencyLabel, color = urgencyColor)
                             BadgeItem(text = statusLabel, color = statusColor)
@@ -144,7 +197,6 @@ fun PenugasanDetailScreen(
                             }
                         }
 
-                        // Deskripsi
                         if (!penugasan.deskripsi.isNullOrBlank()) {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text("Deskripsi", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Secondary)
@@ -164,7 +216,6 @@ fun PenugasanDetailScreen(
                             }
                         }
 
-                        // Info Metadata
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -184,55 +235,24 @@ fun PenugasanDetailScreen(
                             "belum" -> ActionButton("Terima & Mulai Kerja", Icons.Default.PlayArrow, Primary, onAccept, isProcessing)
                             "proses" -> ActionButton("Selesaikan Tugas", Icons.Default.CheckCircle, Success, onComplete, isProcessing)
                             "selesai" -> {
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = Success.copy(alpha = 0.1f),
-                                    shape = RoundedCornerShape(14.dp)
-                                ) {
-                                    Text(
-                                        "Tugas Selesai",
-                                        modifier = Modifier.padding(14.dp),
-                                        textAlign = TextAlign.Center,
-                                        color = Success,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                Surface(modifier = Modifier.fillMaxWidth(), color = Success.copy(alpha = 0.1f), shape = RoundedCornerShape(14.dp)) {
+                                    Text("Tugas Selesai", modifier = Modifier.padding(14.dp), textAlign = TextAlign.Center, color = Success, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
                     }
 
-                    // ── Validasi manual (Owner/Manager) untuk tugas menunggu_validasi ──
                     if (canManage && penugasan.status == "menunggu_validasi") {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedButton(
-                                onClick = { onValidasi(false) },
-                                modifier = Modifier.weight(1f),
-                                enabled = !isProcessing
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Kembalikan")
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(onClick = { onValidasi(false) }, modifier = Modifier.weight(1f), enabled = !isProcessing) {
+                                Icon(Icons.Default.Close, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text("Kembalikan")
                             }
-                            Button(
-                                onClick = { onValidasi(true) },
-                                modifier = Modifier.weight(1f),
-                                enabled = !isProcessing,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
-                            ) {
+                            Button(onClick = { onValidasi(true) }, modifier = Modifier.weight(1f), enabled = !isProcessing, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))) {
                                 if (isProcessing) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Icon(Icons.Default.CheckCircle, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Setujui")
+                                Icon(Icons.Default.CheckCircle, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text("Setujui")
                             }
                         }
                     }
@@ -244,27 +264,15 @@ fun PenugasanDetailScreen(
 
 @Composable
 private fun BadgeItem(text: String, color: Color) {
-    Surface(
-        color = color.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
+    Surface(color = color.copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp)) {
+        Text(text = text, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = color)
     }
 }
 
 @Composable
 private fun DetailItem(icon: ImageVector, label: String, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            modifier = Modifier.size(32.dp).clip(CircleShape).background(Neutral),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Neutral), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = Secondary.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
         }
         Column {
@@ -276,19 +284,8 @@ private fun DetailItem(icon: ImageVector, label: String, value: String) {
 
 @Composable
 private fun ActionButton(text: String, icon: ImageVector, color: Color, onClick: () -> Unit, isLoading: Boolean) {
-    Button(
-        onClick = onClick,
-        enabled = !isLoading,
-        modifier = Modifier.fillMaxWidth().height(54.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color)
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
-        } else {
-            Icon(icon, null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(text, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-        }
+    Button(onClick = onClick, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = color)) {
+        if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
+        else { Icon(icon, null, modifier = Modifier.size(20.dp)); Spacer(modifier = Modifier.width(10.dp)); Text(text, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp) }
     }
 }

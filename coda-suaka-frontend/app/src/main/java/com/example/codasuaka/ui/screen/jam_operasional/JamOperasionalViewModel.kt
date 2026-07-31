@@ -49,11 +49,16 @@ class JamOperasionalViewModel(
                 if (response.isSuccessful && response.body()?.status == "success") {
                     val instansi = response.body()?.data
                     val jo = instansi?.jamOperasional
+                    
+                    // Normalisasi jam dari format HH:mm:ss ke HH:mm agar rapi di UI
+                    val normalizedBuka = jo?.jamBuka?.take(5) ?: "08:00"
+                    val normalizedTutup = jo?.jamTutup?.take(5) ?: "17:00"
+
                     _uiState.update {
                         it.copy(
                             namaInstansi = instansi?.namaInstansi ?: "",
-                            jamBuka = jo?.jamBuka ?: "08:00",
-                            jamTutup = jo?.jamTutup ?: "17:00",
+                            jamBuka = normalizedBuka,
+                            jamTutup = normalizedTutup,
                             hariOperasional = jo?.hariOperasional?.toSet() ?: setOf(2, 3, 4, 5, 6, 7),
                             isLoading = false
                         )
@@ -102,24 +107,34 @@ class JamOperasionalViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null, successMessage = null) }
             try {
+                val state = _uiState.value
+                
+                // Pastikan format jam memiliki detik (:00) agar diterima oleh database (HH:mm:ss)
+                val formatJamBuka = if (state.jamBuka.length == 5) "${state.jamBuka}:00" else state.jamBuka
+                val formatJamTutup = if (state.jamTutup.length == 5) "${state.jamTutup}:00" else state.jamTutup
+
                 val request = UpdateInstansiRequest(
+                    namaInstansi = state.namaInstansi, // Sertakan nama agar validasi server terpenuhi
                     jamOperasional = mapOf(
-                        "jam_buka" to _uiState.value.jamBuka,
-                        "jam_tutup" to _uiState.value.jamTutup,
-                        "hari_operasional" to _uiState.value.hariOperasional.toList()
+                        "jam_buka" to formatJamBuka,
+                        "jam_tutup" to formatJamTutup,
+                        "hari_operasional" to state.hariOperasional.toList()
                     )
                 )
+
                 val response = apiService.updateInstansi(request)
                 if (response.isSuccessful && response.body()?.status == "success") {
                     _uiState.update {
                         it.copy(isSaving = false, successMessage = "Jam operasional berhasil disimpan")
                     }
                 } else {
-                    val msg = response.body()?.message ?: "Gagal menyimpan jam operasional"
-                    _uiState.update { it.copy(isSaving = false, errorMessage = msg) }
+                    // Coba ambil pesan error dari body atau errorBody
+                    val errorRaw = response.errorBody()?.string() ?: response.body()?.message
+                    val mappedError = com.example.codasuaka.util.ErrorMessageMapper.map(errorRaw, "jam operasional")
+                    _uiState.update { it.copy(isSaving = false, errorMessage = mappedError.message) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false, errorMessage = e.message ?: "Terjadi kesalahan") }
+                _uiState.update { it.copy(isSaving = false, errorMessage = e.message ?: "Terjadi kesalahan koneksi") }
             }
         }
     }

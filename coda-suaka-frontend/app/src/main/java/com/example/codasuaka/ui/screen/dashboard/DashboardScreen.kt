@@ -13,6 +13,8 @@ import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +31,7 @@ import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.NavbarItem
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.components.NotificationBannerStatic
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.theme.*
@@ -39,6 +42,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.draw.clipToBounds
 import com.example.codasuaka.util.ClickHelper
+import com.example.codasuaka.util.DateTimeUtil
 
 // ─── Data class menu items ───────────────────────────────────
 
@@ -62,8 +66,16 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // ── Tangani drawer via ViewModel ──
+    // Pull to Refresh state
+    val pullRefreshState = rememberPullToRefreshState()
+
+    // Reset navbar index to Home every time we return to this screen
+    com.example.codasuaka.util.OnResumeEffect {
+        viewModel.onBottomNavSelected(0)
+    }
+
     LaunchedEffect(uiState.isDrawerOpen) {
         if (uiState.isDrawerOpen) drawerState.open() else drawerState.close()
     }
@@ -85,7 +97,7 @@ fun DashboardScreen(
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = Tertiary, // Fix: Ensure gaps around floating navbar are not dark
+            containerColor = Tertiary, 
             topBar = {
                 TopAppBar(
                     title = {
@@ -175,92 +187,101 @@ fun DashboardScreen(
                         }
                     }
                 )
-            }
+            },
+            snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) }
         ) { innerPadding ->
-            Column(
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refreshDashboard() },
+                state = pullRefreshState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(Tertiary)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .background(Tertiary),
+                contentAlignment = Alignment.TopCenter
             ) {
-                // ── Loading Indicator ──
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Primary)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // ── Loading Indicator (Internal, only if not refreshing via pull) ──
+                    if (uiState.isLoading && !uiState.isRefreshing) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Primary)
+                        }
                     }
-                }
 
-                // ── Error Message (User-Friendly Notification) ──
-                if (uiState.errorMessage != null) {
-                    NotificationBannerStatic(
-                        message = uiState.errorMessage ?: "",
-                        mapFromServer = true,
-                        onDismiss = { viewModel.clearError() }
+                    // ── Error Message (User-Friendly Notification) ──
+                    if (uiState.errorMessage != null) {
+                        NotificationBannerStatic(
+                            message = uiState.errorMessage ?: "",
+                            mapFromServer = true,
+                            onDismiss = { viewModel.clearError() }
+                        )
+                    }
+
+                    // ══════════════════════════════════════════════
+                    // SECTION ATAS — Omset
+                    // ══════════════════════════════════════════════
+                    SectionOmset(
+                        omsetTotal = uiState.omsetTotal,
+                        onCariOmset = { start, end ->
+                            viewModel.loadOmset(start, end)
+                        }
                     )
+
+                    // ══════════════════════════════════════════════
+                    // SECTION TENGAH — Kelola Outlet & Log Absensi
+                    // ══════════════════════════════════════════════
+                    SectionMenuGrid(
+                        title = "Menu Utama",
+                        userRole = uiState.userRole,
+                        items = listOf(
+                            MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
+                            MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
+                            MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
+                            MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus)
+                        ),
+                        onItemClick = { label ->
+                            when (label) {
+                                "Kelola Outlet" -> onNavigateTo("kelola_outlet")
+                                "Penugasan" -> onNavigateTo("penugasan")
+                                "Jadwal" -> onNavigateTo("kalender")
+                                "Log Absensi" -> onNavigateTo("log_absensi")
+                            }
+                        }
+                    )
+
+                    // ══════════════════════════════════════════════
+                    // SECTION BAWAH — Laporan Keuangan & Status Karyawan
+                    // ══════════════════════════════════════════════
+                    SectionMenuGrid(
+                        title = "Laporan & Status",
+                        userRole = uiState.userRole,
+                        items = listOf(
+                            MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
+                            MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
+                        ),
+                        onItemClick = { label ->
+                            when (label) {
+                                "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
+                                "Status Karyawan" -> onNavigateTo("status_karyawan")
+                            }
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-
-                // ══════════════════════════════════════════════
-                // SECTION ATAS — Omset
-                // ══════════════════════════════════════════════
-                SectionOmset(
-                    omsetTotal = uiState.omsetTotal,
-                    onCariOmset = { startDate, endDate ->
-                        viewModel.loadOmset(startDate, endDate)
-                    }
-                )
-
-                // ══════════════════════════════════════════════
-                // SECTION TENGAH — Kelola Outlet & Log Absensi
-                // ══════════════════════════════════════════════
-                SectionMenuGrid(
-                    title = "Menu Utama",
-                    userRole = uiState.userRole,
-                    items = listOf(
-                        MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
-                        MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
-                        MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
-                        MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus) // Ganti dari Purple ke TealStatus
-                    ),
-                    onItemClick = { label ->
-                        when (label) {
-                            "Kelola Outlet" -> onNavigateTo("kelola_outlet")
-                            "Penugasan" -> onNavigateTo("penugasan")
-                            "Jadwal" -> onNavigateTo("kalender")
-                            "Log Absensi" -> onNavigateTo("log_absensi")
-                        }
-                    }
-                )
-
-                // ══════════════════════════════════════════════
-                // SECTION BAWAH — Laporan Keuangan & Status Karyawan
-                // ══════════════════════════════════════════════
-                SectionMenuGrid(
-                    title = "Laporan & Status",
-                    userRole = uiState.userRole,
-                    items = listOf(
-                        MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
-                        MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
-                    ),
-                    onItemClick = { label ->
-                        when (label) {
-                            "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
-                            "Status Karyawan" -> onNavigateTo("status_karyawan")
-                        }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 
-    // ── Sidebar Notifikasi (Overlay) ──
     NotificationSidebar(
         uiState = notificationUiState,
         onClose = { notificationViewModel.toggleSidebar(false) },
@@ -276,7 +297,7 @@ fun DashboardScreen(
 @Composable
 private fun SectionOmset(
     omsetTotal: Double,
-    onCariOmset: (startDate: String, endDate: String) -> Unit
+    onCariOmset: (String, String) -> Unit
 ) {
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
@@ -295,11 +316,10 @@ private fun SectionOmset(
         // Paksa tema terang agar teks terlihat jelas
         MaterialTheme(colorScheme = lightColorScheme(
             surface = Color.White,
-            onSurface = Color.Black,
+            onSurface = Secondary, 
             primary = Primary,
             onPrimary = Color.White,
-            secondary = Secondary,
-            onSecondary = Color.White
+            secondary = Secondary
         )) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
@@ -332,14 +352,12 @@ private fun SectionOmset(
                         selectedYear = displayMonth.year,
                         onYearSelected = { year ->
                             val tz = java.util.TimeZone.getTimeZone("UTC")
-                            // 1. Update Tampilan (Bulan berjalan)
                             val cal = java.util.Calendar.getInstance(tz).apply {
                                 timeInMillis = datePickerState.displayedMonthMillis
                                 set(java.util.Calendar.YEAR, year)
                             }
                             datePickerState.displayedMonthMillis = cal.timeInMillis
                             
-                            // 2. Update Seleksi (Agar saat klik OK tidak balik ke tahun lama)
                             val selCal = java.util.Calendar.getInstance(tz).apply {
                                 timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
                                 set(java.util.Calendar.YEAR, year)
@@ -355,7 +373,7 @@ private fun SectionOmset(
                 Column(
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
-                    // ── Header Kustom < Bulan Tahun > ──
+                    // Header Kustom < Bulan Tahun >
                     val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
                         .atZone(ZoneId.of("UTC"))
                         .toLocalDate()
@@ -384,12 +402,10 @@ private fun SectionOmset(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // ── DatePicker (Sembunyikan header asli) ──
-                    // Kita gunakan Box dengan clip untuk membuang baris pager asli
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(340.dp) // Sesuaikan tinggi agar pager asli terpotong
+                            .height(340.dp)
                             .clipToBounds()
                     ) {
                         DatePicker(
@@ -413,7 +429,7 @@ private fun SectionOmset(
                                 todayContentColor = Secondary,
                                 todayDateBorderColor = Primary
                             ),
-                            modifier = Modifier.offset(y = (-48).dp) // Geser ke atas untuk sembunyikan pager asli
+                            modifier = Modifier.offset(y = (-48).dp)
                         )
                     }
                 }
@@ -522,7 +538,7 @@ private fun SectionOmset(
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Primary, // Menggunakan #63B3ED
+                        containerColor = Secondary, 
                         contentColor = OnPrimary
                     )
                 ) {
@@ -676,7 +692,7 @@ private fun DrawerContent(
         drawerContainerColor = Surface,
         drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
     ) {
-        // ── Header Drawer (Modern & Minimalist) ──
+        // ── Header Drawer ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -819,14 +835,7 @@ private fun DrawerItem(
     }
 }
 
-// ─── Utility ────────────────────────────────────────────────
-
-/**
- * Memformat angka ke format Rupiah tanpa desimal.
- * Contoh: 15750000 → "15.750.000"
- */
 private fun formatRupiah(amount: Double): String {
-    val isNegative = amount < 0
     val absStr = kotlin.math.abs(amount).toLong().toString()
     val sb = StringBuilder()
     var count = 0
@@ -835,6 +844,5 @@ private fun formatRupiah(amount: Double): String {
         sb.insert(0, absStr[i])
         count++
     }
-    val prefix = if (isNegative) "-Rp " else "Rp "
-    return "$prefix$sb"
+    return (if (amount < 0) "-Rp " else "Rp ") + sb
 }
