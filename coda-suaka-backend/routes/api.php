@@ -138,6 +138,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('nota')->group(function () {
         Route::get('/', [NotaController::class, 'index']);
         Route::post('/', [NotaController::class, 'store']);
+        Route::post('/import', [NotaController::class, 'import']);
         Route::get('/{nota}', [NotaController::class, 'show']);
         Route::get('/{nota}/pdf', [NotaController::class, 'cetak']);
     });

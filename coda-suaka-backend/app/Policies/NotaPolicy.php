@@ -37,6 +37,14 @@ class NotaPolicy
     }
 
     /**
+     * User bisa mengimpor nota pembelian dari file untuk instansinya.
+     */
+    public function import(User $user): bool
+    {
+        return app(PermissionService::class)->userHasPermission($user, 'import:kasir');
+    }
+
+    /**
      * User hanya bisa menghapus nota milik instansinya sendiri.
      */
     public function delete(User $user, Nota $nota): bool

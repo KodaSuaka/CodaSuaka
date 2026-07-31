@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportNotaPembelianRequest;
 use App\Http\Requests\StoreNotaRequest;
 use App\Models\Nota;
 use App\Services\KasirService;
@@ -72,8 +73,25 @@ class NotaController extends Controller
                 return $this->success($nota, 'Nota penjualan berhasil dibuat', 201);
             }
 
-            // Task 4: pembelian belum didukung di KasirService.
-            return $this->error('Nota pembelian belum didukung', 501);
+            $nota = $this->kasirService->buatNotaPembelian($request->validated(), $request->user());
+
+            return $this->success($nota, 'Nota pembelian berhasil dibuat', 201);
+        } catch (ValidationException $e) {
+            return $this->error(collect($e->errors())->flatten()->first() ?? $e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * POST /api/nota/import
+     */
+    public function import(ImportNotaPembelianRequest $request)
+    {
+        $this->authorize('import', Nota::class);
+
+        try {
+            $nota = $this->kasirService->importNotaPembelian($request->file('file'), $request->except('file'), $request->user());
+
+            return $this->success($nota->load('items'), 'Nota pembelian berhasil diimpor', 201);
         } catch (ValidationException $e) {
             return $this->error(collect($e->errors())->flatten()->first() ?? $e->getMessage(), 422);
         }
