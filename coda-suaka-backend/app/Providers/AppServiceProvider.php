@@ -10,6 +10,7 @@ use App\Models\Instansi;
 use App\Models\jadwal;
 use App\Models\karyawan;
 use App\Models\KategoriTransaksi;
+use App\Models\Nota;
 use App\Models\outlet;
 use App\Models\paket;
 use App\Models\pengajuan;
@@ -25,6 +26,7 @@ use App\Policies\InstansiPolicy;
 use App\Policies\JadwalPolicy;
 use App\Policies\KaryawanPolicy;
 use App\Policies\KategoriTransaksiPolicy;
+use App\Policies\NotaPolicy;
 use App\Policies\OutletPolicy;
 use App\Policies\PaketPolicy;
 use App\Policies\PengajuanPolicy;
@@ -91,6 +93,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(KategoriTransaksi::class, KategoriTransaksiPolicy::class);
         Gate::policy(TransaksiKas::class, TransaksiKasPolicy::class);
         Gate::policy(BarangJasa::class, BarangJasaPolicy::class);
+        Gate::policy(Nota::class, NotaPolicy::class);
 
         // ─── Gate definitions ─────────────────────────────────────
 

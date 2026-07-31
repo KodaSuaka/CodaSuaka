@@ -14,6 +14,7 @@ use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriTransaksiController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanExportController;
+use App\Http\Controllers\NotaController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\PaketController;
@@ -132,6 +133,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Kasir: Katalog Barang/Jasa ────────────────────────────
     Route::apiResource('/barang-jasas', BarangJasaController::class);
+
+    // ─── Kasir: Nota Penjualan/Pembelian ───────────────────────
+    Route::prefix('nota')->group(function () {
+        Route::get('/', [NotaController::class, 'index']);
+        Route::post('/', [NotaController::class, 'store']);
+        Route::get('/{nota}', [NotaController::class, 'show']);
+        Route::get('/{nota}/pdf', [NotaController::class, 'cetak']);
+    });
 
     // ─── Keuangan: Buku Kas (Transaksi Kas) ───────────────────
     Route::prefix('transaksi-kas')->group(function () {
