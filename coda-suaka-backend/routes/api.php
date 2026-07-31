@@ -4,6 +4,7 @@ use App\Http\Controllers\AnggotaDivisiController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AttandenceController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BarangJasaController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DivisiController;
@@ -128,6 +129,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Keuangan: Kategori Transaksi ─────────────────────────
     Route::apiResource('/kategori-transaksis', KategoriTransaksiController::class);
+
+    // ─── Kasir: Katalog Barang/Jasa ────────────────────────────
+    Route::apiResource('/barang-jasas', BarangJasaController::class);
 
     // ─── Keuangan: Buku Kas (Transaksi Kas) ───────────────────
     Route::prefix('transaksi-kas')->group(function () {

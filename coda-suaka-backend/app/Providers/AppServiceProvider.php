@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\AnggotaDivisi;
 use App\Models\attandence;
+use App\Models\BarangJasa;
 use App\Models\Divisi;
 use App\Models\Instansi;
 use App\Models\jadwal;
@@ -18,6 +19,7 @@ use App\Models\TransaksiKas;
 use App\Models\User;
 use App\Policies\AnggotaDivisiPolicy;
 use App\Policies\AttandencePolicy;
+use App\Policies\BarangJasaPolicy;
 use App\Policies\DivisiPolicy;
 use App\Policies\InstansiPolicy;
 use App\Policies\JadwalPolicy;
@@ -88,6 +90,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(KategoriTransaksi::class, KategoriTransaksiPolicy::class);
         Gate::policy(TransaksiKas::class, TransaksiKasPolicy::class);
+        Gate::policy(BarangJasa::class, BarangJasaPolicy::class);
 
         // ─── Gate definitions ─────────────────────────────────────
 
