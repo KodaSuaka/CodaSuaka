@@ -200,7 +200,7 @@ class KasirService
                     'harga_satuan' => $row['hargaSatuan'],
                     'subtotal' => $row['subtotal'],
                 ]);
-                if ($row['barangJasa'] && $row['jenis'] === 'barang') {
+                if ($row['barangJasa'] && $row['jenis'] === 'barang' && $row['barangJasa']->stok !== null) {
                     $row['barangJasa']->increment('stok', $row['item']['kuantitas']);
                 }
             }
@@ -221,16 +221,20 @@ class KasirService
                 'created_by' => $user->id,
             ]);
 
-            if ($transaksiKas->needsApproval()) {
+            if (app(ApprovalService::class)->perluApproval($transaksiKas)) {
                 app(ApprovalService::class)->ajukanApproval($transaksiKas, $user);
 
-                app(NotificationService::class)->createForInstansi(
-                    $user->instansi_id,
-                    'keuangan',
-                    'Transaksi Menunggu Approval',
-                    "Pembelian {$nomorNota} menunggu approval",
-                    excludeUserIds: [$user->id]
-                );
+                $pemeriksaIds = User::where('instansi_id', $user->instansi_id)
+                    ->whereHas('role.permissions', fn ($q) => $q->where('permission', 'approve:keuangan'))
+                    ->pluck('id');
+
+                foreach ($pemeriksaIds as $pemeriksaId) {
+                    app(NotificationService::class)->onTransaksiPendingApproval(
+                        $transaksiKas->id,
+                        $pemeriksaId,
+                        $transaksiKas->keterangan
+                    );
+                }
             }
 
             $nota->update(['transaksi_kas_id' => $transaksiKas->id]);

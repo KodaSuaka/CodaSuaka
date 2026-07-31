@@ -120,6 +120,18 @@ class NotaPembelianTest extends TestCase
     {
         $approver = $this->buatApprover();
 
+        // Staff biasa tanpa permission approve:keuangan — tidak boleh ikut
+        // dapat notifikasi (dulu bug-nya broadcast ke seluruh instansi).
+        $staffRole = role::firstOrCreate(
+            ['nama_role' => 'Staff'],
+            ['deskripsi' => 'Staff']
+        );
+        $staff = User::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'role_id' => $staffRole->id,
+            'email_verified_at' => now(),
+        ]);
+
         $response = $this->actingAs($this->user)->postJson('/api/nota', [
             'tipe' => 'pembelian',
             'tanggal' => now()->format('Y-m-d'),
@@ -155,9 +167,17 @@ class NotaPembelianTest extends TestCase
                 ->exists()
         );
 
-        // Pengaju sendiri tidak mendapat notifikasi (excludeUserIds).
+        // Pengaju sendiri tidak mendapat notifikasi.
         $this->assertFalse(
             Notification::where('user_id', $this->user->id)
+                ->where('type', 'keuangan')
+                ->exists()
+        );
+
+        // Staff tanpa permission approve:keuangan juga tidak mendapat
+        // notifikasi — hanya user ber-permission approve:keuangan yang dituju.
+        $this->assertFalse(
+            Notification::where('user_id', $staff->id)
                 ->where('type', 'keuangan')
                 ->exists()
         );
