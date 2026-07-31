@@ -1,6 +1,5 @@
 package com.example.codasuaka.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -34,9 +33,10 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun CodaSuakaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Dipaksa Light Mode sesuai keinginan user
     content: @Composable () -> Unit
 ) {
+    // Selalu gunakan LightColorScheme kecuali user secara eksplisit mengirim darkTheme = true
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(

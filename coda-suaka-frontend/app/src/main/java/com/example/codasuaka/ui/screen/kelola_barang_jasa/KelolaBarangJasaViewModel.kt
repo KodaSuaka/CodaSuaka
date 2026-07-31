@@ -26,6 +26,7 @@ sealed class BarangJasaDialogMode {
  */
 data class KelolaBarangJasaUiState(
     val items: List<BarangJasaDto> = emptyList(),
+    val searchQuery: String = "",
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,
@@ -43,9 +44,24 @@ data class KelolaBarangJasaUiState(
     val formHargaJual: String = "",
     val formHargaBeli: String = "",
     val formStok: String = "",
-    val formKeterangan: String = ""
+    val formKeterangan: String = "",
+    // Inline validation errors
+    val namaError: String? = null,
+    val satuanError: String? = null,
+    val hargaJualError: String? = null,
+    val hargaBeliError: String? = null,
+    val stokError: String? = null
 ) {
     val isEditing: Boolean get() = dialogMode is BarangJasaDialogMode.Edit
+
+    val filteredItems: List<BarangJasaDto> get() = if (searchQuery.isBlank()) {
+        items
+    } else {
+        items.filter { 
+            it.nama.contains(searchQuery, ignoreCase = true) || 
+            (it.kategori?.contains(searchQuery, ignoreCase = true) == true)
+        }
+    }
 }
 
 /**
@@ -79,6 +95,12 @@ class KelolaBarangJasaViewModel(
         }
     }
 
+    // ─── Search ───────────────────────────────────────────────
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+    }
+
     // ─── Dialog ──────────────────────────────────────────────
 
     fun openDialogTambah() {
@@ -94,7 +116,12 @@ class KelolaBarangJasaViewModel(
             formKeterangan = "",
             errorMessage = null,
             deleteError = null,
-            successMessage = null
+            successMessage = null,
+            namaError = null,
+            satuanError = null,
+            hargaJualError = null,
+            hargaBeliError = null,
+            stokError = null
         )
     }
 
@@ -111,7 +138,12 @@ class KelolaBarangJasaViewModel(
             formKeterangan = item.keterangan ?: "",
             errorMessage = null,
             deleteError = null,
-            successMessage = null
+            successMessage = null,
+            namaError = null,
+            satuanError = null,
+            hargaJualError = null,
+            hargaBeliError = null,
+            stokError = null
         )
     }
 
@@ -127,7 +159,7 @@ class KelolaBarangJasaViewModel(
     // ─── Form Input ──────────────────────────────────────────
 
     fun onFormNamaChange(value: String) {
-        _uiState.value = _uiState.value.copy(formNama = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formNama = value, namaError = null)
     }
 
     fun onFormJenisChange(value: String) {
@@ -135,32 +167,32 @@ class KelolaBarangJasaViewModel(
             formJenis = value,
             // Stok cuma relevan untuk barang — kosongkan kalau pindah ke jasa
             formStok = if (value == "jasa") "" else _uiState.value.formStok,
-            errorMessage = null
+            stokError = null
         )
     }
 
     fun onFormKategoriChange(value: String) {
-        _uiState.value = _uiState.value.copy(formKategori = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formKategori = value)
     }
 
     fun onFormSatuanChange(value: String) {
-        _uiState.value = _uiState.value.copy(formSatuan = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formSatuan = value, satuanError = null)
     }
 
     fun onFormHargaJualChange(value: String) {
-        _uiState.value = _uiState.value.copy(formHargaJual = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formHargaJual = value, hargaJualError = null)
     }
 
     fun onFormHargaBeliChange(value: String) {
-        _uiState.value = _uiState.value.copy(formHargaBeli = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formHargaBeli = value, hargaBeliError = null)
     }
 
     fun onFormStokChange(value: String) {
-        _uiState.value = _uiState.value.copy(formStok = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formStok = value, stokError = null)
     }
 
     fun onFormKeteranganChange(value: String) {
-        _uiState.value = _uiState.value.copy(formKeterangan = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(formKeterangan = value)
     }
 
     /**
@@ -168,30 +200,49 @@ class KelolaBarangJasaViewModel(
      */
     fun simpan() {
         val state = _uiState.value
+        var hasError = false
+        var newState = state.copy(
+            namaError = null,
+            satuanError = null,
+            hargaJualError = null,
+            hargaBeliError = null,
+            stokError = null,
+            errorMessage = null
+        )
 
         if (state.formNama.isBlank()) {
-            _uiState.value = state.copy(errorMessage = "Nama harus diisi.")
-            return
+            newState = newState.copy(namaError = "Nama harus diisi.")
+            hasError = true
         }
         if (state.formSatuan.isBlank()) {
-            _uiState.value = state.copy(errorMessage = "Satuan harus diisi.")
-            return
+            newState = newState.copy(satuanError = "Satuan harus diisi.")
+            hasError = true
         }
         val hargaJual = state.formHargaJual.trim().toDoubleOrNull()
-        if (hargaJual == null) {
-            _uiState.value = state.copy(errorMessage = "Harga jual harus diisi dengan angka.")
-            return
+        if (state.formHargaJual.isBlank()) {
+            newState = newState.copy(hargaJualError = "Harga jual harus diisi.")
+            hasError = true
+        } else if (hargaJual == null) {
+            newState = newState.copy(hargaJualError = "Harga jual harus berupa angka.")
+            hasError = true
         }
+        
         val hargaBeliInput = state.formHargaBeli.trim()
         val hargaBeli = if (hargaBeliInput.isBlank()) null else hargaBeliInput.toDoubleOrNull()
         if (hargaBeliInput.isNotBlank() && hargaBeli == null) {
-            _uiState.value = state.copy(errorMessage = "Harga beli harus berupa angka.")
-            return
+            newState = newState.copy(hargaBeliError = "Harga beli harus berupa angka.")
+            hasError = true
         }
+        
         val stokInput = state.formStok.trim()
         val stok = if (state.formJenis == "jasa" || stokInput.isBlank()) null else stokInput.toIntOrNull()
         if (state.formJenis == "barang" && stokInput.isNotBlank() && stok == null) {
-            _uiState.value = state.copy(errorMessage = "Stok harus berupa angka bulat.")
+            newState = newState.copy(stokError = "Stok harus berupa angka bulat.")
+            hasError = true
+        }
+
+        if (hasError) {
+            _uiState.value = newState
             return
         }
 
@@ -200,7 +251,7 @@ class KelolaBarangJasaViewModel(
             jenis = state.formJenis,
             kategori = state.formKategori.trim().ifBlank { null },
             satuan = state.formSatuan.trim(),
-            hargaJual = hargaJual,
+            hargaJual = hargaJual!!,
             hargaBeli = hargaBeli,
             stok = stok,
             keterangan = state.formKeterangan.trim().ifBlank { null }

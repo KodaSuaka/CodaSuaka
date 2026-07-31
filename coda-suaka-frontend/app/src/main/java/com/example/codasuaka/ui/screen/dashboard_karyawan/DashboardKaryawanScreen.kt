@@ -42,14 +42,6 @@ import com.example.codasuaka.util.DateTimeUtil
 import org.koin.androidx.compose.koinViewModel
 import java.time.format.DateTimeFormatter
 
-// ─── Color Palette Tambahan (Fresh & Soft) ─────
-private val Teal = Color(0xFF2DD4BF)      // Soft Teal
-private val OceanBlue = Color(0xFF60A5FA) // Ocean Blue (turunan Primary)
-private val Mint = Color(0xFF34D399)      // Mint Green
-private val Amber = Color(0xFFFBBF24)     // Soft Amber
-private val Coral = Color(0xFFF87171)     // Soft Coral
-private val ScoreGreen = Color(0xFF10B981)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardKaryawanScreen(
@@ -80,7 +72,7 @@ fun DashboardKaryawanScreen(
                             badge = {
                                 if (notificationUiState.unreadCount > 0) {
                                     Badge(containerColor = Error, modifier = Modifier.size(16.dp).offset(x = (-4).dp, y = 4.dp)) {
-                                        Text(text = if (notificationUiState.unreadCount > 99) "9+" else notificationUiState.unreadCount.toString(), fontSize = 9.sp, color = Color.White)
+                                        Text(text = if (notificationUiState.unreadCount > 99) "9+" else notificationUiState.unreadCount.toString(), fontSize = 9.sp, color = OnPrimary)
                                     }
                                 }
                             }

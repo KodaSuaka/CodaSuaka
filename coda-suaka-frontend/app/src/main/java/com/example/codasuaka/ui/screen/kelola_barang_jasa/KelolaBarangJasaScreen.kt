@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,192 +43,205 @@ fun KelolaBarangJasaScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // ─── Force Light Theme ───
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Primary,
-            onPrimary = Color.White,
-            secondary = Secondary,
-            onSecondary = Color.White,
-            surface = Color.White,
-            onSurface = OnSurface,
-            onSurfaceVariant = OnSurfaceVariant,
-            tertiary = Tertiary,
-            outline = NeutralBorder
-        )
-    ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text("Kelola Barang/Jasa", fontWeight = FontWeight.Bold, color = Secondary)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { viewModel.openDialogTambah() },
-                    containerColor = Primary,
-                    contentColor = Color.White,
-                    shape = CircleShape
-                ) {
-                    Icon(Icons.Default.Add, "Tambah Barang/Jasa", modifier = Modifier.size(32.dp))
-                }
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Kelola Barang/Jasa", fontWeight = FontWeight.Bold, color = Secondary)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, "Kembali", tint = Secondary)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.openDialogTambah() },
+                containerColor = Primary,
+                contentColor = OnPrimary,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, "Tambah Barang/Jasa", modifier = Modifier.size(32.dp))
             }
-        ) { innerPadding ->
-            if (uiState.isLoading && uiState.items.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-                return@Scaffold
-            }
-
-            LazyColumn(
+        }
+    ) { innerPadding ->
+        if (uiState.isLoading && uiState.items.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(Tertiary)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .background(Tertiary),
+                contentAlignment = Alignment.Center
             ) {
-                if (uiState.successMessage != null) {
-                    item {
-                        NotificationBannerStatic(
-                            message = uiState.successMessage ?: "",
-                            type = com.example.codasuaka.util.ErrorMessageMapper.NotificationType.SUCCESS,
-                            onDismiss = { viewModel.clearMessages() }
-                        )
-                    }
-                }
+                CircularProgressIndicator(color = Primary)
+            }
+            return@Scaffold
+        }
 
-                if (uiState.errorMessage != null && uiState.dialogMode is BarangJasaDialogMode.Closed) {
-                    item {
-                        NotificationBannerStatic(
-                            message = uiState.errorMessage ?: "",
-                            mapFromServer = true,
-                            onDismiss = { viewModel.clearMessages() }
-                        )
-                    }
-                }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Tertiary)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item { Spacer(modifier = Modifier.height(16.dp)) }
 
+            if (uiState.successMessage != null) {
                 item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    NotificationBannerStatic(
+                        message = uiState.successMessage ?: "",
+                        type = com.example.codasuaka.util.ErrorMessageMapper.NotificationType.SUCCESS,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
+                }
+            }
+
+            if (uiState.errorMessage != null && uiState.dialogMode is BarangJasaDialogMode.Closed) {
+                item {
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
+                }
+            }
+
+            // ─── Search Bar ───
+            item {
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = viewModel::onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Cari nama atau kategori...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Secondary) },
+                    trailingIcon = {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear", tint = OnSurfaceVariant)
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = NeutralBorder,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface
+                    )
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Daftar Barang/Jasa",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Secondary
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Primary.copy(alpha = 0.1f)
                     ) {
                         Text(
-                            "Daftar Barang/Jasa",
-                            style = MaterialTheme.typography.titleMedium,
+                            "${uiState.filteredItems.size} item",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Secondary
+                            color = Primary
                         )
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Primary.copy(alpha = 0.1f)
+                    }
+                }
+            }
+
+            if (uiState.filteredItems.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            Icon(
+                                Icons.Default.Inventory2,
+                                null,
+                                tint = Neutral,
+                                modifier = Modifier.size(48.dp)
+                            )
                             Text(
-                                "${uiState.items.size} item",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Primary
+                                if (uiState.searchQuery.isEmpty()) "Belum ada barang/jasa" else "Pencarian tidak ditemukan",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = OnSurfaceVariant
+                            )
+                            Text(
+                                if (uiState.searchQuery.isEmpty()) "Tekan tombol + untuk menambahkan." else "Coba kata kunci lain.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariant
                             )
                         }
                     }
                 }
-
-                if (uiState.items.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Inventory2,
-                                    null,
-                                    tint = Neutral,
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Text(
-                                    "Belum ada barang/jasa",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = OnSurfaceVariant
-                                )
-                                Text(
-                                    "Tekan tombol + untuk menambahkan.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = OnSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-
-                items(uiState.items, key = { it.id }) { barangJasa ->
-                    BarangJasaListItem(
-                        item = barangJasa,
-                        onClick = { viewModel.openDialogEdit(barangJasa) }
-                    )
-                }
-
-                item { Spacer(modifier = Modifier.height(72.dp)) }
             }
-        }
 
-        // ─── Dialog Tambah/Edit ───
-        when (val dialog = uiState.dialogMode) {
-            is BarangJasaDialogMode.Tambah, is BarangJasaDialogMode.Edit -> {
-                DialogFormBarangJasa(
-                    uiState = uiState,
-                    onNamaChange = viewModel::onFormNamaChange,
-                    onJenisChange = viewModel::onFormJenisChange,
-                    onKategoriChange = viewModel::onFormKategoriChange,
-                    onSatuanChange = viewModel::onFormSatuanChange,
-                    onHargaJualChange = viewModel::onFormHargaJualChange,
-                    onHargaBeliChange = viewModel::onFormHargaBeliChange,
-                    onStokChange = viewModel::onFormStokChange,
-                    onKeteranganChange = viewModel::onFormKeteranganChange,
-                    onSimpan = viewModel::simpan,
-                    onHapus = { viewModel.requestDelete() },
-                    onDismiss = viewModel::closeDialog
+            items(uiState.filteredItems, key = { it.id }) { barangJasa ->
+                BarangJasaListItem(
+                    item = barangJasa,
+                    onClick = { viewModel.openDialogEdit(barangJasa) }
                 )
             }
-            BarangJasaDialogMode.Closed -> { /* tidak ada dialog */ }
-        }
 
-        // ─── Dialog Konfirmasi Hapus ───
-        if (uiState.showDeleteConfirm) {
-            val editing = (uiState.dialogMode as? BarangJasaDialogMode.Edit)?.item
-            if (editing != null) {
-                DeleteBarangJasaDialog(
-                    nama = editing.nama,
-                    isDeleting = uiState.isDeleting,
-                    onDismiss = { viewModel.cancelDelete() },
-                    onConfirm = { viewModel.confirmDelete() }
-                )
-            }
+            item { Spacer(modifier = Modifier.height(72.dp)) }
+        }
+    }
+
+    // ─── Dialog Tambah/Edit ───
+    when (val dialog = uiState.dialogMode) {
+        is BarangJasaDialogMode.Tambah, is BarangJasaDialogMode.Edit -> {
+            DialogFormBarangJasa(
+                uiState = uiState,
+                onNamaChange = viewModel::onFormNamaChange,
+                onJenisChange = viewModel::onFormJenisChange,
+                onKategoriChange = viewModel::onFormKategoriChange,
+                onSatuanChange = viewModel::onFormSatuanChange,
+                onHargaJualChange = viewModel::onFormHargaJualChange,
+                onHargaBeliChange = viewModel::onFormHargaBeliChange,
+                onStokChange = viewModel::onFormStokChange,
+                onKeteranganChange = viewModel::onFormKeteranganChange,
+                onSimpan = viewModel::simpan,
+                onHapus = { viewModel.requestDelete() },
+                onDismiss = viewModel::closeDialog
+            )
+        }
+        BarangJasaDialogMode.Closed -> { /* tidak ada dialog */ }
+    }
+
+    // ─── Dialog Konfirmasi Hapus ───
+    if (uiState.showDeleteConfirm) {
+        val editing = (uiState.dialogMode as? BarangJasaDialogMode.Edit)?.item
+        if (editing != null) {
+            DeleteBarangJasaDialog(
+                nama = editing.nama,
+                isDeleting = uiState.isDeleting,
+                onDismiss = { viewModel.cancelDelete() },
+                onConfirm = { viewModel.confirmDelete() }
+            )
         }
     }
 }
@@ -274,41 +288,53 @@ private fun BarangJasaListItem(
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        item.nama,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    if (!item.isActive) {
-                        Surface(shape = RoundedCornerShape(8.dp), color = Error.copy(alpha = 0.1f)) {
-                            Text(
-                                "Nonaktif",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Error
-                            )
-                        }
-                    }
-                }
+                Text(
+                    item.nama,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
                 Spacer(modifier = Modifier.height(4.dp))
+                
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        "${formatRupiahBarangJasa(item.hargaJual)} / ${item.satuan}",
+                        formatRupiahBarangJasa(item.hargaJual),
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Secondary 
                     )
+                    
+                    Text("•", color = Secondary.copy(alpha = 0.3f))
+                    
+                    Text(
+                        item.satuan,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariant
+                    )
+
+                    if (item.jenis == "barang") {
+                        val stok = item.stok ?: 0
+                        val stokColor = if (stok <= 5) Error else if (stok <= 20) WarningColor else Success
+                        
+                        Text("•", color = Secondary.copy(alpha = 0.3f))
+                        Text(
+                            "Stok: $stok",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = stokColor
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = Secondary.copy(alpha = 0.1f)
@@ -318,8 +344,21 @@ private fun BarangJasaListItem(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = Secondary,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
                         )
+                    }
+
+                    if (!item.isActive) {
+                        Surface(shape = RoundedCornerShape(8.dp), color = Error.copy(alpha = 0.1f)) {
+                            Text(
+                                "Nonaktif",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Error
+                            )
+                        }
                     }
                 }
             }
@@ -350,40 +389,29 @@ private fun DialogFormBarangJasa(
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = Primary,
-        unfocusedBorderColor = Neutral,
-        focusedContainerColor = Surface,
-        unfocusedContainerColor = Surface,
+        unfocusedBorderColor = NeutralBorder,
+        focusedContainerColor = InputBackground,
+        unfocusedContainerColor = InputBackground,
         cursorColor = Primary,
         focusedLabelColor = Primary,
-        unfocusedLabelColor = OnSurfaceVariant
+        unfocusedLabelColor = Secondary.copy(alpha = 0.6f),
+        focusedTextColor = Secondary,   // Memaksa teks input menjadi Navy
+        unfocusedTextColor = Secondary  // Memaksa teks input menjadi Navy
     )
 
-    // ─── Force Light Theme (dialog render di window terpisah) ───
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Primary,
-            onPrimary = Color.White,
-            secondary = Secondary,
-            onSecondary = Color.White,
-            surface = Color.White,
-            onSurface = OnSurface,
-            onSurfaceVariant = OnSurfaceVariant,
-            tertiary = Tertiary,
-            error = Error,
-            outline = NeutralBorder
-        )
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
+        CodaSuakaTheme {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
                     .heightIn(max = 640.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface)
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -399,15 +427,15 @@ private fun DialogFormBarangJasa(
                         Text(
                             if (uiState.isEditing) "Edit Barang/Jasa" else "Tambah Barang/Jasa",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = OnSurface
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Secondary
                         )
-                        IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Close, "Tutup", tint = OnSurfaceVariant)
+                        IconButton(onClick = onDismiss, modifier = Modifier.background(Neutral.copy(alpha = 0.5f), CircleShape).size(32.dp)) {
+                            Icon(Icons.Default.Close, "Tutup", tint = Secondary, modifier = Modifier.size(18.dp))
                         }
                     }
 
-                    HorizontalDivider(color = Neutral)
+                    HorizontalDivider(color = Neutral, thickness = 1.dp)
 
                     if (uiState.errorMessage != null) {
                         Surface(shape = RoundedCornerShape(8.dp), color = Error.copy(alpha = 0.1f)) {
@@ -444,7 +472,7 @@ private fun DialogFormBarangJasa(
                                         Text(
                                             label,
                                             fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
-                                            color = if (selected) Color.White else Secondary
+                                            color = if (selected) OnPrimary else Secondary
                                         )
                                     },
                                     colors = FilterChipDefaults.filterChipColors(
@@ -465,7 +493,9 @@ private fun DialogFormBarangJasa(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors
+                        colors = fieldColors,
+                        isError = uiState.namaError != null,
+                        supportingText = uiState.namaError?.let { { Text(it) } }
                     )
 
                     OutlinedTextField(
@@ -475,7 +505,8 @@ private fun DialogFormBarangJasa(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors
+                        colors = fieldColors,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = OnSurface)
                     )
 
                     OutlinedTextField(
@@ -486,7 +517,9 @@ private fun DialogFormBarangJasa(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors
+                        colors = fieldColors,
+                        isError = uiState.satuanError != null,
+                        supportingText = uiState.satuanError?.let { { Text(it) } }
                     )
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -498,7 +531,9 @@ private fun DialogFormBarangJasa(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            colors = fieldColors
+                            colors = fieldColors,
+                            isError = uiState.hargaJualError != null,
+                            supportingText = uiState.hargaJualError?.let { { Text(it) } }
                         )
                         OutlinedTextField(
                             value = uiState.formHargaBeli,
@@ -508,7 +543,9 @@ private fun DialogFormBarangJasa(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            colors = fieldColors
+                            colors = fieldColors,
+                            isError = uiState.hargaBeliError != null,
+                            supportingText = uiState.hargaBeliError?.let { { Text(it) } }
                         )
                     }
 
@@ -521,7 +558,9 @@ private fun DialogFormBarangJasa(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            colors = fieldColors
+                            colors = fieldColors,
+                            isError = uiState.stokError != null,
+                            supportingText = uiState.stokError?.let { { Text(it) } }
                         )
                     }
 
@@ -545,14 +584,14 @@ private fun DialogFormBarangJasa(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Primary,
-                            contentColor = Color.White,
+                            contentColor = OnPrimary,
                             disabledContainerColor = Primary.copy(alpha = 0.5f)
                         )
                     ) {
                         if (uiState.isSaving) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                color = Color.White,
+                                color = OnPrimary,
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -567,21 +606,35 @@ private fun DialogFormBarangJasa(
                     }
 
                     if (uiState.isEditing) {
-                        OutlinedButton(
+                        TextButton(
                             onClick = onHapus,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
                             enabled = !uiState.isDeleting,
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Error),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Error.copy(alpha = 0.4f))
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Error,
+                                containerColor = Error.copy(alpha = 0.08f)
+                            )
                         ) {
-                            Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline, 
+                                contentDescription = null, 
+                                modifier = Modifier.size(20.dp),
+                                tint = Error // Paksa ikon jadi merah
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Hapus", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text(
+                                text = "Hapus Produk", 
+                                fontWeight = FontWeight.ExtraBold, 
+                                fontSize = 14.sp,
+                                color = Error // Paksa teks jadi merah tegas
+                            )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(8.dp)) // Tambahan padding bawah agar tidak mepet
                 }
             }
         }
@@ -599,51 +652,45 @@ private fun DeleteBarangJasaDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    // ─── Force Light Theme (dialog render di window terpisah) ───
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            surface = Color.White,
-            onSurface = OnSurface,
-            onSurfaceVariant = OnSurfaceVariant,
-            primary = Primary,
-            secondary = Secondary,
-            error = Error
-        )
-    ) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            containerColor = Color.White,
-            titleContentColor = Secondary,
-            textContentColor = OnSurface,
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Default.Warning, null, tint = Error)
-                    Text("Hapus Barang/Jasa", fontWeight = FontWeight.ExtraBold, color = Secondary)
-                }
-            },
-            text = {
-                Text("Yakin ingin menghapus \"$nama\"? Tindakan ini permanen.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = onConfirm,
-                    enabled = !isDeleting,
-                    colors = ButtonDefaults.buttonColors(containerColor = Error),
-                    shape = RoundedCornerShape(12.dp)
+    Dialog(onDismissRequest = onDismiss) {
+        CodaSuakaTheme {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (isDeleting) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
+                    Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Error.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Delete, null, tint = Error, modifier = Modifier.size(32.dp))
                     }
-                    Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Batal", color = OnSurfaceVariant)
+                    Text("Hapus Produk", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Secondary)
+                    Text("Yakin ingin menghapus \"$nama\"? Tindakan ini permanen.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = Secondary.copy(alpha = 0.7f))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                            Text("Batal", color = Secondary.copy(alpha = 0.6f))
+                        }
+                        Button(
+                            onClick = onConfirm,
+                            enabled = !isDeleting,
+                            modifier = Modifier.weight(1.5f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Error),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            if (isDeleting) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = OnPrimary, strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Hapus", color = OnPrimary, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 }
 

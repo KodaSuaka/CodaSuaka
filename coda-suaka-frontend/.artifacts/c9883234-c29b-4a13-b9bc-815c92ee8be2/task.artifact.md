@@ -1,0 +1,24 @@
+# Task List: UI/UX & Theme Standardization
+
+- [x] **Phase 1: Theme & Color Cleanup**
+    - [x] Update `Color.kt` with centralized status colors.
+    - [x] Audit and replace hardcoded `Color.White` with `Tertiary` or `MaterialTheme.colorScheme.surface`.
+    - [x] Ensure `Secondary` (Navy Blue) is consistently used for headers and primary text.
+- [x] **Phase 2: Kelola Barang/Jasa Improvements**
+    - [x] Add SearchBar to `KelolaBarangJasaScreen`.
+    - [x] Display stock information in `BarangJasaListItem`.
+    - [x] Refactor form dialog to support inline validation errors.
+- [x] **Phase 3: Riwayat Nota Improvements**
+    - [x] Replace separate date pickers with `DateRangePicker`.
+    - [x] Add search field for Invoice Number / Third Party.
+    - [x] Enhance visual hierarchy of transaction totals.
+- [x] **Phase 4: Nota Pembelian Improvements**
+    - [x] Implement Bottom Sheet for manual item catalog search.
+    - [x] Add "Download Excel Template" button.
+    - [x] Implement "Quick Add" flow (click catalog -> add to cart with default qty 1).
+    - [x] Simplify main screen by hiding manual forms behind Bottom Sheets.
+    - [x] Implement sticky bottom bar for total and save action.
+- [x] **Phase 5: Verification & Polishing**
+    - [x] Final UI audit for color consistency.
+    - [x] Test all search and filter functionalities.
+    - [x] Verify form validation behavior.

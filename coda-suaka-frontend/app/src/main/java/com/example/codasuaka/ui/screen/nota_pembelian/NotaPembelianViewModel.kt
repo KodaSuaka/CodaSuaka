@@ -56,10 +56,14 @@ data class NotaPembelianUiState(
     val pihakTerkait: String = "",
     val metodePembayaran: String = "",
     val catatan: String = "",
+    val isHeaderExpanded: Boolean = false,
 
-    // Pencarian katalog
+    // Pencarian katalog & Bottom Sheets
     val searchQuery: String = "",
     val filteredKatalog: List<BarangJasaDto> = emptyList(),
+    val isKatalogOpen: Boolean = false,
+    val isManualInputOpen: Boolean = false,
+    val isQtyPromptOpen: Boolean = false,
 
     // Keranjang manual
     val cartItems: List<PembelianCartItem> = emptyList(),
@@ -134,8 +138,24 @@ class NotaPembelianViewModel(
     fun setPihakTerkait(value: String) = _uiState.update { it.copy(pihakTerkait = value) }
     fun setMetodePembayaran(value: String) = _uiState.update { it.copy(metodePembayaran = value) }
     fun setCatatan(value: String) = _uiState.update { it.copy(catatan = value) }
+    fun toggleHeader(expanded: Boolean) = _uiState.update { it.copy(isHeaderExpanded = expanded) }
 
-    // ─── Katalog search ────────────────────────────────────
+    // ─── Katalog & Manual Search ───────────────────────────
+
+    fun toggleKatalog(open: Boolean) {
+        _uiState.update { it.copy(isKatalogOpen = open, searchQuery = "", filteredKatalog = it.katalog) }
+    }
+
+    fun toggleManualInput(open: Boolean) {
+        _uiState.update { 
+            it.copy(
+                isManualInputOpen = open,
+                itemNama = if (open) "" else it.itemNama,
+                itemHarga = if (open) "" else it.itemHarga,
+                itemKuantitas = if (open) "" else it.itemKuantitas
+            ) 
+        }
+    }
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { state ->
@@ -152,10 +172,16 @@ class NotaPembelianViewModel(
                 itemKatalogId = produk.id,
                 itemNama = produk.nama,
                 itemSatuan = produk.satuan,
-                itemHarga = formatDoubleInput(produk.hargaBeli ?: 0.0),
-                itemKuantitas = "1"
+                itemHarga = (produk.hargaBeli ?: 0.0).let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() },
+                itemKuantitas = "1",
+                isKatalogOpen = false,
+                isQtyPromptOpen = true // Buka prompt jumlah setelah pilih produk
             )
         }
+    }
+
+    fun closeQtyPrompt() {
+        _uiState.update { it.copy(isQtyPromptOpen = false) }
     }
 
     fun updateItemNama(value: String) = _uiState.update { it.copy(itemNama = value) }
@@ -203,7 +229,9 @@ class NotaPembelianViewModel(
                         itemNama = "",
                         itemKuantitas = "",
                         itemSatuan = "pcs",
-                        itemHarga = ""
+                        itemHarga = "",
+                        isManualInputOpen = false, // Tutup sheet manual
+                        isQtyPromptOpen = false    // Tutup prompt qty
                     )
                 }
             }
@@ -354,13 +382,5 @@ class NotaPembelianViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(loadError = null, submitError = null) }
-    }
-
-    private fun formatDoubleInput(value: Double): String {
-        return if (value == value.toLong().toDouble()) {
-            value.toLong().toString()
-        } else {
-            value.toString()
-        }
     }
 }
