@@ -14,6 +14,7 @@ use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriTransaksiController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanExportController;
+use App\Http\Controllers\LaporanKeuanganController;
 use App\Http\Controllers\NotaController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutletController;
@@ -167,6 +168,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/laba-rugi/export/pdf', [LaporanExportController::class, 'exportLabaRugiPdf']);
         Route::get('/arus-kas/export/pdf', [LaporanExportController::class, 'exportArusKasPdf']);
         Route::get('/arus-kas/export/excel', [LaporanExportController::class, 'exportArusKasExcel']);
+    });
+
+    // Template laporan keuangan (Laba Rugi / Arus Kas) mengikuti format divisi
+    // keuangan, ter-prefill dari transaksi. Izin: export:laporan-keuangan.
+    Route::prefix('laporan-keuangan')->group(function () {
+        Route::get('/template/export', [LaporanKeuanganController::class, 'exportTemplate']);
     });
 
     // Bug #8: Approval Workflow — diaktifkan untuk persetujuan transaksi keuangan

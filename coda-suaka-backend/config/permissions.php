@@ -120,6 +120,7 @@ return [
             'permissions' => [
                 'view:laporan' => 'Melihat laporan arus kas & ringkasan keuangan',
                 'manage:laporan' => 'Mengelola & generate laporan',
+                'export:laporan-keuangan' => 'Mengekspor template Laba Rugi & Arus Kas (format divisi keuangan)',
             ],
         ],
 
@@ -232,6 +233,7 @@ return [
             // Laporan
             'view:laporan',
             'manage:laporan',
+            'export:laporan-keuangan',
 
             // Audit Log — [FITUR ADVANCE — belum diaktifkan]
             // 'view:audit',
@@ -256,6 +258,7 @@ return [
 
             // Laporan
             'view:laporan',
+            'export:laporan-keuangan',
 
             // Presensi (read-only untuk rekap)
             'view:presensi',
