@@ -74,23 +74,55 @@ fun NotaDetailScreen(
     // ─── Dialog konfirmasi hapus ───
     var showDeleteDialog by remember { mutableStateOf(false) }
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Hapus Nota") },
-            text = { Text("Yakin hapus nota ${uiState.nota?.nomorNota ?: ""}? Tindakan ini tidak bisa dibatalkan.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteNota()
-                        showDeleteDialog = false
-                    },
-                    enabled = !uiState.isDeleting
-                ) { Text("Hapus", color = Error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
-            }
-        )
+        // ─── Force Light Theme (dialog render di window terpisah) ───
+        MaterialTheme(
+            colorScheme = lightColorScheme(
+                surface = Color.White,
+                onSurface = OnSurface,
+                onSurfaceVariant = OnSurfaceVariant,
+                primary = Primary,
+                secondary = Secondary,
+                error = Error
+            )
+        ) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                containerColor = Color.White,
+                titleContentColor = Secondary,
+                textContentColor = OnSurface,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Default.Warning, null, tint = Error)
+                        Text("Hapus Nota", fontWeight = FontWeight.ExtraBold, color = Secondary)
+                    }
+                },
+                text = {
+                    Text("Yakin hapus nota ${uiState.nota?.nomorNota ?: ""}? Tindakan ini tidak bisa dibatalkan.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteNota()
+                            showDeleteDialog = false
+                        },
+                        enabled = !uiState.isDeleting,
+                        colors = ButtonDefaults.buttonColors(containerColor = Error),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        if (uiState.isDeleting) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Batal", color = OnSurfaceVariant)
+                    }
+                }
+            )
+        }
     }
 
     // ─── Force Light Theme ───

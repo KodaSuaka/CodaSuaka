@@ -25,6 +25,8 @@ import java.time.LocalDate
 /** Item keranjang nota pembelian (entry manual). */
 data class PembelianCartItem(
     val namaItem: String,
+    val jenis: String,
+    val barangJasaId: Int?,
     val kuantitas: Double,
     val satuan: String,
     val hargaSatuan: Double
@@ -68,6 +70,7 @@ data class NotaPembelianUiState(
     // Field item yang sedang diinput
     val itemKatalogId: Int? = null,
     val itemNama: String = "",
+    val itemJenis: String = "barang",
     val itemKuantitas: String = "",
     val itemSatuan: String = "pcs",
     val itemHarga: String = "",
@@ -151,6 +154,7 @@ class NotaPembelianViewModel(
             state.copy(
                 itemKatalogId = produk.id,
                 itemNama = produk.nama,
+                itemJenis = produk.jenis,
                 itemSatuan = produk.satuan,
                 itemHarga = formatDoubleInput(produk.hargaBeli ?: 0.0),
                 itemKuantitas = "1"
@@ -159,6 +163,8 @@ class NotaPembelianViewModel(
     }
 
     fun updateItemNama(value: String) = _uiState.update { it.copy(itemNama = value) }
+
+    fun updateItemJenis(value: String) = _uiState.update { it.copy(itemJenis = value) }
 
     fun updateItemKuantitas(value: String) {
         // Terima digit & satu titik desimal
@@ -189,6 +195,8 @@ class NotaPembelianViewModel(
             else -> {
                 val item = PembelianCartItem(
                     namaItem = nama,
+                    jenis = state.itemJenis,
+                    barangJasaId = state.itemKatalogId,
                     kuantitas = qty,
                     satuan = state.itemSatuan.ifBlank { "pcs" },
                     hargaSatuan = harga
@@ -201,6 +209,7 @@ class NotaPembelianViewModel(
                         submitError = null,
                         itemKatalogId = null,
                         itemNama = "",
+                        itemJenis = "barang",
                         itemKuantitas = "",
                         itemSatuan = "pcs",
                         itemHarga = ""
@@ -258,9 +267,9 @@ class NotaPembelianViewModel(
                 catatan = state.catatan.ifBlank { null },
                 items = state.cartItems.map { item ->
                     NotaItemRequest(
-                        barangJasaId = null,
+                        barangJasaId = item.barangJasaId,
                         namaItem = item.namaItem,
-                        jenis = "barang",
+                        jenis = item.jenis,
                         kuantitas = item.kuantitas,
                         satuan = item.satuan,
                         hargaSatuan = item.hargaSatuan
@@ -336,6 +345,7 @@ class NotaPembelianViewModel(
                 importFile = null,
                 itemKatalogId = null,
                 itemNama = "",
+                itemJenis = "barang",
                 itemKuantitas = "",
                 itemSatuan = "pcs",
                 itemHarga = "",

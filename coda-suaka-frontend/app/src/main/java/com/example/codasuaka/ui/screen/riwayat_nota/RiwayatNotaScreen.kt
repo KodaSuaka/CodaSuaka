@@ -78,70 +78,115 @@ fun RiwayatNotaScreen(
         }.getOrNull()
     )
 
+    // ─── Force Light Theme (dialog render di window terpisah) ───
+    val datePickerColorScheme = lightColorScheme(
+        primary = Primary,
+        onPrimary = Color.White,
+        secondary = Secondary,
+        surface = Color.White,
+        onSurface = OnSurface
+    )
+
     if (showStartPicker) {
-        DatePickerDialog(
-            onDismissRequest = { showStartPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    startPickerState.selectedDateMillis?.let { millis ->
-                        val date = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .toLocalDate()
-                        viewModel.setFilterDateRange(date.toString(), uiState.filterEndDate)
-                    }
-                    showStartPicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showStartPicker = false }) { Text("Batal") }
+        MaterialTheme(colorScheme = datePickerColorScheme) {
+            DatePickerDialog(
+                onDismissRequest = { showStartPicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        startPickerState.selectedDateMillis?.let { millis ->
+                            val date = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.setFilterDateRange(date.toString(), uiState.filterEndDate)
+                        }
+                        showStartPicker = false
+                    }) { Text("Pilih") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showStartPicker = false }) { Text("Batal") }
+                }
+            ) {
+                DatePicker(state = startPickerState)
             }
-        ) {
-            DatePicker(state = startPickerState)
         }
     }
 
     if (showEndPicker) {
-        DatePickerDialog(
-            onDismissRequest = { showEndPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    endPickerState.selectedDateMillis?.let { millis ->
-                        val date = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .toLocalDate()
-                        viewModel.setFilterDateRange(uiState.filterStartDate, date.toString())
-                    }
-                    showEndPicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEndPicker = false }) { Text("Batal") }
+        MaterialTheme(colorScheme = datePickerColorScheme) {
+            DatePickerDialog(
+                onDismissRequest = { showEndPicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        endPickerState.selectedDateMillis?.let { millis ->
+                            val date = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.setFilterDateRange(uiState.filterStartDate, date.toString())
+                        }
+                        showEndPicker = false
+                    }) { Text("Pilih") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEndPicker = false }) { Text("Batal") }
+                }
+            ) {
+                DatePicker(state = endPickerState)
             }
-        ) {
-            DatePicker(state = endPickerState)
         }
     }
 
     // ─── Dialog konfirmasi hapus ───
     var notaToDelete by remember { mutableStateOf<NotaDto?>(null) }
     notaToDelete?.let { nota ->
-        AlertDialog(
-            onDismissRequest = { notaToDelete = null },
-            title = { Text("Hapus Nota") },
-            text = { Text("Yakin hapus nota ${nota.nomorNota}? Tindakan ini tidak bisa dibatalkan.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteNota(nota.id)
-                        notaToDelete = null
-                    },
-                    enabled = !uiState.isDeleting
-                ) { Text("Hapus", color = Error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { notaToDelete = null }) { Text("Batal") }
-            }
-        )
+        // ─── Force Light Theme (dialog render di window terpisah) ───
+        MaterialTheme(
+            colorScheme = lightColorScheme(
+                surface = Color.White,
+                onSurface = OnSurface,
+                onSurfaceVariant = OnSurfaceVariant,
+                primary = Primary,
+                secondary = Secondary,
+                error = Error
+            )
+        ) {
+            AlertDialog(
+                onDismissRequest = { notaToDelete = null },
+                containerColor = Color.White,
+                titleContentColor = Secondary,
+                textContentColor = OnSurface,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Default.Warning, null, tint = Error)
+                        Text("Hapus Nota", fontWeight = FontWeight.ExtraBold, color = Secondary)
+                    }
+                },
+                text = {
+                    Text("Yakin hapus nota ${nota.nomorNota}? Tindakan ini tidak bisa dibatalkan.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteNota(nota.id)
+                            notaToDelete = null
+                        },
+                        enabled = !uiState.isDeleting,
+                        colors = ButtonDefaults.buttonColors(containerColor = Error),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        if (uiState.isDeleting) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { notaToDelete = null }) {
+                        Text("Batal", color = OnSurfaceVariant)
+                    }
+                }
+            )
+        }
     }
 
     // ─── Force Light Theme ───

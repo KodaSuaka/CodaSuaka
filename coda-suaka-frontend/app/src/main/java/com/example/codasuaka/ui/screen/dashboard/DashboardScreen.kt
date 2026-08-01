@@ -246,7 +246,7 @@ fun DashboardScreen(
                             MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
                             MenuItem("Kelola Produk", Icons.Default.Inventory2, TealStatus, allowedRoles = listOf("Owner", "Keuangan")),
                             MenuItem("Nota Pembelian", Icons.Default.Receipt, GreenFinance, allowedRoles = listOf("Owner", "Keuangan")),
-                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, Color(0xFF7C3AED)),
+                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, PurpleLog, allowedRoles = listOf("Owner", "Keuangan")),
                             MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
                             MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
                             MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus)

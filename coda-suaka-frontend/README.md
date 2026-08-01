@@ -269,14 +269,17 @@ coda-suaka-frontend/
 ### 📊 Poin Kinerja
 - **Skor Kinerja** — poin dari penugasan yang diselesaikan
 
-### 🛒 Kasir (POS) — _belum diimplementasi di app_
-- **Status:** API backend sudah tersedia & terhubung ke Keuangan (`/api/notas`, `/api/barang-jasas` — lihat [README backend](../coda-suaka-backend/README.md)), tetapi **layar Android-nya belum dibuat**. Modul ini masuk roadmap; belum ada `NotaScreen`/`BarangJasaScreen` di codebase frontend.
+### 🛒 Kasir (POS)
+- **Kasir** — layar POS: pilih produk (grid barang/jasa), keranjang, checkout jadi nota penjualan
+- **Kelola Barang/Jasa** — CRUD katalog item + stok
+- **Nota Pembelian** — buat nota pembelian (item dari katalog / lepas)
+- **Riwayat Nota** — daftar nota penjualan & pembelian
+- **Detail Nota** — rincian item nota + cetak PDF
+- Terhubung ke API `/api/notas` & `/api/barang-jasas` ([README backend](../coda-suaka-backend/README.md))
 
 ---
 
 ## Layar Aplikasi
-
-> Kasir (POS) tidak tercantum di bawah — API-nya sudah siap di backend, tetapi layar Android-nya belum diimplementasi.
 
 
 | Screen | ViewModel | Deskripsi |
@@ -299,6 +302,11 @@ coda-suaka-frontend/
 | [`ChatDetailScreen`](app/src/main/java/com/example/codasuaka/ui/screen/chat/ChatDetailScreen.kt) | `ChatDetailViewModel` | Detail Chat |
 | [`NotificationScreen`](app/src/main/java/com/example/codasuaka/ui/screen/notifikasi/NotificationScreen.kt) | `NotificationViewModel` | Notifikasi |
 | [`PoinKinerjaScreen`](app/src/main/java/com/example/codasuaka/ui/screen/poin_kinerja/PoinKinerjaScreen.kt) | `PoinKinerjaViewModel` | Poin Kinerja |
+| [`KasirScreen`](app/src/main/java/com/example/codasuaka/ui/screen/kasir/KasirScreen.kt) | `KasirViewModel` | Kasir / POS |
+| [`KelolaBarangJasaScreen`](app/src/main/java/com/example/codasuaka/ui/screen/kelola_barang_jasa/KelolaBarangJasaScreen.kt) | `KelolaBarangJasaViewModel` | CRUD Barang/Jasa |
+| [`NotaPembelianScreen`](app/src/main/java/com/example/codasuaka/ui/screen/nota_pembelian/NotaPembelianScreen.kt) | `NotaPembelianViewModel` | Buat Nota Pembelian |
+| [`RiwayatNotaScreen`](app/src/main/java/com/example/codasuaka/ui/screen/riwayat_nota/RiwayatNotaScreen.kt) | `RiwayatNotaViewModel` | Riwayat Nota |
+| [`NotaDetailScreen`](app/src/main/java/com/example/codasuaka/ui/screen/nota_detail/NotaDetailScreen.kt) | `NotaDetailViewModel` | Detail Nota + Cetak PDF |
 
 ---
 

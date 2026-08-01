@@ -161,6 +161,10 @@ git pull origin main && composer install --no-dev --optimize-autoloader
 # 3. Migrasi (aditif — JANGAN pernah migrate:fresh di produksi)
 php artisan migrate --force
 
+# 3b. Pastikan kategori global terisi (WAJIB untuk Kasir — migrate tidak
+#     menjalankan seeder; tanpa ini setiap nota gagal 500). Idempoten.
+php artisan db:seed --class=KategoriTransaksiSeeder --force
+
 # 4. Symlink storage + rebuild cache + restart worker
 php artisan storage:link
 php artisan config:cache && php artisan route:cache && php artisan view:cache

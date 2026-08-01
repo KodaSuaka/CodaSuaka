@@ -65,24 +65,35 @@ fun NotaPembelianScreen(
     val datePickerState = rememberDatePickerState()
     val showDatePicker = remember { mutableStateOf(false) }
     if (showDatePicker.value) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker.value = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val date = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .toLocalDate()
-                        viewModel.setTanggal(date.toString())
-                    }
-                    showDatePicker.value = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker.value = false }) { Text("Batal") }
-            }
+        // ─── Force Light Theme (dialog render di window terpisah) ───
+        MaterialTheme(
+            colorScheme = lightColorScheme(
+                primary = Primary,
+                onPrimary = Color.White,
+                secondary = Secondary,
+                surface = Color.White,
+                onSurface = OnSurface
+            )
         ) {
-            DatePicker(state = datePickerState)
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker.value = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.setTanggal(date.toString())
+                        }
+                        showDatePicker.value = false
+                    }) { Text("Pilih") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker.value = false }) { Text("Batal") }
+                }
+            ) {
+                DatePicker(state = datePickerState)
+            }
         }
     }
 
@@ -168,10 +179,12 @@ fun NotaPembelianScreen(
                 when (uiState.mode) {
                     NotaPembelianMode.MANUAL -> {
                         ManualSection(
+                            modifier = Modifier.weight(1f),
                             uiState = uiState,
                             onSearchChange = { viewModel.onSearchQueryChange(it) },
                             onSelectKatalog = { viewModel.selectKatalogItem(it) },
                             onNamaChange = { viewModel.updateItemNama(it) },
+                            onJenisChange = { viewModel.updateItemJenis(it) },
                             onKuantitasChange = { viewModel.updateItemKuantitas(it) },
                             onSatuanChange = { viewModel.updateItemSatuan(it) },
                             onHargaChange = { viewModel.updateItemHarga(it) },
@@ -185,6 +198,7 @@ fun NotaPembelianScreen(
 
                     NotaPembelianMode.IMPORT -> {
                         ImportSection(
+                            modifier = Modifier.weight(1f),
                             uiState = uiState,
                             onPickFile = { filePicker.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream")) },
                             onClearFile = { viewModel.clearImportFile() },
@@ -350,10 +364,12 @@ private fun FormUmum(
 
 @Composable
 private fun ManualSection(
+    modifier: Modifier = Modifier,
     uiState: NotaPembelianUiState,
     onSearchChange: (String) -> Unit,
     onSelectKatalog: (BarangJasaDto) -> Unit,
     onNamaChange: (String) -> Unit,
+    onJenisChange: (String) -> Unit,
     onKuantitasChange: (String) -> Unit,
     onSatuanChange: (String) -> Unit,
     onHargaChange: (String) -> Unit,
@@ -363,7 +379,14 @@ private fun ManualSection(
     onSubmit: () -> Unit,
     isSubmitting: Boolean
 ) {
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    // Modifier dari caller (weight(1f)) memberi tinggi terbatas, sehingga
+    // verticalScroll di bawah ini aman dipakai (tidak infinite-height).
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
         // ── Tambah Item ──
         Card(
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -421,6 +444,30 @@ private fun ManualSection(
                     }
                 }
 
+                // Jenis: barang / jasa
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("barang" to "Barang", "jasa" to "Jasa").forEach { (value, label) ->
+                        val selected = uiState.itemJenis == value
+                        FilterChip(
+                            selected = selected,
+                            onClick = { onJenisChange(value) },
+                            label = {
+                                Text(
+                                    label,
+                                    fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
+                                    color = if (selected) Color.White else Secondary
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Primary,
+                                containerColor = InputBackground
+                            ),
+                            border = null,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
                 // Form item
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
@@ -469,7 +516,7 @@ private fun ManualSection(
 
         // ── Keranjang ──
         Card(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).weight(1f),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -498,11 +545,11 @@ private fun ManualSection(
                         )
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        itemsIndexed(uiState.cartItems) { index, item ->
+                    // Non-lazy: kartu ini sudah hidup di dalam parent yang
+                    // verticalScroll (lihat ManualSection), LazyColumn tanpa
+                    // tinggi tetap di dalam parent scroll akan crash.
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        uiState.cartItems.forEachIndexed { index, item ->
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -572,6 +619,7 @@ private fun ManualSection(
 
 @Composable
 private fun ImportSection(
+    modifier: Modifier = Modifier,
     uiState: NotaPembelianUiState,
     onPickFile: () -> Unit,
     onClearFile: () -> Unit,
@@ -579,7 +627,7 @@ private fun ImportSection(
     isSubmitting: Boolean
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Card(

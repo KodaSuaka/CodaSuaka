@@ -48,27 +48,12 @@ class KasirService
                 }
             }
 
-            // 2. Hitung total & buat NotaItem snapshot
-            $total = 0;
-            $itemRows = [];
-            foreach ($items as $item) {
-                $barangJasa = ($item['barang_jasa_id'] ?? null) ? BarangJasa::find($item['barang_jasa_id']) : null;
-                $namaItem = $item['nama_item'] ?? $barangJasa?->nama;
-                $jenis = $item['jenis'] ?? $barangJasa?->jenis;
-                $satuan = $item['satuan'] ?? $barangJasa?->satuan ?? 'pcs';
-                $hargaSatuan = $item['harga_satuan'];
-                $subtotal = $item['kuantitas'] * $hargaSatuan;
-                $total += $subtotal;
-                $itemRows[] = compact('barangJasa', 'namaItem', 'jenis', 'satuan', 'hargaSatuan', 'subtotal', 'item');
-            }
+            // 2. Hitung total & snapshot item
+            ['total' => $total, 'rows' => $itemRows] = $this->bangunItemRows($items);
 
             // 3. Kategori default: "Penjualan Barang" kecuali caller override
             $tanggal = $data['tanggal'];
-            $kategoriId = $data['kategori_transaksi_id']
-                ?? KategoriTransaksi::whereNull('instansi_id')->where('nama_kategori', 'Penjualan Barang')->value('id');
-            if (! $kategoriId) {
-                throw new \RuntimeException('Kategori default "Penjualan Barang" tidak ditemukan — cek KategoriTransaksiSeeder.');
-            }
+            $kategoriId = $this->resolveKategoriDefault($data['kategori_transaksi_id'] ?? null, 'Penjualan Barang');
 
             // 4. Buat Nota. Nomor nota (sequence harian per instansi) di-generate
             // & di-retry di dalam buatNotaDenganNomorUnik() karena dua checkout
@@ -87,22 +72,8 @@ class KasirService
                 'created_by' => $user->id,
             ]);
 
-            // 5. Buat NotaItem + kurangi stok
-            foreach ($itemRows as $row) {
-                NotaItem::create([
-                    'nota_id' => $nota->id,
-                    'barang_jasa_id' => $row['barangJasa']?->id,
-                    'nama_item' => $row['namaItem'],
-                    'jenis' => $row['jenis'],
-                    'kuantitas' => $row['item']['kuantitas'],
-                    'satuan' => $row['satuan'],
-                    'harga_satuan' => $row['hargaSatuan'],
-                    'subtotal' => $row['subtotal'],
-                ]);
-                if ($row['barangJasa'] && $row['jenis'] === 'barang' && $row['barangJasa']->stok !== null) {
-                    $row['barangJasa']->decrement('stok', $row['item']['kuantitas']);
-                }
-            }
+            // 5. Buat NotaItem + kurangi stok (penjualan -> arah -1)
+            $this->simpanNotaItems($nota, $itemRows, -1);
 
             // 6. Buat TransaksiKas masuk (income tidak pernah butuh approval — lihat Global Constraint #2)
             $transaksiKas = TransaksiKas::create([
@@ -136,28 +107,13 @@ class KasirService
         return DB::transaction(function () use ($data, $user, $sourceFile) {
             $items = $data['items'];
 
-            // 1. Hitung total & buat NotaItem snapshot. Tidak ada
-            // validasi stok-cukup untuk pembelian — menambah stok apa pun kondisinya.
-            $total = 0;
-            $itemRows = [];
-            foreach ($items as $item) {
-                $barangJasa = ($item['barang_jasa_id'] ?? null) ? BarangJasa::find($item['barang_jasa_id']) : null;
-                $namaItem = $item['nama_item'] ?? $barangJasa?->nama;
-                $jenis = $item['jenis'] ?? $barangJasa?->jenis;
-                $satuan = $item['satuan'] ?? $barangJasa?->satuan ?? 'pcs';
-                $hargaSatuan = $item['harga_satuan'];
-                $subtotal = $item['kuantitas'] * $hargaSatuan;
-                $total += $subtotal;
-                $itemRows[] = compact('barangJasa', 'namaItem', 'jenis', 'satuan', 'hargaSatuan', 'subtotal', 'item');
-            }
+            // 1. Hitung total & snapshot item (tidak ada validasi stok-cukup untuk
+            // pembelian — menambah stok apa pun kondisinya).
+            ['total' => $total, 'rows' => $itemRows] = $this->bangunItemRows($items);
 
             // 2. Kategori default: "Pembelian Bahan/Stok" kecuali caller override
             $tanggal = $data['tanggal'];
-            $kategoriId = $data['kategori_transaksi_id']
-                ?? KategoriTransaksi::whereNull('instansi_id')->where('nama_kategori', 'Pembelian Bahan/Stok')->value('id');
-            if (! $kategoriId) {
-                throw new \RuntimeException('Kategori default "Pembelian Bahan/Stok" tidak ditemukan — cek KategoriTransaksiSeeder.');
-            }
+            $kategoriId = $this->resolveKategoriDefault($data['kategori_transaksi_id'] ?? null, 'Pembelian Bahan/Stok');
 
             // 3. Simpan lampiran (opsional — entri manual tidak punya file)
             $lampiranUrl = null;
@@ -183,22 +139,8 @@ class KasirService
                 'created_by' => $user->id,
             ]);
 
-            // 5. Buat NotaItem + tambah stok
-            foreach ($itemRows as $row) {
-                NotaItem::create([
-                    'nota_id' => $nota->id,
-                    'barang_jasa_id' => $row['barangJasa']?->id,
-                    'nama_item' => $row['namaItem'],
-                    'jenis' => $row['jenis'],
-                    'kuantitas' => $row['item']['kuantitas'],
-                    'satuan' => $row['satuan'],
-                    'harga_satuan' => $row['hargaSatuan'],
-                    'subtotal' => $row['subtotal'],
-                ]);
-                if ($row['barangJasa'] && $row['jenis'] === 'barang' && $row['barangJasa']->stok !== null) {
-                    $row['barangJasa']->increment('stok', $row['item']['kuantitas']);
-                }
-            }
+            // 5. Buat NotaItem + tambah stok (pembelian -> arah +1)
+            $this->simpanNotaItems($nota, $itemRows, 1);
 
             // 6. Buat TransaksiKas keluar — reuse alur approval existing (lihat
             // TransaksiKasController::store()). JANGAN kirim 'status_approval' di
@@ -238,6 +180,72 @@ class KasirService
 
             return $nota->load('items');
         });
+    }
+
+    /**
+     * Bangun snapshot item nota + hitung total. Sama untuk penjualan & pembelian:
+     * nama/jenis/satuan di-fallback ke katalog saat item menunjuk barang_jasa_id.
+     *
+     * @return array{total: float, rows: array<int, array<string, mixed>>}
+     */
+    private function bangunItemRows(array $items): array
+    {
+        $total = 0;
+        $rows = [];
+        foreach ($items as $item) {
+            $barangJasa = ($item['barang_jasa_id'] ?? null) ? BarangJasa::find($item['barang_jasa_id']) : null;
+            $namaItem = $item['nama_item'] ?? $barangJasa?->nama;
+            $jenis = $item['jenis'] ?? $barangJasa?->jenis;
+            $satuan = $item['satuan'] ?? $barangJasa?->satuan ?? 'pcs';
+            $hargaSatuan = $item['harga_satuan'];
+            $subtotal = $item['kuantitas'] * $hargaSatuan;
+            $total += $subtotal;
+            $rows[] = compact('barangJasa', 'namaItem', 'jenis', 'satuan', 'hargaSatuan', 'subtotal', 'item');
+        }
+
+        return ['total' => $total, 'rows' => $rows];
+    }
+
+    /**
+     * Resolusi kategori transaksi: pakai override caller, atau kategori global
+     * default (instansi_id null) berdasarkan nama. Melempar bila keduanya tidak
+     * ada — mis. KategoriTransaksiSeeder belum dijalankan.
+     */
+    private function resolveKategoriDefault(?int $override, string $namaKategori): int
+    {
+        $kategoriId = $override
+            ?? KategoriTransaksi::whereNull('instansi_id')->where('nama_kategori', $namaKategori)->value('id');
+
+        if (! $kategoriId) {
+            throw new \RuntimeException("Kategori default \"{$namaKategori}\" tidak ditemukan — cek KategoriTransaksiSeeder.");
+        }
+
+        return $kategoriId;
+    }
+
+    /**
+     * Simpan NotaItem dari snapshot + sesuaikan stok katalog.
+     * $arahStok: -1 mengurangi (penjualan), +1 menambah (pembelian), 0 tidak menyentuh stok.
+     * Stok hanya disesuaikan untuk item jenis 'barang' yang menunjuk katalog ber-stok.
+     */
+    private function simpanNotaItems(Nota $nota, array $rows, int $arahStok): void
+    {
+        foreach ($rows as $row) {
+            NotaItem::create([
+                'nota_id' => $nota->id,
+                'barang_jasa_id' => $row['barangJasa']?->id,
+                'nama_item' => $row['namaItem'],
+                'jenis' => $row['jenis'],
+                'kuantitas' => $row['item']['kuantitas'],
+                'satuan' => $row['satuan'],
+                'harga_satuan' => $row['hargaSatuan'],
+                'subtotal' => $row['subtotal'],
+            ]);
+
+            if ($arahStok !== 0 && $row['barangJasa'] && $row['jenis'] === 'barang' && $row['barangJasa']->stok !== null) {
+                $row['barangJasa']->increment('stok', $arahStok * $row['item']['kuantitas']);
+            }
+        }
     }
 
     /**
