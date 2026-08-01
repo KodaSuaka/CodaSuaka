@@ -159,18 +159,7 @@ fun NotaDetailScreen(
                             )
                         }
                     },
-                    actions = {
-                        IconButton(
-                            onClick = { showDeleteDialog = true },
-                            enabled = uiState.nota != null && !uiState.isDeleting
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Hapus nota",
-                                tint = Error
-                            )
-                        }
-                    },
+                    actions = {},
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
                 )
             },
@@ -224,44 +213,49 @@ fun NotaDetailScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Button(
                                 onClick = { viewModel.downloadPdf() },
                                 enabled = !uiState.isDownloading,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary)
                             ) {
                                 if (uiState.isDownloading) {
                                     CircularProgressIndicator(
-                                        color = Color.White,
+                                        color = OnPrimary,
                                         strokeWidth = 2.dp,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 } else {
-                                    Icon(Icons.Default.Download, contentDescription = null)
+                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                                 }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(if (uiState.isDownloading) "Mengunduh..." else "Unduh PDF")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Unduh PDF", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
 
-                            OutlinedButton(
+                            Button(
                                 onClick = { showDeleteDialog = true },
                                 enabled = !uiState.isDeleting,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Error)
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Error,
+                                    contentColor = OnPrimary
+                                )
                             ) {
                                 if (uiState.isDeleting) {
                                     CircularProgressIndicator(
-                                        color = Error,
+                                        color = OnPrimary,
                                         strokeWidth = 2.dp,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 } else {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = null)
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
                                 }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Hapus")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Hapus", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                         }
                     }

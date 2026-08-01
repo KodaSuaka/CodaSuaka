@@ -33,6 +33,7 @@ val Success = Color(0xFF38A169)
 val SuccessLight = Color(0xFFF0FFF4)
 val WarningColor = Color(0xFFDD6B20)
 val WarningBg = Color(0xFFFFFAF0)
+val Pending = Color(0xFFFFA000)
 val InfoColor = Color(0xFF3182CE)
 val InfoBg = Color(0xFFEBF8FF)
 val Coral = Color(0xFFF56565)
@@ -43,6 +44,13 @@ val GreenFinance = Color(0xFF48BB78)
 val BlueSchedule = Color(0xFF4299E1)
 val PurpleLog = Color(0xFF9F7AEA)
 val TealStatus = Color(0xFF38B2AC)
+
+// Dashboard / Status Colors
+val Teal = Color(0xFF2DD4BF)
+val OceanBlue = Color(0xFF60A5FA)
+val Mint = Color(0xFF34D399)
+val Amber = Color(0xFFFBBF24)
+val ScoreGreen = Color(0xFF10B981)
 
 // ── Dark Theme ───────────────────────────────────────────
 

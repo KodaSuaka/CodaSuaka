@@ -49,7 +49,7 @@ import com.example.codasuaka.util.DateTimeUtil
 private data class MenuItem(
     val label: String,
     val icon: ImageVector,
-    val color: androidx.compose.ui.graphics.Color = Primary,
+    val color: Color = Primary,
     val allowedRoles: List<String> = emptyList() // empty = all roles
 )
 
@@ -128,7 +128,7 @@ fun DashboardScreen(
                                             Text(
                                                 text = if (notificationUiState.unreadCount > 99) "9+" else notificationUiState.unreadCount.toString(),
                                                 fontSize = 9.sp,
-                                                color = Color.White
+                                                color = OnPrimary
                                             )
                                         }
                                     }
@@ -319,125 +319,116 @@ private fun SectionOmset(
     val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
 
     if (showDatePicker) {
-        // Paksa tema terang agar teks terlihat jelas
-        MaterialTheme(colorScheme = lightColorScheme(
-            surface = Color.White,
-            onSurface = Secondary, 
-            primary = Primary,
-            onPrimary = Color.White,
-            secondary = Secondary
-        )) {
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            val formattedDate = Instant.ofEpochMilli(it)
-                                .atZone(ZoneId.of("UTC"))
-                                .toLocalDate()
-                                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        val formattedDate = Instant.ofEpochMilli(it)
+                            .atZone(ZoneId.of("UTC"))
+                            .toLocalDate()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-                            if (pickingStartDate) startDate = formattedDate else endDate = formattedDate
-                        }
-                        showDatePicker = false
-                    }) { Text("OK", fontWeight = FontWeight.Bold, color = Secondary) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) { Text("Batal", color = OnSurfaceVariant) }
-                },
-                colors = DatePickerDefaults.colors(
-                    containerColor = Color.White
-                )
-            ) {
-                if (showYearPicker) {
-                    val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(ZoneId.of("UTC"))
-                        .toLocalDate()
-                        
-                    YearPickerDialog(
-                        selectedYear = displayMonth.year,
-                        onYearSelected = { year ->
-                            val tz = java.util.TimeZone.getTimeZone("UTC")
-                            val cal = java.util.Calendar.getInstance(tz).apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                set(java.util.Calendar.YEAR, year)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
-                            
-                            val selCal = java.util.Calendar.getInstance(tz).apply {
-                                timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                                set(java.util.Calendar.YEAR, year)
-                            }
-                            datePickerState.selectedDateMillis = selCal.timeInMillis
-                            
-                            showYearPicker = false
-                        },
-                        onDismiss = { showYearPicker = false }
-                    )
-                }
-
-                Column(
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    // Header Kustom < Bulan Tahun >
-                    val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(ZoneId.of("UTC"))
-                        .toLocalDate()
-                    
-                    val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
-                    
-                    CustomCalendarNavigation(
-                        title = monthTitle.replaceFirstChar { it.uppercase() },
-                        onPrevClick = {
-                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                add(java.util.Calendar.MONTH, -1)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
-                        },
-                        onNextClick = {
-                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                add(java.util.Calendar.MONTH, 1)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
-                        },
-                        onTitleClick = { showYearPicker = true },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(340.dp)
-                            .clipToBounds()
-                    ) {
-                        DatePicker(
-                            state = datePickerState,
-                            title = null,
-                            headline = null,
-                            showModeToggle = false,
-                            colors = DatePickerDefaults.colors(
-                                containerColor = Color.White,
-                                titleContentColor = Secondary,
-                                headlineContentColor = Secondary,
-                                weekdayContentColor = Secondary.copy(alpha = 0.6f),
-                                subheadContentColor = Secondary.copy(alpha = 0.6f),
-                                yearContentColor = Secondary.copy(alpha = 0.7f),
-                                currentYearContentColor = Primary,
-                                selectedYearContentColor = Color.White,
-                                selectedYearContainerColor = Primary,
-                                dayContentColor = OnSurface,
-                                selectedDayContentColor = Color.White,
-                                selectedDayContainerColor = Primary,
-                                todayContentColor = Secondary,
-                                todayDateBorderColor = Primary
-                            ),
-                            modifier = Modifier.offset(y = (-48).dp)
-                        )
+                        if (pickingStartDate) startDate = formattedDate else endDate = formattedDate
                     }
+                    showDatePicker = false
+                }) { Text("OK", fontWeight = FontWeight.Bold, color = Secondary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Batal", color = OnSurfaceVariant) }
+            },
+            colors = DatePickerDefaults.colors(
+                containerColor = Surface
+            )
+        ) {
+            if (showYearPicker) {
+                val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                    .atZone(ZoneId.of("UTC"))
+                    .toLocalDate()
+                    
+                YearPickerDialog(
+                    selectedYear = displayMonth.year,
+                    onYearSelected = { year ->
+                        val tz = java.util.TimeZone.getTimeZone("UTC")
+                        val cal = java.util.Calendar.getInstance(tz).apply {
+                            timeInMillis = datePickerState.displayedMonthMillis
+                            set(java.util.Calendar.YEAR, year)
+                        }
+                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                        
+                        val selCal = java.util.Calendar.getInstance(tz).apply {
+                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                            set(java.util.Calendar.YEAR, year)
+                        }
+                        datePickerState.selectedDateMillis = selCal.timeInMillis
+                        
+                        showYearPicker = false
+                    },
+                    onDismiss = { showYearPicker = false }
+                )
+            }
+
+            Column(
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                // Header Kustom < Bulan Tahun >
+                val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                    .atZone(ZoneId.of("UTC"))
+                    .toLocalDate()
+                
+                val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+                
+                CustomCalendarNavigation(
+                    title = monthTitle.replaceFirstChar { it.uppercase() },
+                    onPrevClick = {
+                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                            timeInMillis = datePickerState.displayedMonthMillis
+                            add(java.util.Calendar.MONTH, -1)
+                        }
+                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                    },
+                    onNextClick = {
+                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                            timeInMillis = datePickerState.displayedMonthMillis
+                            add(java.util.Calendar.MONTH, 1)
+                        }
+                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                    },
+                    onTitleClick = { showYearPicker = true },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(340.dp)
+                        .clipToBounds()
+                ) {
+                    DatePicker(
+                        state = datePickerState,
+                        title = null,
+                        headline = null,
+                        showModeToggle = false,
+                        colors = DatePickerDefaults.colors(
+                            containerColor = Surface,
+                            titleContentColor = Secondary,
+                            headlineContentColor = Secondary,
+                            weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                            subheadContentColor = Secondary.copy(alpha = 0.6f),
+                            yearContentColor = Secondary.copy(alpha = 0.7f),
+                            currentYearContentColor = Primary,
+                            selectedYearContentColor = OnPrimary,
+                            selectedYearContainerColor = Primary,
+                            dayContentColor = OnSurface,
+                            selectedDayContentColor = OnPrimary,
+                            selectedDayContainerColor = Primary,
+                            todayContentColor = Secondary,
+                            todayDateBorderColor = Primary
+                        ),
+                        modifier = Modifier.offset(y = (-48).dp)
+                    )
                 }
             }
         }

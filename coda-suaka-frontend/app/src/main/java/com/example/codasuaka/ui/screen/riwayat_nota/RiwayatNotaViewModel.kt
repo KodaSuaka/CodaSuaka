@@ -34,6 +34,7 @@ data class RiwayatNotaUiState(
     val filterOutletId: Int? = null,
     val filterStartDate: String = LocalDate.now().withDayOfMonth(1).toString(),
     val filterEndDate: String = LocalDate.now().toString(),
+    val searchQuery: String = "",
 
     // Pagination
     val currentPage: Int = 1,
@@ -43,7 +44,16 @@ data class RiwayatNotaUiState(
     val isDeleting: Boolean = false,
     val deleteError: String? = null,
     val deleteSuccess: String? = null
-)
+) {
+    val filteredNotaList: List<NotaDto> get() = if (searchQuery.isBlank()) {
+        notaList
+    } else {
+        notaList.filter { 
+            it.nomorNota.contains(searchQuery, ignoreCase = true) || 
+            (it.pihakTerkait?.contains(searchQuery, ignoreCase = true) == true)
+        }
+    }
+}
 
 class RiwayatNotaViewModel(
     private val kasirRepository: KasirRepository,
@@ -148,6 +158,10 @@ class RiwayatNotaViewModel(
     fun setFilterDateRange(startDate: String, endDate: String) {
         _uiState.update { it.copy(filterStartDate = startDate, filterEndDate = endDate) }
         loadNota(page = 1)
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun loadMore() {

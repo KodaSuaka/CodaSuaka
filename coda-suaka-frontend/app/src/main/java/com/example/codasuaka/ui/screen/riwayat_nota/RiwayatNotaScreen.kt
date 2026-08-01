@@ -1,11 +1,12 @@
 package com.example.codasuaka.ui.screen.riwayat_nota
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,15 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.codasuaka.data.remote.dto.NotaDto
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.screen.nota_pembelian.formatRupiah
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.util.ErrorMessageMapper
-import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +37,6 @@ fun RiwayatNotaScreen(
     viewModel: RiwayatNotaViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     // ─── Snackbar ───
     val snackbarHostState = remember { SnackbarHostState() }
@@ -59,25 +60,10 @@ fun RiwayatNotaScreen(
     }
 
     // ─── Picker tanggal ───
-    var showStartPicker by remember { mutableStateOf(false) }
-    var showEndPicker by remember { mutableStateOf(false) }
-    val startPickerState = rememberDatePickerState(
-        initialSelectedDateMillis = runCatching {
-            LocalDate.parse(uiState.filterStartDate)
-                .atStartOfDay(java.time.ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
-        }.getOrNull()
-    )
-    val endPickerState = rememberDatePickerState(
-        initialSelectedDateMillis = runCatching {
-            LocalDate.parse(uiState.filterEndDate)
-                .atStartOfDay(java.time.ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
-        }.getOrNull()
-    )
+    var showRangePicker by remember { mutableStateOf(false) }
+    val dateRangePickerState = rememberDateRangePickerState()
 
+<<<<<<< HEAD
     // ─── Force Light Theme (dialog render di window terpisah) ───
     val datePickerColorScheme = lightColorScheme(
         primary = Primary,
@@ -131,12 +117,62 @@ fun RiwayatNotaScreen(
                 }
             ) {
                 DatePicker(state = endPickerState)
+=======
+    if (showRangePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showRangePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val start = dateRangePickerState.selectedStartDateMillis
+                    val end = dateRangePickerState.selectedEndDateMillis
+                    if (start != null && end != null) {
+                        val startDate = java.time.Instant.ofEpochMilli(start)
+                            .atZone(java.time.ZoneId.of("UTC"))
+                            .toLocalDate()
+                        val endDate = java.time.Instant.ofEpochMilli(end)
+                            .atZone(java.time.ZoneId.of("UTC"))
+                            .toLocalDate()
+                        viewModel.setFilterDateRange(startDate.toString(), endDate.toString())
+                    }
+                    showRangePicker = false
+                }) { Text("OK", fontWeight = FontWeight.ExtraBold, color = Secondary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRangePicker = false }) { Text("Batal", color = Secondary.copy(alpha = 0.6f)) }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Surface),
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            CodaSuakaTheme { 
+                DateRangePicker(
+                    state = dateRangePickerState,
+                    modifier = Modifier.weight(1f).padding(top = 16.dp),
+                    title = { Text("Pilih Rentang Tanggal", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold, color = Secondary) },
+                    headline = { /* rapi */ },
+                    showModeToggle = false,
+                    colors = DatePickerDefaults.colors(
+                        containerColor = Surface,
+                        titleContentColor = Secondary,
+                        headlineContentColor = Secondary,
+                        weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                        subheadContentColor = Secondary.copy(alpha = 0.6f),
+                        selectedDayContainerColor = Primary,
+                        selectedDayContentColor = OnPrimary,
+                        dayContentColor = Secondary,
+                        todayContentColor = Primary,
+                        todayDateBorderColor = Primary,
+                        dayInSelectionRangeContainerColor = Primary.copy(alpha = 0.15f),
+                        dayInSelectionRangeContentColor = Secondary
+                    )
+                )
+>>>>>>> 69e8a7268ce4d561ca3a4d56f8711b36abf79404
             }
         }
     }
 
     // ─── Dialog konfirmasi hapus ───
     var notaToDelete by remember { mutableStateOf<NotaDto?>(null) }
+<<<<<<< HEAD
     notaToDelete?.let { nota ->
         // ─── Force Light Theme (dialog render di window terpisah) ───
         MaterialTheme(
@@ -187,137 +223,132 @@ fun RiwayatNotaScreen(
                 }
             )
         }
+=======
+    if (notaToDelete != null) {
+        DeleteNotaDialog(
+            nomorNota = notaToDelete!!.nomorNota,
+            isDeleting = uiState.isDeleting,
+            onDismiss = { notaToDelete = null },
+            onConfirm = {
+                viewModel.deleteNota(notaToDelete!!.id)
+                notaToDelete = null
+            }
+        )
+>>>>>>> 69e8a7268ce4d561ca3a4d56f8711b36abf79404
     }
 
-    // ─── Force Light Theme ───
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Primary,
-            onPrimary = Color.White,
-            secondary = Secondary,
-            onSecondary = Color.White,
-            surface = Color.White,
-            onSurface = OnSurface,
-            onSurfaceVariant = OnSurfaceVariant,
-            tertiary = Tertiary,
-            outline = NeutralBorder
-        )
-    ) {
-        Scaffold(
-            snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "Riwayat Nota",
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Secondary
+    Scaffold(
+        snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Riwayat Nota",
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Secondary
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Kembali",
+                            tint = Secondary
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
+            )
+        },
+        containerColor = Tertiary
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            FilterSection(
+                uiState = uiState,
+                onTipeSelect = { viewModel.setFilterTipe(it) },
+                onRangeClick = { showRangePicker = true },
+                onOutletChange = { viewModel.setFilterOutlet(it) },
+                onSearchChange = viewModel::onSearchQueryChange
+            )
+
+            when {
+                uiState.isLoading && uiState.notaList.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                }
+
+                uiState.filteredNotaList.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Kembali",
-                                tint = Secondary
+                                imageVector = Icons.Default.ReceiptLong,
+                                contentDescription = null,
+                                tint = NeutralBorder,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                if (uiState.searchQuery.isEmpty()) "Belum ada nota" else "Nota tidak ditemukan",
+                                fontWeight = FontWeight.Bold,
+                                color = Secondary 
+                            )
+                            Text(
+                                if (uiState.searchQuery.isEmpty()) "Ubah filter atau buat nota baru" else "Coba cari nomor nota atau nama lain",
+                                fontSize = 12.sp,
+                                color = Secondary.copy(alpha = 0.6f)
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
-                )
-            },
-            containerColor = Tertiary
-        ) { paddingValues ->
-            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                FilterSection(
-                    uiState = uiState,
-                    onTipeSelect = { viewModel.setFilterTipe(it) },
-                    onPickStart = { showStartPicker = true },
-                    onPickEnd = { showEndPicker = true },
-                    onOutletChange = { viewModel.setFilterOutlet(it) }
-                )
-
-                when {
-                    uiState.isLoading && uiState.notaList.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = Primary)
-                        }
                     }
+                }
 
-                    uiState.notaList.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize().padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.ReceiptLong,
-                                    contentDescription = null,
-                                    tint = NeutralBorder,
-                                    modifier = Modifier.size(56.dp)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    "Belum ada nota",
-                                    fontWeight = FontWeight.Medium,
-                                    color = OnSurfaceVariant
-                                )
-                                Text(
-                                    "Ubah filter atau buat nota baru",
-                                    fontSize = 12.sp,
-                                    color = OnSurfaceVariant
-                                )
-                            }
+                else -> {
+                    val listState = rememberLazyListState()
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(uiState.filteredNotaList, key = { it.id }) { nota ->
+                            NotaCard(
+                                nota = nota,
+                                onClick = { onNotaClick(nota.id) },
+                                onDelete = { notaToDelete = nota }
+                            )
                         }
-                    }
 
-                    else -> {
-                        val listState = rememberLazyListState()
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(uiState.notaList, key = { it.id }) { nota ->
-                                NotaCard(
-                                    nota = nota,
-                                    onClick = { onNotaClick(nota.id) },
-                                    onDelete = { notaToDelete = nota }
-                                )
-                            }
-
-                            // Load-more indicator
-                            if (uiState.isLoadingMore) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(
-                                            color = Primary,
-                                            strokeWidth = 2.dp,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    }
+                        if (uiState.isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = Primary,
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(22.dp)
+                                    )
                                 }
                             }
                         }
+                    }
 
-                        // Trigger load more saat scroll mendekati akhir
-                        val shouldLoadMore by remember {
-                            derivedStateOf {
-                                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                                val total = listState.layoutInfo.totalItemsCount
-                                lastVisible >= total - 3
-                            }
+                    val shouldLoadMore by remember {
+                        derivedStateOf {
+                            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                            val total = listState.layoutInfo.totalItemsCount
+                            lastVisible >= total - 3
                         }
-                        LaunchedEffect(shouldLoadMore) {
-                            if (shouldLoadMore) viewModel.loadMore()
-                        }
+                    }
+                    LaunchedEffect(shouldLoadMore) {
+                        if (shouldLoadMore) viewModel.loadMore()
                     }
                 }
             }
@@ -331,117 +362,185 @@ fun RiwayatNotaScreen(
 private fun FilterSection(
     uiState: RiwayatNotaUiState,
     onTipeSelect: (NotaTipeFilter) -> Unit,
-    onPickStart: () -> Unit,
-    onPickEnd: () -> Unit,
-    onOutletChange: (Int?) -> Unit
+    onRangeClick: () -> Unit,
+    onOutletChange: (Int?) -> Unit,
+    onSearchChange: (String) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().background(Surface).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Surface,
+        border = BorderStroke(1.dp, Neutral)
     ) {
-        // Chips tipe
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NotaTipeFilter.entries.forEach { tipe ->
-                FilterChip(
-                    selected = uiState.filterTipe == tipe,
-                    onClick = { onTipeSelect(tipe) },
-                    label = { Text(tipe.label) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Primary,
-                        selectedLabelColor = Color.White,
-                        containerColor = Neutral.copy(alpha = 0.7f),
-                        labelColor = OnSurfaceVariant
-                    )
-                )
-            }
-        }
-
-        // Range tanggal
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            DateField(
-                label = "Dari",
-                date = uiState.filterStartDate,
-                onClick = onPickStart,
-                modifier = Modifier.weight(1f)
-            )
-            Text("s/d", color = OnSurfaceVariant, fontSize = 12.sp)
-            DateField(
-                label = "Sampai",
-                date = uiState.filterEndDate,
-                onClick = onPickEnd,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // Dropdown outlet
-        var outletExpanded by remember { mutableStateOf(false) }
-        Box {
             OutlinedTextField(
-                value = uiState.filterOutletId
-                    ?.let { id -> uiState.outletList.firstOrNull { it.id == id }?.namaOutlet }
-                    ?: "",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Outlet (Semua)") },
-                trailingIcon = {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                value = uiState.searchQuery,
+                onValueChange = onSearchChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { 
+                    Text(
+                        "Cari nomor nota atau nama...", 
+                        fontSize = 14.sp, 
+                        color = Secondary.copy(alpha = 0.5f) 
+                    ) 
                 },
-                modifier = Modifier.fillMaxWidth().clickable { outletExpanded = true },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Secondary, modifier = Modifier.size(20.dp)) },
                 shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Secondary),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Primary,
-                    unfocusedBorderColor = NeutralBorder
+                    unfocusedBorderColor = NeutralBorder,
+                    focusedContainerColor = InputBackground,
+                    unfocusedContainerColor = InputBackground,
+                    focusedTextColor = Secondary,
+                    unfocusedTextColor = Secondary
                 )
             )
-            DropdownMenu(
-                expanded = outletExpanded,
-                onDismissRequest = { outletExpanded = false }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                DropdownMenuItem(
-                    text = { Text("Semua Outlet") },
-                    onClick = {
-                        onOutletChange(null)
-                        outletExpanded = false
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NotaTipeFilter.entries.forEach { tipe ->
+                        val isSelected = uiState.filterTipe == tipe
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { onTipeSelect(tipe) },
+                            label = { 
+                                Text(
+                                    text = tipe.label, 
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) Primary else Secondary
+                                ) 
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Primary.copy(alpha = 0.08f),
+                                containerColor = Color.White
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = NeutralBorder,
+                                selectedBorderColor = Primary.copy(alpha = 0.2f),
+                                borderWidth = 1.dp
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
                     }
-                )
-                uiState.outletList.forEach { outlet ->
-                    DropdownMenuItem(
-                        text = { Text(outlet.namaOutlet) },
-                        onClick = {
-                            onOutletChange(outlet.id)
-                            outletExpanded = false
+                }
+
+                Surface(
+                    onClick = onRangeClick,
+                    shape = RoundedCornerShape(100.dp),
+                    color = Primary.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, Primary.copy(alpha = 0.15f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange, 
+                            contentDescription = null, 
+                            tint = Primary, 
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "Tanggal", 
+                            fontSize = 12.sp, 
+                            fontWeight = FontWeight.Bold, 
+                            color = Primary
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                var outletExpanded by remember { mutableStateOf(false) }
+                
+                Box(modifier = Modifier.weight(1.3f)) {
+                    // Custom Dropdown Card (Soft UI Style)
+                    Surface(
+                        onClick = { outletExpanded = true },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = InputBackground,
+                        border = BorderStroke(1.dp, NeutralBorder.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = uiState.filterOutletId
+                                    ?.let { id -> uiState.outletList.firstOrNull { it.id == id }?.namaOutlet }
+                                    ?: "Semua Outlet",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Secondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = Secondary,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
+                    }
+
+                    DropdownMenu(
+                        expanded = outletExpanded,
+                        onDismissRequest = { outletExpanded = false },
+                        modifier = Modifier.background(Surface)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Semua Outlet", fontWeight = FontWeight.Medium, color = Secondary) },
+                            onClick = {
+                                onOutletChange(null)
+                                outletExpanded = false
+                            }
+                        )
+                        uiState.outletList.forEach { outlet ->
+                            DropdownMenuItem(
+                                text = { Text(outlet.namaOutlet, fontWeight = FontWeight.Medium, color = Secondary) },
+                                onClick = {
+                                    onOutletChange(outlet.id)
+                                    outletExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                    Text("Periode:", fontSize = 10.sp, color = Secondary, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        text = "${uiState.filterStartDate} s/d ${uiState.filterEndDate}",
+                        fontSize = 11.sp,
+                        color = Secondary,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun DateField(
-    label: String,
-    date: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = date,
-        onValueChange = {},
-        readOnly = true,
-        label = { Text(label) },
-        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Primary,
-            unfocusedBorderColor = NeutralBorder
-        )
-    )
 }
 
 // ─── Kartu nota ────────────────────────────────────────────
@@ -453,17 +552,20 @@ private fun NotaCard(
     onDelete: () -> Unit
 ) {
     val isPembelian = nota.tipe.equals("pembelian", ignoreCase = true)
-    val badgeColor = if (isPembelian) Primary else Secondary
+    
+    val badgeColor = if (isPembelian) Error else Success
+    val badgeBg = if (isPembelian) Error.copy(alpha = 0.1f) else Success.copy(alpha = 0.1f)
     val badgeLabel = if (isPembelian) "Pembelian" else "Penjualan"
 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Neutral)
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -471,22 +573,24 @@ private fun NotaCard(
             ) {
                 Text(
                     text = nota.nomorNota,
-                    fontWeight = FontWeight.Bold,
-                    color = OnSurface,
-                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Secondary,
+                    fontSize = 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(badgeColor).padding(horizontal = 10.dp, vertical = 3.dp)
+                
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = badgeBg
                 ) {
                     Text(
                         text = badgeLabel,
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = badgeColor,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -495,7 +599,8 @@ private fun NotaCard(
             Text(
                 text = nota.tanggal,
                 fontSize = 12.sp,
-                color = OnSurfaceVariant
+                color = Secondary, 
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -508,8 +613,9 @@ private fun NotaCard(
                     nota.pihakTerkait?.let {
                         Text(
                             text = it,
-                            fontSize = 12.sp,
-                            color = OnSurface,
+                            fontSize = 13.sp,
+                            color = Secondary, 
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -518,7 +624,7 @@ private fun NotaCard(
                         Text(
                             text = it,
                             fontSize = 11.sp,
-                            color = OnSurfaceVariant,
+                            color = Secondary.copy(alpha = 0.7f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -536,6 +642,65 @@ private fun NotaCard(
                         contentDescription = "Hapus nota",
                         tint = Error
                     )
+                }
+            }
+        }
+    }
+}
+
+// ─── Delete Confirmation Dialog ───
+
+@Composable
+private fun DeleteNotaDialog(
+    nomorNota: String,
+    isDeleting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        CodaSuakaTheme {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.size(64.dp).clip(CircleShape).background(Coral.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Warning, null, tint = Coral, modifier = Modifier.size(32.dp))
+                    }
+                    Text("Hapus Nota", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Secondary)
+                    Text(
+                        text = "Yakin ingin menghapus nota \"$nomorNota\"? Tindakan ini tidak bisa dibatalkan.",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Secondary.copy(alpha = 0.7f)
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                            Text("Batal", color = Secondary.copy(alpha = 0.6f))
+                        }
+                        Button(
+                            onClick = onConfirm,
+                            enabled = !isDeleting,
+                            modifier = Modifier.weight(1.5f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Coral),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            if (isDeleting) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
