@@ -28,6 +28,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.data.remote.dto.BarangJasaDto
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.ui.util.formatRupiah
 
 /**
  * Screen Kelola Barang/Jasa (katalog Kasir).
@@ -304,7 +305,7 @@ private fun BarangJasaListItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        formatRupiahBarangJasa(item.hargaJual),
+                        formatRupiah(item.hargaJual),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = Secondary 
@@ -403,8 +404,7 @@ private fun DialogFormBarangJasa(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        CodaSuakaTheme {
-            Card(
+        Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
@@ -637,7 +637,6 @@ private fun DialogFormBarangJasa(
                     Spacer(modifier = Modifier.height(8.dp)) // Tambahan padding bawah agar tidak mepet
                 }
             }
-        }
     }
 }
 
@@ -653,8 +652,7 @@ private fun DeleteBarangJasaDialog(
     onConfirm: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        CodaSuakaTheme {
-            Card(
+        Card(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = Surface),
@@ -689,21 +687,9 @@ private fun DeleteBarangJasaDialog(
                         }
                     }
                 }
-            }
         }
     }
 }
 
 // ─── Helpers ────────────────────────────────────────────────
 
-private fun formatRupiahBarangJasa(amount: Double): String {
-    val absStr = kotlin.math.abs(amount).toLong().toString()
-    val sb = StringBuilder()
-    var count = 0
-    for (i in absStr.lastIndex downTo 0) {
-        if (count > 0 && count % 3 == 0) sb.insert(0, '.')
-        sb.insert(0, absStr[i])
-        count++
-    }
-    return "Rp $sb"
-}

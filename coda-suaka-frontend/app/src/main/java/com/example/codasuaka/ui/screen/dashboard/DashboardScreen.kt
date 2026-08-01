@@ -35,6 +35,7 @@ import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.screen.notifikasi.NotificationSidebar
 import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.ui.util.formatRupiah
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -50,7 +51,8 @@ private data class MenuItem(
     val label: String,
     val icon: ImageVector,
     val color: Color = Primary,
-    val allowedRoles: List<String> = emptyList() // empty = all roles
+    val allowedRoles: List<String> = emptyList(), // empty = all roles
+    val requiredPermission: String? = null // when set, takes precedence over allowedRoles — checked against the user's actual synced permissions, not their role name, so custom roles work correctly
 )
 
 // ─── DashboardScreen ─────────────────────────────────────────
@@ -242,11 +244,12 @@ fun DashboardScreen(
                     SectionMenuGrid(
                         title = "Menu Utama",
                         userRole = uiState.userRole,
+                        userPermissions = uiState.userPermissions,
                         items = listOf(
                             MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
-                            MenuItem("Kelola Produk", Icons.Default.Inventory2, TealStatus, allowedRoles = listOf("Owner", "Keuangan")),
-                            MenuItem("Nota Pembelian", Icons.Default.Receipt, GreenFinance, allowedRoles = listOf("Owner", "Keuangan")),
-                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, PurpleLog, allowedRoles = listOf("Owner", "Keuangan")),
+                            MenuItem("Kelola Produk", Icons.Default.Inventory2, TealStatus, requiredPermission = "manage:kasir"),
+                            MenuItem("Nota Pembelian", Icons.Default.Receipt, GreenFinance, requiredPermission = "manage:kasir"),
+                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, PurpleLog, requiredPermission = "view:kasir"),
                             MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
                             MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
                             MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus)
@@ -325,7 +328,7 @@ private fun SectionOmset(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
                         val formattedDate = Instant.ofEpochMilli(it)
-                            .atZone(ZoneId.of("UTC"))
+                            .atZone(ZoneId.systemDefault())
                             .toLocalDate()
                             .format(DateTimeFormatter.ISO_LOCAL_DATE)
 
@@ -343,13 +346,13 @@ private fun SectionOmset(
         ) {
             if (showYearPicker) {
                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                    .atZone(ZoneId.of("UTC"))
+                    .atZone(ZoneId.systemDefault())
                     .toLocalDate()
                     
                 YearPickerDialog(
                     selectedYear = displayMonth.year,
                     onYearSelected = { year ->
-                        val tz = java.util.TimeZone.getTimeZone("UTC")
+                        val tz = java.util.TimeZone.getDefault()
                         val cal = java.util.Calendar.getInstance(tz).apply {
                             timeInMillis = datePickerState.displayedMonthMillis
                             set(java.util.Calendar.YEAR, year)
@@ -373,7 +376,7 @@ private fun SectionOmset(
             ) {
                 // Header Kustom < Bulan Tahun >
                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                    .atZone(ZoneId.of("UTC"))
+                    .atZone(ZoneId.systemDefault())
                     .toLocalDate()
                 
                 val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -381,14 +384,14 @@ private fun SectionOmset(
                 CustomCalendarNavigation(
                     title = monthTitle.replaceFirstChar { it.uppercase() },
                     onPrevClick = {
-                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault()).apply {
                             timeInMillis = datePickerState.displayedMonthMillis
                             add(java.util.Calendar.MONTH, -1)
                         }
                         datePickerState.displayedMonthMillis = cal.timeInMillis
                     },
                     onNextClick = {
-                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault()).apply {
                             timeInMillis = datePickerState.displayedMonthMillis
                             add(java.util.Calendar.MONTH, 1)
                         }
@@ -585,10 +588,19 @@ private fun SectionMenuGrid(
     title: String,
     items: List<MenuItem>,
     userRole: String = "",
+    userPermissions: List<String> = emptyList(),
     onItemClick: (String) -> Unit
 ) {
-    val filteredItems = if (userRole.isBlank()) items
-    else items.filter { it.allowedRoles.isEmpty() || userRole in it.allowedRoles }
+    val filteredItems = items.filter { item ->
+        val requiredPermission = item.requiredPermission
+        if (requiredPermission != null) {
+            requiredPermission in userPermissions
+        } else if (userRole.isBlank()) {
+            true
+        } else {
+            item.allowedRoles.isEmpty() || userRole in item.allowedRoles
+        }
+    }
 
     if (filteredItems.isEmpty()) return
 
@@ -832,14 +844,3 @@ private fun DrawerItem(
     }
 }
 
-private fun formatRupiah(amount: Double): String {
-    val absStr = kotlin.math.abs(amount).toLong().toString()
-    val sb = StringBuilder()
-    var count = 0
-    for (i in absStr.lastIndex downTo 0) {
-        if (count > 0 && count % 3 == 0) sb.insert(0, '.')
-        sb.insert(0, absStr[i])
-        count++
-    }
-    return (if (amount < 0) "-Rp " else "Rp ") + sb
-}

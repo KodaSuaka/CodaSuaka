@@ -382,6 +382,8 @@ class NotaPembelianViewModel(
                 catatan = ""
             )
         }
+        // Reload katalog agar stok terbaru terlihat setelah submit pembelian
+        loadInitialData()
     }
 
     // ─── Cleanup ───────────────────────────────────────────

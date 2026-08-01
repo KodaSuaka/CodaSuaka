@@ -9,6 +9,10 @@ use App\Models\role;
 use App\Models\role_permission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 use Tests\TestCase;
 
 /**
@@ -37,7 +41,15 @@ class KasirKeuanganIntegrationTest extends TestCase
         $this->instansi = Instansi::factory()->create();
         $role = role::firstOrCreate(['nama_role' => 'Owner'], ['deskripsi' => 'Owner']);
 
-        foreach (['view:kasir', 'manage:kasir', 'delete:kasir', 'view:keuangan', 'manage:keuangan'] as $permission) {
+        foreach ([
+            'view:kasir',
+            'manage:kasir',
+            'delete:kasir',
+            'view:keuangan',
+            'manage:keuangan',
+            'export:keuangan',
+            'export:keuangan-excel',
+        ] as $permission) {
             role_permission::firstOrCreate(
                 ['role_id' => $role->id, 'permission' => $permission],
                 ['created_at' => now(), 'updated_at' => now()]
@@ -129,5 +141,73 @@ class KasirKeuanganIntegrationTest extends TestCase
         $this->assertNotNull($entri, 'Entri pembelian tidak muncul di Buku Kas.');
         $this->assertSame('keluar', $entri['tipe']);
         $this->assertSame('pending', $entri['status_approval']);
+    }
+
+    public function test_role_keuangan_excel_ditolak_pdf_diterima_dan_import_nota_ditolak()
+    {
+        // Role Keuangan persis seperti config/permissions.php pasca-fix:
+        // ekspor Excel DILEPAS dari role ini; ekspor PDF tetap; import nota kasir tidak.
+        $role = role::firstOrCreate(['nama_role' => 'Keuangan'], ['deskripsi' => 'Keuangan']);
+        foreach ([
+            'view:keuangan',
+            'manage:keuangan',
+            'export:keuangan',
+            'view:laporan',
+            'view:presensi',
+            'view:penugasan',
+            'view:kasir',
+            'manage:kasir',
+            'export:kasir',
+        ] as $permission) {
+            role_permission::firstOrCreate(
+                ['role_id' => $role->id, 'permission' => $permission],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
+        }
+
+        $keuanganUser = User::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'role_id' => $role->id,
+            'email_verified_at' => now(),
+        ]);
+
+        $exportParams = 'start_date='.now()->startOfMonth()->toDateString().'&end_date='.now()->toDateString();
+
+        // 1. Excel -> 403 (tidak punya export:keuangan-excel).
+        $this->actingAs($keuanganUser)
+            ->get("/api/laporan/buku-kas/export/excel?{$exportParams}")
+            ->assertStatus(403);
+
+        $this->actingAs($keuanganUser)
+            ->get("/api/laporan/arus-kas/export/excel?{$exportParams}")
+            ->assertStatus(403);
+
+        // 2. PDF -> 200 (export:keuangan tetap dipegang Keuangan).
+        $this->actingAs($keuanganUser)
+            ->get("/api/laporan/buku-kas/export/pdf?{$exportParams}")
+            ->assertStatus(200);
+
+        // 3. Import nota pembelian -> 403 (import:kasir sudah dilepas dari Keuangan).
+        Storage::fake('public');
+        $tmpPath = sys_get_temp_dir().'/keuangan_import_'.uniqid().'.xlsx';
+        $writer = new Writer;
+        $writer->openToFile($tmpPath);
+        $writer->addRow(Row::fromValues(['nama_item', 'jenis', 'kuantitas', 'satuan', 'harga_satuan']));
+        $writer->addRow(Row::fromValues(['Beras 5kg', 'barang', 10, 'karung', 65000]));
+        $writer->close();
+        $file = new UploadedFile($tmpPath, 'nota-pembelian.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $this->actingAs($keuanganUser)->post('/api/notas/import', [
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Tunai',
+            'file' => $file,
+        ])->assertStatus(403);
+
+        @unlink($tmpPath);
+
+        // 4. Owner (punya segalanya di seeder) tetap boleh Excel.
+        $this->actingAs($this->user)
+            ->get("/api/laporan/buku-kas/export/excel?{$exportParams}")
+            ->assertStatus(200);
     }
 }

@@ -388,6 +388,7 @@ private fun mapIcon(iconName: String): ImageVector {
         "Receipt" -> Icons.Default.Receipt; "Schedule" -> Icons.Default.Schedule; "Book" -> Icons.Default.Book
         "Groups" -> Icons.Default.Groups; "Store" -> Icons.Default.Store; "Person" -> Icons.Default.Person
         "Star" -> Icons.Default.Star; "Favorite" -> Icons.Default.Favorite; "TrendingUp" -> Icons.Default.TrendingUp
+        "PointOfSale" -> Icons.Default.PointOfSale; "Inventory2" -> Icons.Default.Inventory2; "ReceiptLong" -> Icons.Default.ReceiptLong
         else -> Icons.Default.List
     }
 }

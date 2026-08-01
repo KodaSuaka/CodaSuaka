@@ -40,8 +40,16 @@ class BarangJasaController extends Controller
      */
     public function store(StoreBarangJasaRequest $request)
     {
+        $data = $request->validated();
+
+        // Jaga agar jenis=barang tidak punya stok NULL (NULL + n = NULL di MySQL 5.7,
+        // bikin stok tidak pernah bertambah saat pembelian).
+        if (($data['jenis'] ?? null) === 'barang' && ($data['stok'] ?? null) === null) {
+            $data['stok'] = 0;
+        }
+
         $barangJasa = BarangJasa::create([
-            ...$request->validated(),
+            ...$data,
             'instansi_id' => $request->user()->instansi_id,
         ]);
 
@@ -61,7 +69,14 @@ class BarangJasaController extends Controller
      */
     public function update(UpdateBarangJasaRequest $request, BarangJasa $barang_jasa)
     {
-        $barang_jasa->update($request->validated());
+        $data = $request->validated();
+
+        // Jaga agar jenis=barang tidak punya stok NULL (lihat comment di store).
+        if (($data['jenis'] ?? $barang_jasa->jenis) === 'barang' && ($data['stok'] ?? $barang_jasa->stok) === null) {
+            $data['stok'] = 0;
+        }
+
+        $barang_jasa->update($data);
 
         return $this->success($barang_jasa, 'Barang/jasa berhasil diperbarui');
     }

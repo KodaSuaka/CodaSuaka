@@ -40,7 +40,7 @@ class KasirService
                 if ($item['barang_jasa_id'] ?? null) {
                     $barangJasa = BarangJasa::findOrFail($item['barang_jasa_id']);
                     $jenis = $item['jenis'] ?? $barangJasa->jenis;
-                    if ($jenis === 'barang' && $barangJasa->stok !== null && $barangJasa->stok < $item['kuantitas']) {
+                    if ($jenis === 'barang' && ($barangJasa->stok ?? 0) < $item['kuantitas']) {
                         throw ValidationException::withMessages([
                             'items' => "Stok {$barangJasa->nama} tidak cukup (tersisa {$barangJasa->stok}).",
                         ]);
@@ -242,8 +242,13 @@ class KasirService
                 'subtotal' => $row['subtotal'],
             ]);
 
-            if ($arahStok !== 0 && $row['barangJasa'] && $row['jenis'] === 'barang' && $row['barangJasa']->stok !== null) {
-                $row['barangJasa']->increment('stok', $arahStok * $row['item']['kuantitas']);
+            if ($arahStok !== 0 && $row['barangJasa'] && $row['jenis'] === 'barang') {
+                // NULL stok dianggap 0 (MySQL: NULL + 5 = NULL). Pakai update
+                // eksplisit + max(0, ...) supaya stok tidak pernah negatif.
+                $stokSaatIni = (int) ($row['barangJasa']->stok ?? 0);
+                $row['barangJasa']->update([
+                    'stok' => max(0, $stokSaatIni + ($arahStok * $row['item']['kuantitas'])),
+                ]);
             }
         }
     }
@@ -361,9 +366,13 @@ class KasirService
 
         DB::transaction(function () use ($nota) {
             foreach ($nota->items as $item) {
-                if ($item->barangJasa && $item->jenis === 'barang' && $item->barangJasa->stok !== null) {
+                if ($item->barangJasa && $item->jenis === 'barang') {
                     $delta = $nota->tipe === 'penjualan' ? $item->kuantitas : -$item->kuantitas;
-                    $item->barangJasa->increment('stok', $delta);
+                    // NULL stok dianggap 0; max(0, ...) mencegah stok negatif.
+                    $stokSaatIni = (int) ($item->barangJasa->stok ?? 0);
+                    $item->barangJasa->update([
+                        'stok' => max(0, $stokSaatIni + $delta),
+                    ]);
                 }
             }
             $nota->transaksiKas?->delete();

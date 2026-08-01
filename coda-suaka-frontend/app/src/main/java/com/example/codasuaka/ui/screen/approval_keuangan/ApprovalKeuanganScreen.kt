@@ -21,11 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.codasuaka.data.remote.dto.ApprovalLogDto
 import org.koin.androidx.compose.koinViewModel
-import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.ui.util.formatRupiahNumber
 import com.example.codasuaka.util.ErrorMessageMapper
-import java.text.NumberFormat
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -273,7 +271,7 @@ fun ApprovalCard(
                 }
 
                 Text(
-                    text = formatRupiah(transaksi?.nominal ?: 0.0),
+                    text = formatRupiahNumber(transaksi?.nominal ?: 0.0),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = tipeColor
@@ -405,7 +403,7 @@ fun ApprovalDetailBottomSheet(
                         InfoRow("Tanggal", transaksi?.tanggal ?: "-")
                         InfoRow("Tipe", if (transaksi?.tipe == "masuk") "Pemasukan" else "Pengeluaran")
                         InfoRow("Kategori", transaksi?.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori")
-                        InfoRow("Nominal", formatRupiah(transaksi?.nominal ?: 0.0))
+                        InfoRow("Nominal", formatRupiahNumber(transaksi?.nominal ?: 0.0))
                         InfoRow("Metode", transaksi?.metodePembayaran ?: "-")
                         InfoRow("Outlet", transaksi?.outlet?.namaOutlet ?: "-")
                         if (!transaksi?.keterangan.isNullOrBlank()) {
@@ -578,8 +576,3 @@ fun TolakDialog(
     )
 }
 
-private fun formatRupiah(amount: Double): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    format.maximumFractionDigits = 0
-    return format.format(amount)
-}

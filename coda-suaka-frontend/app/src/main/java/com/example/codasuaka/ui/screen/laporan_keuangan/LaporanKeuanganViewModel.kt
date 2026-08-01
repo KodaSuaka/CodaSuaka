@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import java.io.IOException
 import java.time.LocalDate
+import com.example.codasuaka.ui.util.formatRupiah
 import java.time.format.DateTimeFormatter
 
 /**
@@ -528,18 +529,7 @@ class LaporanKeuanganViewModel(
     }
 
     companion object {
-        fun formatRupiah(amount: Double): String {
-            val isNegative = amount < 0
-            val absStr = kotlin.math.abs(amount).toLong().toString()
-            val sb = StringBuilder()
-            var count = 0
-            for (i in absStr.lastIndex downTo 0) {
-                if (count > 0 && count % 3 == 0) sb.insert(0, '.')
-                sb.insert(0, absStr[i])
-                count++
-            }
-            val prefix = if (isNegative) "-Rp " else "Rp "
-            return "$prefix$sb"
-        }
+        /** Delegasi ke util terpusat (FormatUtil) agar format konsisten di semua layar. */
+        fun formatRupiah(amount: Double): String = com.example.codasuaka.ui.util.formatRupiah(amount)
     }
 }

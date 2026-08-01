@@ -67,7 +67,7 @@ class LaporanExportController extends Controller
     public function exportBukuKasExcel(Request $request)
     {
         $user = $request->user();
-        $this->authorize('export', TransaksiKas::class);
+        $this->authorize('exportExcel', TransaksiKas::class);
 
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
         $endDate = $request->end_date ?? Carbon::now()->toDateString();
@@ -143,7 +143,7 @@ class LaporanExportController extends Controller
     public function exportArusKasExcel(Request $request)
     {
         $user = $request->user();
-        $this->authorize('export', TransaksiKas::class);
+        $this->authorize('exportExcel', TransaksiKas::class);
 
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
         $endDate = $request->end_date ?? Carbon::now()->toDateString();

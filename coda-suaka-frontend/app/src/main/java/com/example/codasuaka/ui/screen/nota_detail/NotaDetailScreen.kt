@@ -23,8 +23,10 @@ import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.NotaDto
 import com.example.codasuaka.data.remote.dto.NotaItemDto
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
-import com.example.codasuaka.ui.screen.nota_pembelian.formatRupiah
+import com.example.codasuaka.ui.components.DeleteNotaDialog
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.ui.util.formatQty
+import com.example.codasuaka.ui.util.formatRupiah
 import com.example.codasuaka.util.ErrorMessageMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,72 +76,21 @@ fun NotaDetailScreen(
     // ─── Dialog konfirmasi hapus ───
     var showDeleteDialog by remember { mutableStateOf(false) }
     if (showDeleteDialog) {
-        // ─── Force Light Theme (dialog render di window terpisah) ───
-        MaterialTheme(
-            colorScheme = lightColorScheme(
-                surface = Color.White,
-                onSurface = OnSurface,
-                onSurfaceVariant = OnSurfaceVariant,
-                primary = Primary,
-                secondary = Secondary,
-                error = Error
-            )
-        ) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                containerColor = Color.White,
-                titleContentColor = Secondary,
-                textContentColor = OnSurface,
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(Icons.Default.Warning, null, tint = Error)
-                        Text("Hapus Nota", fontWeight = FontWeight.ExtraBold, color = Secondary)
-                    }
-                },
-                text = {
-                    Text("Yakin hapus nota ${uiState.nota?.nomorNota ?: ""}? Tindakan ini tidak bisa dibatalkan.")
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            viewModel.deleteNota()
-                            showDeleteDialog = false
-                        },
-                        enabled = !uiState.isDeleting,
-                        colors = ButtonDefaults.buttonColors(containerColor = Error),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        if (uiState.isDeleting) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Batal", color = OnSurfaceVariant)
-                    }
-                }
-            )
-        }
+        DeleteNotaDialog(
+            nomorNota = uiState.nota?.nomorNota ?: "",
+            isDeleting = uiState.isDeleting,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                viewModel.deleteNota()
+                showDeleteDialog = false
+            }
+        )
     }
 
-    // ─── Force Light Theme ───
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Primary,
-            onPrimary = Color.White,
-            secondary = Secondary,
-            onSecondary = Color.White,
-            surface = Color.White,
-            onSurface = OnSurface,
-            onSurfaceVariant = OnSurfaceVariant,
-            tertiary = Tertiary,
-            outline = NeutralBorder
-        )
-    ) {
-        Scaffold(
+    // ─── Gunakan tema aplikasi (CodaSuakaTheme) — wrapper MaterialTheme lokal
+    // dihapus karena memakai Typography bawaan Material (bukan Typography kustom
+    // di Type.kt), sehingga warna labelLarge jadi OnPrimary/putih di atas putih.
+    Scaffold(
             snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
@@ -261,7 +212,6 @@ fun NotaDetailScreen(
                     }
                 }
             }
-        }
     }
 }
 
@@ -358,9 +308,9 @@ private fun ItemsCard(items: List<NotaItemDto>) {
                 // Header
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Text("Item", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, modifier = Modifier.weight(2.2f))
-                    Text("Qty", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-                    Text("Harga", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, textAlign = TextAlign.End, modifier = Modifier.weight(1.4f))
-                    Text("Subtotal", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, textAlign = TextAlign.End, modifier = Modifier.weight(1.6f))
+                    Text("Qty", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text("Harga", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1.4f))
+                    Text("Subtotal", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = OnSurfaceVariant, textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1.6f))
                 }
                 HorizontalDivider(color = NeutralBorder, thickness = 1.dp)
 
@@ -378,7 +328,9 @@ private fun ItemsCard(items: List<NotaItemDto>) {
                             Text(
                                 text = item.satuan,
                                 fontSize = 10.sp,
-                                color = OnSurfaceVariant
+                                color = OnSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         Text(
@@ -386,6 +338,8 @@ private fun ItemsCard(items: List<NotaItemDto>) {
                             fontSize = 12.sp,
                             color = OnSurface,
                             textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
@@ -393,6 +347,8 @@ private fun ItemsCard(items: List<NotaItemDto>) {
                             fontSize = 12.sp,
                             color = OnSurface,
                             textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1.4f)
                         )
                         Text(
@@ -401,6 +357,8 @@ private fun ItemsCard(items: List<NotaItemDto>) {
                             color = OnSurface,
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1.6f)
                         )
                     }
@@ -443,10 +401,3 @@ private fun TotalCard(nota: NotaDto) {
     }
 }
 
-private fun formatQty(value: Double): String {
-    return if (value == value.toLong().toDouble()) {
-        value.toLong().toString()
-    } else {
-        value.toString()
-    }
-}

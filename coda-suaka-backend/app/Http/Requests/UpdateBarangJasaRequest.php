@@ -35,6 +35,17 @@ class UpdateBarangJasaRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $data = $validator->getData();
+            $jenis = $data['jenis'] ?? null;
+            if ($jenis === 'barang' && ! array_key_exists('stok', $data)) {
+                $validator->errors()->add('stok', 'Stok wajib diisi untuk jenis barang.');
+            }
+        });
+    }
+
     public function messages(): array
     {
         return [

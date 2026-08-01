@@ -108,7 +108,8 @@ return [
                 'view:keuangan' => 'Melihat data keuangan & transaksi kas',
                 'manage:keuangan' => 'Mengelola transaksi kas (tambah/edit/hapus)',
                 'delete:keuangan' => 'Menghapus transaksi kas & kategori',
-                'export:keuangan' => 'Mengekspor laporan keuangan (PDF/Excel)',
+                'export:keuangan' => 'Mengekspor laporan keuangan ke PDF',
+                'export:keuangan-excel' => 'Mengekspor laporan keuangan ke Excel',
                 'approve:keuangan' => 'Menyetujui/menolak transaksi keuangan', // [FITUR ADVANCE]
             ],
         ],
@@ -226,6 +227,7 @@ return [
             'manage:keuangan',
             'approve:keuangan',
             'export:keuangan',
+            'export:keuangan-excel',
 
             // Laporan
             'view:laporan',
@@ -266,7 +268,6 @@ return [
             'view:kasir',
             'manage:kasir',
             'export:kasir',
-            'import:kasir',
         ],
 
         'Manager' => [

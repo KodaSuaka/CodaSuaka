@@ -34,7 +34,7 @@ val Typography = Typography(
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        color = OnPrimary
+        color = OnSurface
     ),
     labelMedium = TextStyle(
         fontWeight = FontWeight.Medium,

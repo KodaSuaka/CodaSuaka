@@ -361,4 +361,70 @@ class NotaPembelianTest extends TestCase
         $this->assertNull(Nota::find($notaId));
         $this->assertNull(TransaksiKas::find($transaksiKasId));
     }
+
+    /**
+     * Bug tester: "stok tidak bertambah meski sudah melakukan pembelian di nota
+     * pembelian". Root cause: stok NULL (barang lama/jasa legacy) + aritmetika
+     * NULL MySQL 5.7 (NULL + 5 = NULL). KasirService harus perlakukan NULL
+     * sebagai 0, bukan skip increment.
+     */
+    public function test_pembelian_barang_stok_null_bertambah_dari_nol()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => null,
+            'harga_beli' => 10000,
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson('/api/notas', [
+            'tipe' => 'pembelian',
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Tunai',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'jenis' => 'barang',
+                    'kuantitas' => 5,
+                    'harga_satuan' => 10000,
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertSame(5, $barangJasa->fresh()->stok);
+    }
+
+    public function test_hapus_pembelian_barang_stok_null_kembali_ke_nol()
+    {
+        $barangJasa = BarangJasa::factory()->create([
+            'instansi_id' => $this->instansi->id,
+            'jenis' => 'barang',
+            'stok' => null,
+            'harga_beli' => 10000,
+        ]);
+
+        $createResponse = $this->actingAs($this->user)->postJson('/api/notas', [
+            'tipe' => 'pembelian',
+            'tanggal' => now()->format('Y-m-d'),
+            'metode_pembayaran' => 'Tunai',
+            'items' => [
+                [
+                    'barang_jasa_id' => $barangJasa->id,
+                    'jenis' => 'barang',
+                    'kuantitas' => 5,
+                    'harga_satuan' => 10000,
+                ],
+            ],
+        ]);
+
+        $notaId = $createResponse->json('data.id');
+        $this->assertSame(5, $barangJasa->fresh()->stok);
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/notas/{$notaId}");
+
+        $response->assertStatus(200);
+        $this->assertSame(0, $barangJasa->fresh()->stok);
+        $this->assertNull(Nota::find($notaId));
+    }
 }

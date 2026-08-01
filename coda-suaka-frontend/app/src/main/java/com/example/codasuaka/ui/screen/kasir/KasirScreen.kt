@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.BarangJasaDto
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.ui.util.formatRupiah
 import com.example.codasuaka.util.ErrorMessageMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,21 +67,10 @@ fun KasirScreen(
         }
     }
 
-    // ─── Force Light Theme ───
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Primary,
-            onPrimary = Color.White,
-            secondary = Secondary,
-            onSecondary = Color.White,
-            surface = Color.White,
-            onSurface = OnSurface,
-            onSurfaceVariant = OnSurfaceVariant,
-            tertiary = Tertiary,
-            outline = NeutralBorder
-        )
-    ) {
-        Scaffold(
+    // ─── Gunakan tema aplikasi (CodaSuakaTheme) — wrapper MaterialTheme lokal
+    // dihapus karena memakai Typography bawaan Material (bukan Typography kustom
+    // di Type.kt), sehingga warna labelLarge jadi OnPrimary/putih di atas putih.
+    Scaffold(
             snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
@@ -134,7 +124,7 @@ fun KasirScreen(
                         EmptyStateKasir()
                     } else {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Adaptive(minSize = 140.dp),
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -183,7 +173,6 @@ fun KasirScreen(
                 onCheckout = { viewModel.checkout() }
             )
         }
-    }
 }
 
 @Composable
@@ -356,7 +345,7 @@ private fun ProductCard(
             )
 
             Text(
-                text = formatRupiahKasir(produk.hargaJual),
+                text = formatRupiah(produk.hargaJual),
                 style = MaterialTheme.typography.titleMedium,
                 color = OnSurface,
                 fontWeight = FontWeight.ExtraBold
@@ -459,7 +448,7 @@ private fun CartSummaryBar(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = formatRupiahKasir(totalPrice),
+                        text = formatRupiah(totalPrice),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = Secondary
@@ -572,7 +561,7 @@ private fun CartDetailsSheet(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = formatRupiahKasir(totalPrice),
+                    text = formatRupiah(totalPrice),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Black,
                     color = Primary
@@ -669,7 +658,7 @@ private fun CartItemRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = formatRupiahKasir(item.produk.hargaJual),
+                text = formatRupiah(item.produk.hargaJual),
                 style = MaterialTheme.typography.bodySmall,
                 color = OnSurfaceVariant,
                 fontWeight = FontWeight.Bold
@@ -750,14 +739,3 @@ private fun categoryColorFor(kategori: String?): Color {
     return categoryColorPalette[Math.floorMod(kategori.hashCode(), categoryColorPalette.size)]
 }
 
-private fun formatRupiahKasir(amount: Double): String {
-    val absStr = kotlin.math.abs(amount).toLong().toString()
-    val sb = StringBuilder()
-    var count = 0
-    for (i in absStr.lastIndex downTo 0) {
-        if (count > 0 && count % 3 == 0) sb.insert(0, '.')
-        sb.insert(0, absStr[i])
-        count++
-    }
-    return "Rp $sb"
-}

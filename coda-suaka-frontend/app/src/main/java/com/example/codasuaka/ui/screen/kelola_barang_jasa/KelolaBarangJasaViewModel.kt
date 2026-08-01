@@ -166,7 +166,7 @@ class KelolaBarangJasaViewModel(
         _uiState.value = _uiState.value.copy(
             formJenis = value,
             // Stok cuma relevan untuk barang — kosongkan kalau pindah ke jasa
-            formStok = if (value == "jasa") "" else _uiState.value.formStok,
+            formStok = if (value == "jasa") "" else if (value.isBlank()) "0" else _uiState.value.formStok,
             stokError = null
         )
     }
@@ -235,11 +235,11 @@ class KelolaBarangJasaViewModel(
         }
         
         val stokInput = state.formStok.trim()
-        val stok = if (state.formJenis == "jasa" || stokInput.isBlank()) null else stokInput.toIntOrNull()
-        if (state.formJenis == "barang" && stokInput.isNotBlank() && stok == null) {
-            newState = newState.copy(stokError = "Stok harus berupa angka bulat.")
-            hasError = true
-        }
+        val stok = if (state.formJenis == "jasa" || stokInput.isBlank()) 0 else stokInput.toIntOrNull()
+       if (state.formJenis == "barang" && stokInput.isNotBlank() && stok == null) {
+           newState = newState.copy(stokError = "Stok harus berupa angka bulat.")
+           hasError = true
+       }
 
         if (hasError) {
             _uiState.value = newState

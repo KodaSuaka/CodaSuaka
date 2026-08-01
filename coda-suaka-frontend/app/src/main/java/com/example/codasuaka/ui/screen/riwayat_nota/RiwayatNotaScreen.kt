@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,18 +14,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.example.codasuaka.data.remote.dto.NotaDto
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
-import com.example.codasuaka.ui.screen.nota_pembelian.formatRupiah
+import com.example.codasuaka.ui.components.DeleteNotaDialog
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.ui.util.formatRupiah
 import com.example.codasuaka.util.ErrorMessageMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,87 +60,32 @@ fun RiwayatNotaScreen(
     var showRangePicker by remember { mutableStateOf(false) }
     val dateRangePickerState = rememberDateRangePickerState()
 
-<<<<<<< HEAD
-    // ─── Force Light Theme (dialog render di window terpisah) ───
-    val datePickerColorScheme = lightColorScheme(
-        primary = Primary,
-        onPrimary = Color.White,
-        secondary = Secondary,
-        surface = Color.White,
-        onSurface = OnSurface
-    )
-
-    if (showStartPicker) {
-        MaterialTheme(colorScheme = datePickerColorScheme) {
-            DatePickerDialog(
-                onDismissRequest = { showStartPicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        startPickerState.selectedDateMillis?.let { millis ->
-                            val date = java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneId.systemDefault())
-                                .toLocalDate()
-                            viewModel.setFilterDateRange(date.toString(), uiState.filterEndDate)
-                        }
-                        showStartPicker = false
-                    }) { Text("Pilih") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showStartPicker = false }) { Text("Batal") }
-                }
-            ) {
-                DatePicker(state = startPickerState)
-            }
-        }
-    }
-
-    if (showEndPicker) {
-        MaterialTheme(colorScheme = datePickerColorScheme) {
-            DatePickerDialog(
-                onDismissRequest = { showEndPicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        endPickerState.selectedDateMillis?.let { millis ->
-                            val date = java.time.Instant.ofEpochMilli(millis)
-                                .atZone(java.time.ZoneId.systemDefault())
-                                .toLocalDate()
-                            viewModel.setFilterDateRange(uiState.filterStartDate, date.toString())
-                        }
-                        showEndPicker = false
-                    }) { Text("Pilih") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showEndPicker = false }) { Text("Batal") }
-                }
-            ) {
-                DatePicker(state = endPickerState)
-=======
     if (showRangePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showRangePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val start = dateRangePickerState.selectedStartDateMillis
-                    val end = dateRangePickerState.selectedEndDateMillis
-                    if (start != null && end != null) {
-                        val startDate = java.time.Instant.ofEpochMilli(start)
-                            .atZone(java.time.ZoneId.of("UTC"))
-                            .toLocalDate()
-                        val endDate = java.time.Instant.ofEpochMilli(end)
-                            .atZone(java.time.ZoneId.of("UTC"))
-                            .toLocalDate()
-                        viewModel.setFilterDateRange(startDate.toString(), endDate.toString())
-                    }
-                    showRangePicker = false
-                }) { Text("OK", fontWeight = FontWeight.ExtraBold, color = Secondary) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRangePicker = false }) { Text("Batal", color = Secondary.copy(alpha = 0.6f)) }
-            },
-            colors = DatePickerDefaults.colors(containerColor = Surface),
-            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            CodaSuakaTheme { 
+        CodaSuakaTheme {
+            DatePickerDialog(
+                onDismissRequest = { showRangePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val start = dateRangePickerState.selectedStartDateMillis
+                        val end = dateRangePickerState.selectedEndDateMillis
+                        if (start != null && end != null) {
+                            val startDate = java.time.Instant.ofEpochMilli(start)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            val endDate = java.time.Instant.ofEpochMilli(end)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.setFilterDateRange(startDate.toString(), endDate.toString())
+                        }
+                        showRangePicker = false
+                    }) { Text("OK", fontWeight = FontWeight.ExtraBold, color = Secondary) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRangePicker = false }) { Text("Batal", color = Secondary.copy(alpha = 0.6f)) }
+                },
+                colors = DatePickerDefaults.colors(containerColor = Surface),
+                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+            ) {
                 DateRangePicker(
                     state = dateRangePickerState,
                     modifier = Modifier.weight(1f).padding(top = 16.dp),
@@ -165,65 +107,12 @@ fun RiwayatNotaScreen(
                         dayInSelectionRangeContentColor = Secondary
                     )
                 )
->>>>>>> 69e8a7268ce4d561ca3a4d56f8711b36abf79404
             }
         }
     }
 
     // ─── Dialog konfirmasi hapus ───
     var notaToDelete by remember { mutableStateOf<NotaDto?>(null) }
-<<<<<<< HEAD
-    notaToDelete?.let { nota ->
-        // ─── Force Light Theme (dialog render di window terpisah) ───
-        MaterialTheme(
-            colorScheme = lightColorScheme(
-                surface = Color.White,
-                onSurface = OnSurface,
-                onSurfaceVariant = OnSurfaceVariant,
-                primary = Primary,
-                secondary = Secondary,
-                error = Error
-            )
-        ) {
-            AlertDialog(
-                onDismissRequest = { notaToDelete = null },
-                containerColor = Color.White,
-                titleContentColor = Secondary,
-                textContentColor = OnSurface,
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(Icons.Default.Warning, null, tint = Error)
-                        Text("Hapus Nota", fontWeight = FontWeight.ExtraBold, color = Secondary)
-                    }
-                },
-                text = {
-                    Text("Yakin hapus nota ${nota.nomorNota}? Tindakan ini tidak bisa dibatalkan.")
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            viewModel.deleteNota(nota.id)
-                            notaToDelete = null
-                        },
-                        enabled = !uiState.isDeleting,
-                        colors = ButtonDefaults.buttonColors(containerColor = Error),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        if (uiState.isDeleting) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { notaToDelete = null }) {
-                        Text("Batal", color = OnSurfaceVariant)
-                    }
-                }
-            )
-        }
-=======
     if (notaToDelete != null) {
         DeleteNotaDialog(
             nomorNota = notaToDelete!!.nomorNota,
@@ -234,7 +123,6 @@ fun RiwayatNotaScreen(
                 notaToDelete = null
             }
         )
->>>>>>> 69e8a7268ce4d561ca3a4d56f8711b36abf79404
     }
 
     Scaffold(
@@ -642,65 +530,6 @@ private fun NotaCard(
                         contentDescription = "Hapus nota",
                         tint = Error
                     )
-                }
-            }
-        }
-    }
-}
-
-// ─── Delete Confirmation Dialog ───
-
-@Composable
-private fun DeleteNotaDialog(
-    nomorNota: String,
-    isDeleting: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        CodaSuakaTheme {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.size(64.dp).clip(CircleShape).background(Coral.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Warning, null, tint = Coral, modifier = Modifier.size(32.dp))
-                    }
-                    Text("Hapus Nota", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Secondary)
-                    Text(
-                        text = "Yakin ingin menghapus nota \"$nomorNota\"? Tindakan ini tidak bisa dibatalkan.",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Secondary.copy(alpha = 0.7f)
-                    )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                            Text("Batal", color = Secondary.copy(alpha = 0.6f))
-                        }
-                        Button(
-                            onClick = onConfirm,
-                            enabled = !isDeleting,
-                            modifier = Modifier.weight(1.5f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Coral),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            if (isDeleting) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
         }

@@ -142,6 +142,34 @@ class PermissionService
                 'route' => 'pengajuan',
                 'permission' => 'manage:pengajuan',
             ],
+            [
+                'id' => 'kasir',
+                'label' => 'Kasir',
+                'icon' => 'PointOfSale',
+                'route' => 'kasir',
+                'permission' => 'view:kasir',
+            ],
+            [
+                'id' => 'kelola_barang_jasa',
+                'label' => 'Kelola Produk',
+                'icon' => 'Inventory2',
+                'route' => 'kelola_barang_jasa',
+                'permission' => 'manage:kasir',
+            ],
+            [
+                'id' => 'nota_pembelian',
+                'label' => 'Nota Pembelian',
+                'icon' => 'Receipt',
+                'route' => 'nota_pembelian',
+                'permission' => 'manage:kasir',
+            ],
+            [
+                'id' => 'riwayat_nota',
+                'label' => 'Riwayat Nota',
+                'icon' => 'ReceiptLong',
+                'route' => 'riwayat_nota',
+                'permission' => 'view:kasir',
+            ],
             // [DINONAKTIFKAN SEMENTARA] Audit Log — fitur advance, belum diaktifkan
             // [
             //     'id' => 'audit_log',
