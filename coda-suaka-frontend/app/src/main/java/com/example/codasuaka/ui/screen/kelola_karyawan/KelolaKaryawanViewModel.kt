@@ -26,7 +26,11 @@ data class Karyawan(
     val outlet: Outlet? = null,
     val sisaCuti: Int? = null,
     /** Format yyyy-MM-dd, null jika belum diisi. */
-    val tanggalMulaiKerja: String? = null
+    val tanggalMulaiKerja: String? = null,
+    // ── Biodata opsional ──
+    val tempatLahir: String? = null,
+    /** Format yyyy-MM-dd, null jika belum diisi. */
+    val tanggalLahir: String? = null
 ) {
     /** Masa kerja dihitung on-the-fly dari [tanggalMulaiKerja], contoh: "2 tahun 3 bulan". */
     val masaKerja: String?
@@ -81,6 +85,10 @@ data class KelolaKaryawanUiState(
     val formSisaCuti: String = "",
     /** Format yyyy-MM-dd. */
     val formTanggalMulaiKerja: String = "",
+    // ── Biodata opsional ──
+    val formTempatLahir: String = "",
+    /** Format yyyy-MM-dd. */
+    val formTanggalLahir: String = "",
     val editingKaryawanId: String? = null
 )
 
@@ -183,6 +191,8 @@ class KelolaKaryawanViewModel(
             formRoleId = 0,
             formOutletId = 0,
             formTanggalMulaiKerja = "",
+            formTempatLahir = "",
+            formTanggalLahir = "",
             editingKaryawanId = null,
             errorMessage = null,
             successMessage = null
@@ -200,6 +210,8 @@ class KelolaKaryawanViewModel(
             formOutletId = karyawan.outlet?.id ?: 0,
             formSisaCuti = karyawan.sisaCuti?.toString() ?: "",
             formTanggalMulaiKerja = karyawan.tanggalMulaiKerja ?: "",
+            formTempatLahir = karyawan.tempatLahir ?: "",
+            formTanggalLahir = karyawan.tanggalLahir ?: "",
             editingKaryawanId = karyawan.id,
             errorMessage = null,
             successMessage = null
@@ -254,6 +266,14 @@ class KelolaKaryawanViewModel(
         _uiState.value = _uiState.value.copy(formTanggalMulaiKerja = value, errorMessage = null)
     }
 
+    fun onFormTempatLahirChange(value: String) {
+        _uiState.value = _uiState.value.copy(formTempatLahir = value, errorMessage = null)
+    }
+
+    fun onFormTanggalLahirChange(value: String) {
+        _uiState.value = _uiState.value.copy(formTanggalLahir = value, errorMessage = null)
+    }
+
     // ─── Actions ───
 
     /**
@@ -299,6 +319,8 @@ class KelolaKaryawanViewModel(
                 email = state.formEmail.trim(),
                 password = state.formPassword,
                 alamat = state.formAlamat.trim(),
+                tempatLahir = state.formTempatLahir.trim().ifBlank { null },
+                tanggalLahir = state.formTanggalLahir.ifBlank { null },
                 roleId = state.formRoleId,
                 outletId = outletId,
                 tanggalMulaiKerja = state.formTanggalMulaiKerja.ifBlank { null }
@@ -349,6 +371,8 @@ class KelolaKaryawanViewModel(
             val request = UpdateKaryawanRequest(
                 namaLengkap = state.formNama.trim(),
                 alamat = state.formAlamat.trim(),
+                tempatLahir = state.formTempatLahir.trim().ifBlank { null },
+                tanggalLahir = state.formTanggalLahir.ifBlank { null },
                 outletId = state.formOutletId.takeIf { it > 0 },
                 sisaCuti = state.formSisaCuti.toIntOrNull(),
                 tanggalMulaiKerja = state.formTanggalMulaiKerja.ifBlank { null }
@@ -435,7 +459,9 @@ class KelolaKaryawanViewModel(
                 role = role,
                 outlet = outlet,
                 sisaCuti = this.sisaCuti,
-                tanggalMulaiKerja = this.tanggalMulaiKerja
+                tanggalMulaiKerja = this.tanggalMulaiKerja,
+                tempatLahir = this.tempatLahir,
+                tanggalLahir = this.tanggalLahir
             )
         }
     }

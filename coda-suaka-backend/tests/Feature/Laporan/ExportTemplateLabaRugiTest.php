@@ -8,6 +8,7 @@ use App\Models\TransaksiKas;
 use App\Services\LaporanTemplateExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use OpenSpout\Reader\XLSX\Reader;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,26 @@ class ExportTemplateLabaRugiTest extends TestCase
         $reader->close();
 
         return ['name' => null, 'rows' => []];
+    }
+
+    public function test_output_mempertahankan_format_template_merged_cells()
+    {
+        $instansi = Instansi::factory()->create();
+
+        $path = app(LaporanTemplateExportService::class)
+            ->generateToFile($instansi, 'laba_rugi', 'barang', 7, 2026);
+
+        // Read-and-fill: file hasil harus mewarisi merged cells template
+        // (16 di sheet Laba Rugi), bukan grid polos hasil rebuild.
+        $sheet = IOFactory::load($path)->getSheetByName('Laba Rugi - Barang');
+        $this->assertNotNull($sheet, 'Sheet Laba Rugi - Barang tidak ada.');
+        $this->assertGreaterThanOrEqual(
+            16,
+            count($sheet->getMergeCells()),
+            'Merged cells template harus terjaga (read-and-fill), bukan hilang (rebuild).'
+        );
+
+        @unlink($path);
     }
 
     public function test_export_laba_rugi_barang_punya_judul_dan_label_baris()

@@ -113,6 +113,13 @@ interface KeuanganRepository {
         outletId: Int? = null
     ): Result<okhttp3.ResponseBody>
 
+    suspend fun exportTemplateLaporan(
+        jenis: String,
+        tipeUsaha: String,
+        bulan: Int,
+        tahun: Int
+    ): Result<okhttp3.ResponseBody>
+
     // ─── Approval Transaksi ──────────────────────────────────────
 
     suspend fun getApprovalPending(

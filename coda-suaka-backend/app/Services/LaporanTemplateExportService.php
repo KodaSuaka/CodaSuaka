@@ -6,62 +6,58 @@ use App\Models\Instansi;
 use App\Models\TransaksiKas;
 use App\Support\LaporanTemplateMap;
 use Carbon\Carbon;
-use OpenSpout\Common\Entity\Cell;
-use OpenSpout\Common\Entity\Cell\FormulaCell;
-use OpenSpout\Common\Entity\Row;
-use OpenSpout\Common\Entity\Style\Style;
-use OpenSpout\Writer\XLSX\Writer;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 
 /**
- * Generate file Excel laporan keuangan (Laba Rugi / Arus Kas) mengikuti
- * layout template divisi keuangan, ter-prefill sebagian dari transaksi.
- * Sel input berwarna kuning, sel formula berwarna biru dengan formula asli.
+ * Generate laporan keuangan (Laba Rugi / Arus Kas) dengan pola READ-AND-FILL:
+ * memuat file template divisi keuangan apa adanya (format, merged cell, border,
+ * formula semua terjaga), lalu HANYA mengisi sel input dari total transaksi
+ * periode. Sel tanpa sumber transaksi (penyusutan, persediaan, dll) dibiarkan
+ * kosong untuk diisi manual keuangan.
  */
 class LaporanTemplateExportService
 {
-    private const WARNA_INPUT = 'FFF2CC';   // kuning muda
-
-    private const WARNA_FORMULA = 'DDEBF7'; // biru muda
-
     /**
-     * @return string path absolut file .xlsx yang dihasilkan
+     * @return string path absolut file .xlsx yang dihasilkan (hanya sheet yang diminta)
      */
     public function generateToFile(Instansi $instansi, string $jenis, string $tipeUsaha, int $bulan, int $tahun): string
     {
-        $rows = LaporanTemplateMap::rows($jenis, $tipeUsaha, $bulan, $tahun);
         $sheetName = LaporanTemplateMap::sheetName($jenis, $tipeUsaha);
+        $prefill = LaporanTemplateMap::prefillCells($jenis, $tipeUsaha);
         $totalPerKategori = $this->totalPerKategori($instansi, $bulan, $tahun);
 
-        $path = sys_get_temp_dir().'/laporan_'.uniqid().'.xlsx';
+        $spreadsheet = IOFactory::load($this->templatePath());
 
-        $styleInput = (new Style)->setBackgroundColor(self::WARNA_INPUT);
-        $styleFormula = (new Style)->setBackgroundColor(self::WARNA_FORMULA);
-
-        $writer = new Writer;
-        $writer->openToFile($path);
-        $writer->getCurrentSheet()->setName($sheetName);
-
-        foreach ($rows as $row) {
-            $cells = [];
-            foreach ($row as $cell) {
-                if (is_array($cell) && ($cell['t'] ?? null) === 'input') {
-                    // src null → sel kuning kosong (diisi manual keuangan).
-                    // src ada → total transaksi kategori itu di periode (0 bila tak ada).
-                    $src = $cell['src'] ?? null;
-                    $nilai = $src !== null ? ($totalPerKategori[$src] ?? 0) : '';
-                    $cells[] = Cell::fromValue($nilai, $styleInput);
-                } elseif (is_array($cell) && ($cell['t'] ?? null) === 'formula') {
-                    $cells[] = new FormulaCell($cell['expr'], $styleFormula, null);
-                } else {
-                    $cells[] = Cell::fromValue($cell);
-                }
+        // Buang sheet lain → output hanya berisi sheet yang diminta.
+        foreach ($spreadsheet->getSheetNames() as $nama) {
+            if ($nama !== $sheetName && count($spreadsheet->getSheetNames()) > 1) {
+                $spreadsheet->removeSheetByIndex(
+                    $spreadsheet->getIndex($spreadsheet->getSheetByName($nama))
+                );
             }
-            $writer->addRow(new Row($cells));
         }
 
-        $writer->close();
+        $sheet = $spreadsheet->getSheetByName($sheetName);
+
+        // Label periode menggantikan placeholder template.
+        $sheet->setCellValue(LaporanTemplateMap::PERIODE_CELL, LaporanTemplateMap::periodeLabel($bulan, $tahun));
+
+        // Isi sel input dari total kategori (0 bila kategori tak bertransaksi).
+        foreach ($prefill as $cell => $kategori) {
+            $sheet->setCellValue($cell, $totalPerKategori[$kategori] ?? 0);
+        }
+
+        $path = sys_get_temp_dir().'/laporan_'.uniqid().'.xlsx';
+        (new XlsxWriter($spreadsheet))->save($path);
+        $spreadsheet->disconnectWorksheets();
 
         return $path;
+    }
+
+    private function templatePath(): string
+    {
+        return resource_path('templates/laporan-keuangan.xlsx');
     }
 
     /**
@@ -84,4 +80,3 @@ class LaporanTemplateExportService
             ->all();
     }
 }
-

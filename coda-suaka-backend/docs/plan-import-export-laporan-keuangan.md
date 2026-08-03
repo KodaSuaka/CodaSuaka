@@ -1,5 +1,19 @@
 # Rencana: Export + Import Excel Laporan Keuangan (Laba Rugi & Arus Kas)
 
+> ## 🔄 REVISI (2026-08-02): READ-AND-FILL + FE
+> Bug: app download pakai endpoint LAMA (LaporanExportController), bukan endpoint template. Dan pendekatan REBUILD (OpenSpout) tidak mewarisi format template (16-20 merged cell, border, 39 format) — hasil grid polos.
+> **Perbaikan:** ganti ke **read-and-fill** pakai **PhpSpreadsheet**: muat `resources/templates/laporan-keuangan.xlsx` apa adanya, isi HANYA sel input dari total transaksi, simpan. Format/formula/merge 100% terjaga.
+> - `LaporanTemplateExportService` ditulis ulang (PhpSpreadsheet load→fill→save, buang sheet lain).
+> - `LaporanTemplateMap` diringkas jadi peta `cellRef → kategori` (`prefillCells()`), tak lagi mendeskripsikan struktur.
+> - Template disalin ke `resources/templates/` (runtime, tidak export-ignored).
+> - **FE tersambung:** ApiService `exportTemplateLaporan`, `KeuanganRepository(+Impl)`, `LaporanKeuanganViewModel.exportTemplateLaporan(jenis,tipeUsaha)` (bulan/tahun diturunkan dari filter), 4 item menu di dropdown export `LaporanKeuanganScreen`. FE compile OK; **belum diverifikasi visual (butuh device)**.
+> - Test read-and-fill: `test_output_mempertahankan_format_template_merged_cells` (≥16 merge). Suite 120 hijau. FE `compileDebugKotlin` exit 0.
+>
+> **⚠️ DEPLOY (BARU):**
+> - `composer install` butuh `ext-gd` untuk PhpSpreadsheet. Jika server tak punya GD: aktifkan ext-gd ATAU `composer install --ignore-platform-req=ext-gd` (runtime GD hanya untuk gambar, tak kita pakai).
+> - `resources/templates/laporan-keuangan.xlsx` wajib ikut ter-deploy (resources/ tidak export-ignored — aman).
+> - `php artisan permission:sync` (interaktif, jawab YA) untuk izin `export:laporan-keuangan`.
+>
 > ## ✅ STATUS: EXPORT SELESAI (2026-08-02)
 > Fase 2, 3, 5-export, 6-export **selesai & hijau** (9 test, bagian dari suite 119 passed). Yang dibangun:
 > - `app/Support/LaporanTemplateMap.php` — peta 4 sheet (laba rugi barang/jasa, arus kas barang/jasa), formula & koordinat diambil dari file template.

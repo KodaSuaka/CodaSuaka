@@ -16,17 +16,53 @@ class karyawan extends Model
         'nama_lengkap',
         'kontak',
         'alamat',
+        'tempat_lahir',
+        'tanggal_lahir',
         'foto_profil',
         'outlet_id',
         'sisa_cuti',
         'tanggal_mulai_kerja',
     ];
 
+    /**
+     * lama_bekerja adalah nilai turunan (dihitung dari tanggal_mulai_kerja),
+     * disertakan otomatis di response JSON.
+     */
+    protected $appends = ['lama_bekerja'];
+
     protected function casts(): array
     {
         return [
             'tanggal_mulai_kerja' => 'date:Y-m-d',
+            'tanggal_lahir' => 'date:Y-m-d',
         ];
+    }
+
+    /**
+     * Lama bekerja dalam format "X tahun Y bulan" dihitung dari
+     * tanggal_mulai_kerja hingga sekarang. null bila tanggal mulai kerja kosong.
+     */
+    public function getLamaBekerjaAttribute(): ?string
+    {
+        if ($this->tanggal_mulai_kerja === null) {
+            return null;
+        }
+
+        $mulai = \Carbon\Carbon::parse($this->tanggal_mulai_kerja);
+        if ($mulai->isFuture()) {
+            return '0 bulan';
+        }
+
+        $tahun = $mulai->diffInYears(now());
+        $bulan = $mulai->copy()->addYears($tahun)->diffInMonths(now());
+
+        $bagian = [];
+        if ($tahun > 0) {
+            $bagian[] = $tahun.' tahun';
+        }
+        $bagian[] = $bulan.' bulan';
+
+        return implode(' ', $bagian);
     }
 
     protected static function booted(): void

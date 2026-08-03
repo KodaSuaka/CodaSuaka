@@ -33,6 +33,9 @@ class StorekaryawanRequest extends FormRequest
             'password' => 'required|string|min:6',
             'kontak' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
+            // Biodata opsional
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tanggal_lahir' => 'nullable|date|before:today',
             // Owner & Super Admin adalah role platform-level, bukan karyawan —
             // cegah privilege escalation (mis. Manager membuat akun ber-role Owner)
             'role_id' => [

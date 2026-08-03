@@ -227,6 +227,8 @@ fun KelolaKaryawanScreen(
                 selectedRoleId = uiState.formRoleId,
                 selectedOutletId = uiState.formOutletId,
                 tanggalMulaiKerja = uiState.formTanggalMulaiKerja,
+                tempatLahir = uiState.formTempatLahir,
+                tanggalLahir = uiState.formTanggalLahir,
                 roles = uiState.roles,
                 outlets = uiState.outlets,
                 isSaving = uiState.isSaving,
@@ -238,6 +240,8 @@ fun KelolaKaryawanScreen(
                 onRoleChange = viewModel::onFormRoleChange,
                 onOutletChange = viewModel::onFormOutletChange,
                 onTanggalMulaiKerjaChange = viewModel::onFormTanggalMulaiKerjaChange,
+                onTempatLahirChange = viewModel::onFormTempatLahirChange,
+                onTanggalLahirChange = viewModel::onFormTanggalLahirChange,
                 onSimpan = viewModel::simpanKaryawan,
                 onDismiss = viewModel::closeDialog
             )
@@ -249,6 +253,8 @@ fun KelolaKaryawanScreen(
                 selectedOutletId = uiState.formOutletId,
                 sisaCuti = uiState.formSisaCuti,
                 tanggalMulaiKerja = uiState.formTanggalMulaiKerja,
+                tempatLahir = uiState.formTempatLahir,
+                tanggalLahir = uiState.formTanggalLahir,
                 outlets = uiState.outlets,
                 roleName = dialog.karyawan.role?.namaRole ?: "-",
                 isSaving = uiState.isSaving,
@@ -258,6 +264,8 @@ fun KelolaKaryawanScreen(
                 onOutletChange = viewModel::onFormOutletChange,
                 onSisaCutiChange = viewModel::onFormSisaCutiChange,
                 onTanggalMulaiKerjaChange = viewModel::onFormTanggalMulaiKerjaChange,
+                onTempatLahirChange = viewModel::onFormTempatLahirChange,
+                onTanggalLahirChange = viewModel::onFormTanggalLahirChange,
                 onSimpan = viewModel::updateKaryawan,
                 onHapus = { viewModel.hapusKaryawan(dialog.karyawan.id) },
                 onDismiss = viewModel::closeDialog
@@ -601,6 +609,8 @@ private fun DialogTambahKaryawan(
     selectedRoleId: Int,
     selectedOutletId: Int,
     tanggalMulaiKerja: String,
+    tempatLahir: String,
+    tanggalLahir: String,
     roles: List<Role>,
     outlets: List<Outlet>,
     isSaving: Boolean,
@@ -612,6 +622,8 @@ private fun DialogTambahKaryawan(
     onRoleChange: (Int) -> Unit,
     onOutletChange: (Int) -> Unit,
     onTanggalMulaiKerjaChange: (String) -> Unit,
+    onTempatLahirChange: (String) -> Unit,
+    onTanggalLahirChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -714,6 +726,33 @@ private fun DialogTambahKaryawan(
                     onValueChange = onTanggalMulaiKerjaChange
                 )
 
+                // Tempat Lahir (biodata opsional)
+                OutlinedTextField(
+                    value = tempatLahir,
+                    onValueChange = onTempatLahirChange,
+                    label = { Text("Tempat Lahir (opsional)") },
+                    placeholder = { Text("mis. Bandung") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
+                )
+
+                // Tanggal Lahir (biodata opsional)
+                SimpleDatePickerField(
+                    label = "Tanggal Lahir (opsional)",
+                    value = tanggalLahir,
+                    onValueChange = onTanggalLahirChange
+                )
+
                 // Email (untuk login)
                 OutlinedTextField(
                     value = email,
@@ -811,6 +850,8 @@ private fun DialogEditKaryawan(
     selectedOutletId: Int,
     sisaCuti: String,
     tanggalMulaiKerja: String,
+    tempatLahir: String,
+    tanggalLahir: String,
     outlets: List<Outlet>,
     roleName: String,
     isSaving: Boolean,
@@ -820,6 +861,8 @@ private fun DialogEditKaryawan(
     onOutletChange: (Int) -> Unit,
     onSisaCutiChange: (String) -> Unit,
     onTanggalMulaiKerjaChange: (String) -> Unit,
+    onTempatLahirChange: (String) -> Unit,
+    onTanggalLahirChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onHapus: () -> Unit,
     onDismiss: () -> Unit
@@ -921,6 +964,33 @@ private fun DialogEditKaryawan(
                     label = "Tanggal Mulai Kerja",
                     value = tanggalMulaiKerja,
                     onValueChange = onTanggalMulaiKerjaChange
+                )
+
+                // Tempat Lahir (biodata opsional)
+                OutlinedTextField(
+                    value = tempatLahir,
+                    onValueChange = onTempatLahirChange,
+                    label = { Text("Tempat Lahir (opsional)") },
+                    placeholder = { Text("mis. Bandung") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
+                )
+
+                // Tanggal Lahir (biodata opsional)
+                SimpleDatePickerField(
+                    label = "Tanggal Lahir (opsional)",
+                    value = tanggalLahir,
+                    onValueChange = onTanggalLahirChange
                 )
 
                 // Role (read-only)

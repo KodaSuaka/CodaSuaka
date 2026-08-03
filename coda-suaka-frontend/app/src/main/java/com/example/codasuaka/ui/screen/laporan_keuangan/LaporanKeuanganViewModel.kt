@@ -467,6 +467,25 @@ class LaporanKeuanganViewModel(
         }
     }
 
+    /**
+     * Export template Laba Rugi / Arus Kas (format divisi keuangan, ter-prefill).
+     * Periode (bulan/tahun) diturunkan dari tanggal mulai filter.
+     */
+    fun exportTemplateLaporan(jenis: String, tipeUsaha: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
+            val mulai = runCatching { LocalDate.parse(_uiState.value.filterStartDate) }
+                .getOrDefault(LocalDate.now())
+            keuanganRepository.exportTemplateLaporan(jenis, tipeUsaha, mulai.monthValue, mulai.year)
+                .onSuccess { body ->
+                    saveFile(body, "${jenis}_${tipeUsaha}_${mulai.year}_${mulai.monthValue}.xlsx")
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isExporting = false, exportError = e.message ?: "Gagal mengekspor template laporan") }
+                }
+        }
+    }
+
     private fun saveFile(body: ResponseBody, filename: String) {
         try {
             val resolver = context.contentResolver

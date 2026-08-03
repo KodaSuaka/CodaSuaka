@@ -137,10 +137,13 @@ data class KaryawanDto(
     @SerializedName("nama_lengkap") val namaLengkap: String,
     @SerializedName("kontak") val kontak: String?,
     @SerializedName("alamat") val alamat: String?,
+    @SerializedName("tempat_lahir") val tempatLahir: String? = null,
+    @SerializedName("tanggal_lahir") val tanggalLahir: String? = null,
     @SerializedName("foto_profil") val fotoProfil: String?,
     @SerializedName("outlet_id") val outletId: Int?,
     @SerializedName("sisa_cuti") val sisaCuti: Int?,
     @SerializedName("tanggal_mulai_kerja") val tanggalMulaiKerja: String?,
+    @SerializedName("lama_bekerja") val lamaBekerja: String? = null,
     @SerializedName("user") val user: KaryawanUserDto?,
     @SerializedName("outlet") val outlet: OutletDto?
 )
@@ -160,6 +163,8 @@ data class CreateKaryawanRequest(
     @SerializedName("password") val password: String,
     @SerializedName("kontak") val kontak: String? = null,
     @SerializedName("alamat") val alamat: String? = null,
+    @SerializedName("tempat_lahir") val tempatLahir: String? = null,
+    @SerializedName("tanggal_lahir") val tanggalLahir: String? = null,
     @SerializedName("role_id") val roleId: Int,
     @SerializedName("outlet_id") val outletId: Int? = null,
     @SerializedName("tanggal_mulai_kerja") val tanggalMulaiKerja: String? = null
@@ -169,6 +174,8 @@ data class UpdateKaryawanRequest(
     @SerializedName("nama_lengkap") val namaLengkap: String? = null,
     @SerializedName("kontak") val kontak: String? = null,
     @SerializedName("alamat") val alamat: String? = null,
+    @SerializedName("tempat_lahir") val tempatLahir: String? = null,
+    @SerializedName("tanggal_lahir") val tanggalLahir: String? = null,
     @SerializedName("outlet_id") val outletId: Int? = null,
     @SerializedName("sisa_cuti") val sisaCuti: Int? = null,
     @SerializedName("tanggal_mulai_kerja") val tanggalMulaiKerja: String? = null

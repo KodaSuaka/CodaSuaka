@@ -211,6 +211,39 @@ fun LaporanKeuanganScreen(
                                         },
                                         leadingIcon = { Icon(Icons.Default.TableChart, null, tint = MasukColor) }
                                     )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text("Laba Rugi Barang (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("laba_rugi", "barang")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Laba Rugi Jasa (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("laba_rugi", "jasa")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Arus Kas Barang (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("arus_kas", "barang")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Arus Kas Jasa (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("arus_kas", "jasa")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
                                 }
                             }
                         }

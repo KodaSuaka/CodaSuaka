@@ -414,6 +414,19 @@ interface ApiService {
         @Query("outlet_id") outletId: Int? = null
     ): Response<ResponseBody>
 
+    /**
+     * Export template Laba Rugi / Arus Kas (format divisi keuangan, ter-prefill).
+     * jenis: "laba_rugi" | "arus_kas"; tipeUsaha: "barang" | "jasa".
+     */
+    @GET("api/laporan-keuangan/template/export")
+    @Streaming
+    suspend fun exportTemplateLaporan(
+        @Query("jenis") jenis: String,
+        @Query("tipe_usaha") tipeUsaha: String,
+        @Query("bulan") bulan: Int,
+        @Query("tahun") tahun: Int
+    ): Response<ResponseBody>
+
     // ─── Approval Transaksi ─────────────────────────────────────
     @GET("api/approval/pending")
     suspend fun getApprovalPending(
