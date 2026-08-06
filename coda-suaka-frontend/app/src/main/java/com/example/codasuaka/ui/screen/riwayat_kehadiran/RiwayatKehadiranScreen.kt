@@ -1,5 +1,6 @@
 package com.example.codasuaka.ui.screen.riwayat_kehadiran
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -239,23 +240,39 @@ private fun OutletFilterDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        CustomTextField(
+        // Mengembalikan CustomTextField (Design lama) dengan perbaikan warna Navy
+        OutlinedTextField(
             value = selectedOutlet?.namaOutlet ?: "Semua Outlet",
             onValueChange = {},
             readOnly = true,
-            label = "Pilih Outlet",
+            enabled = true, // Dipaksa True agar teks tidak pudar
+            label = { Text("Pilih Outlet", color = Secondary.copy(alpha = 0.7f)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(),
+            shape = RoundedCornerShape(12.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = Secondary, 
+                fontWeight = FontWeight.Bold
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary,
+                unfocusedBorderColor = NeutralBorder,
+                focusedContainerColor = InputBackground,
+                unfocusedContainerColor = InputBackground,
+                focusedTextColor = Secondary,
+                unfocusedTextColor = Secondary
+            )
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Surface)
         ) {
             DropdownMenuItem(
-                text = { Text("Semua Outlet") },
+                text = { Text("Semua Outlet", color = Secondary, fontWeight = FontWeight.Medium) },
                 onClick = {
                     onOutletSelected(null)
                     expanded = false
@@ -263,7 +280,7 @@ private fun OutletFilterDropdown(
             )
             outlets.forEach { outlet ->
                 DropdownMenuItem(
-                    text = { Text(outlet.namaOutlet) },
+                    text = { Text(outlet.namaOutlet, color = Secondary, fontWeight = FontWeight.Medium) },
                     onClick = {
                         onOutletSelected(outlet.id)
                         expanded = false
@@ -296,18 +313,34 @@ private fun DatePickerField(
         } else null
     )
 
-    CustomTextField(
+    // Menggunakan OutlinedTextField langsung agar warna bisa dipaksa (tidak pudar)
+    OutlinedTextField(
         value = selectedDate.ifEmpty { LocalDate.now().toString() },
         onValueChange = {},
         readOnly = true,
-        enabled = false,
-        label = "Pilih Tanggal",
+        enabled = true, // Dipaksa True agar teks tidak pudar
+        label = { Text("Pilih Tanggal", color = Secondary.copy(alpha = 0.7f)) },
         trailingIcon = {
-            Icon(Icons.Default.CalendarMonth, "Pilih tanggal", tint = Primary)
+            IconButton(onClick = { showDatePicker = true }) {
+                Icon(Icons.Default.CalendarMonth, "Pilih tanggal", tint = Primary)
+            }
         },
         modifier = modifier
             .fillMaxWidth()
-            .clickable { showDatePicker = true }
+            .clickable { showDatePicker = true },
+        shape = RoundedCornerShape(12.dp),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = Secondary, 
+            fontWeight = FontWeight.Bold
+        ),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Primary,
+            unfocusedBorderColor = NeutralBorder,
+            focusedContainerColor = InputBackground,
+            unfocusedContainerColor = InputBackground,
+            focusedTextColor = Secondary,
+            unfocusedTextColor = Secondary
+        )
     )
 
     if (showDatePicker) {
@@ -358,12 +391,11 @@ private fun DatePickerField(
                     YearPickerDialog(
                         selectedYear = displayMonth.year,
                         onYearSelected = { year ->
-                            val tz = java.util.TimeZone.getTimeZone("UTC")
-                            val cal = java.util.Calendar.getInstance(tz).apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                set(java.util.Calendar.YEAR, year)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(java.time.ZoneId.of("UTC"))
+                                .toLocalDate()
+                            val targetMonth = currentMonth.withYear(year)
+                            datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
                             showYearPicker = false
                         },
                         onDismiss = { showYearPicker = false }
@@ -380,18 +412,20 @@ private fun DatePickerField(
                     CustomCalendarNavigation(
                         title = monthTitle.replaceFirstChar { it.uppercase() },
                         onPrevClick = {
-                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                add(java.util.Calendar.MONTH, -1)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(java.time.ZoneId.of("UTC"))
+                                .toLocalDate()
+                                .withDayOfMonth(1)
+                            val prevMonth = currentMonth.minusMonths(1)
+                            datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
                         },
                         onNextClick = {
-                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                add(java.util.Calendar.MONTH, 1)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(java.time.ZoneId.of("UTC"))
+                                .toLocalDate()
+                                .withDayOfMonth(1)
+                            val nextMonth = currentMonth.plusMonths(1)
+                            datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
                         },
                         onTitleClick = { showYearPicker = true },
                         modifier = Modifier.padding(horizontal = 12.dp)

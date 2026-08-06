@@ -144,8 +144,8 @@ fun PenugasanDetailScreen(
                                 onDismissRequest = { showMenu = false },
                                 modifier = Modifier.background(Color.White)
                             ) {
-                                // Edit & Delete only for Managers/Owner
-                                if (canManage && penugasan.isTemplate != true) {
+                                // Edit & Delete only for Managers/Owner AND if not finished
+                                if (canManage && penugasan.isTemplate != true && penugasan.status != "selesai") {
                                     DropdownMenuItem(
                                         text = { Text("Edit Tugas", fontWeight = FontWeight.Medium, color = Secondary) },
                                         onClick = {

@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.NotaDto
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
-import com.example.codasuaka.ui.components.DeleteNotaDialog
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.ui.util.formatRupiah
 import com.example.codasuaka.util.ErrorMessageMapper
@@ -41,18 +40,6 @@ fun RiwayatNotaScreen(
         uiState.loadError?.let {
             snackbarHostState.showSnackbar(ErrorMessageMapper.map(it, "memuat riwayat nota").message)
             viewModel.clearError()
-        }
-    }
-    LaunchedEffect(uiState.deleteError) {
-        uiState.deleteError?.let {
-            snackbarHostState.showSnackbar(ErrorMessageMapper.map(it, "menghapus nota").message)
-            viewModel.clearError()
-        }
-    }
-    LaunchedEffect(uiState.deleteSuccess) {
-        uiState.deleteSuccess?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearDeleteSuccess()
         }
     }
 
@@ -111,20 +98,6 @@ fun RiwayatNotaScreen(
         }
     }
 
-    // ─── Dialog konfirmasi hapus ───
-    var notaToDelete by remember { mutableStateOf<NotaDto?>(null) }
-    if (notaToDelete != null) {
-        DeleteNotaDialog(
-            nomorNota = notaToDelete!!.nomorNota,
-            isDeleting = uiState.isDeleting,
-            onDismiss = { notaToDelete = null },
-            onConfirm = {
-                viewModel.deleteNota(notaToDelete!!.id)
-                notaToDelete = null
-            }
-        )
-    }
-
     Scaffold(
         snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -141,7 +114,7 @@ fun RiwayatNotaScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Kembali",
-                            tint = Secondary
+                            tint = Primary
                         )
                     }
                 },
@@ -207,8 +180,7 @@ fun RiwayatNotaScreen(
                         items(uiState.filteredNotaList, key = { it.id }) { nota ->
                             NotaCard(
                                 nota = nota,
-                                onClick = { onNotaClick(nota.id) },
-                                onDelete = { notaToDelete = nota }
+                                onClick = { onNotaClick(nota.id) }
                             )
                         }
 
@@ -254,16 +226,17 @@ private fun FilterSection(
     onOutletChange: (Int?) -> Unit,
     onSearchChange: (String) -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Surface,
-        border = BorderStroke(1.dp, Neutral)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Surface)
     ) {
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Search Bar (Gunakan Secondary untuk teks agar tajam)
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = onSearchChange,
@@ -275,7 +248,7 @@ private fun FilterSection(
                         color = Secondary.copy(alpha = 0.5f) 
                     ) 
                 },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Secondary, modifier = Modifier.size(20.dp)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Primary, modifier = Modifier.size(20.dp)) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = Secondary),
@@ -294,6 +267,7 @@ private fun FilterSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Chips tipe (Style Laporan Keuangan)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NotaTipeFilter.entries.forEach { tipe ->
                         val isSelected = uiState.filterTipe == tipe
@@ -324,6 +298,7 @@ private fun FilterSection(
                     }
                 }
 
+                // Button Date Range (Style Pill)
                 Surface(
                     onClick = onRangeClick,
                     shape = RoundedCornerShape(100.dp),
@@ -385,7 +360,7 @@ private fun FilterSection(
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = Secondary,
+                                tint = Primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -428,6 +403,7 @@ private fun FilterSection(
                 }
             }
         }
+        HorizontalDivider(color = Neutral, thickness = 1.dp)
     }
 }
 
@@ -436,8 +412,7 @@ private fun FilterSection(
 @Composable
 private fun NotaCard(
     nota: NotaDto,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     val isPembelian = nota.tipe.equals("pembelian", ignoreCase = true)
     
@@ -524,13 +499,6 @@ private fun NotaCard(
                     color = Secondary,
                     fontSize = 15.sp
                 )
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Hapus nota",
-                        tint = Error
-                    )
-                }
             }
         }
     }

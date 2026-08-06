@@ -1,24 +1,14 @@
-# Task List: UI/UX & Theme Standardization
+# Task List: Final Polish & Crash Fix
 
-- [x] **Phase 1: Theme & Color Cleanup**
-    - [x] Update `Color.kt` with centralized status colors.
-    - [x] Audit and replace hardcoded `Color.White` with `Tertiary` or `MaterialTheme.colorScheme.surface`.
-    - [x] Ensure `Secondary` (Navy Blue) is consistently used for headers and primary text.
-- [x] **Phase 2: Kelola Barang/Jasa Improvements**
-    - [x] Add SearchBar to `KelolaBarangJasaScreen`.
-    - [x] Display stock information in `BarangJasaListItem`.
-    - [x] Refactor form dialog to support inline validation errors.
-- [x] **Phase 3: Riwayat Nota Improvements**
-    - [x] Replace separate date pickers with `DateRangePicker`.
-    - [x] Add search field for Invoice Number / Third Party.
-    - [x] Enhance visual hierarchy of transaction totals.
-- [x] **Phase 4: Nota Pembelian Improvements**
-    - [x] Implement Bottom Sheet for manual item catalog search.
-    - [x] Add "Download Excel Template" button.
-    - [x] Implement "Quick Add" flow (click catalog -> add to cart with default qty 1).
-    - [x] Simplify main screen by hiding manual forms behind Bottom Sheets.
-    - [x] Implement sticky bottom bar for total and save action.
-- [x] **Phase 5: Verification & Polishing**
-    - [x] Final UI audit for color consistency.
-    - [x] Test all search and filter functionalities.
-    - [x] Verify form validation behavior.
+- [/] **Step 1: Bug Fix (Force Close)**
+    - [ ] Update `UserData` DTO to make `namaLengkap` nullable.
+    - [ ] Add null-safety to "Created By" field in `LaporanKeuanganScreen.kt`.
+- [ ] **Step 2: Visual & UI Restoration**
+    - [ ] Consolidate Green price color in `KasirScreen.kt`.
+    - [ ] Fix logo-to-text spacing in `AuthScreen.kt` (4.dp).
+- [ ] **Step 3: Standardization**
+    - [ ] Align Calendar logic to `java.time` in all remaining screens.
+- [ ] **Step 4: Notification Management**
+    - [ ] Scheduled auto-delete for read notifications.
+- [ ] **Step 5: Verification**
+    - [ ] Comprehensive testing.

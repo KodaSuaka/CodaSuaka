@@ -104,7 +104,7 @@ fun LaporanKeuanganScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Secondary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Primary)
                     }
                 },
                 actions = {
@@ -314,12 +314,11 @@ fun LaporanKeuanganScreen(
                             YearPickerDialog(
                                 selectedYear = displayMonth.year,
                                 onYearSelected = { year ->
-                                    val tz = java.util.TimeZone.getTimeZone("UTC")
-                                    val cal = java.util.Calendar.getInstance(tz).apply {
-                                        timeInMillis = datePickerState.displayedMonthMillis
-                                        set(java.util.Calendar.YEAR, year)
-                                    }
-                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                        .atZone(ZoneId.of("UTC"))
+                                        .toLocalDate()
+                                    val targetMonth = currentMonth.withYear(year)
+                                    datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                     showYearPicker = false
                                 },
                                 onDismiss = { showYearPicker = false }
@@ -337,18 +336,20 @@ fun LaporanKeuanganScreen(
                             CustomCalendarNavigation(
                                 title = monthTitle.replaceFirstChar { it.uppercase() },
                                 onPrevClick = {
-                                    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                        timeInMillis = datePickerState.displayedMonthMillis
-                                        add(java.util.Calendar.MONTH, -1)
-                                    }
-                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                        .atZone(ZoneId.of("UTC"))
+                                        .toLocalDate()
+                                        .withDayOfMonth(1)
+                                    val prevMonth = currentMonth.minusMonths(1)
+                                    datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                 },
                                 onNextClick = {
-                                    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                        timeInMillis = datePickerState.displayedMonthMillis
-                                        add(java.util.Calendar.MONTH, 1)
-                                    }
-                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                        .atZone(ZoneId.of("UTC"))
+                                        .toLocalDate()
+                                        .withDayOfMonth(1)
+                                    val nextMonth = currentMonth.plusMonths(1)
+                                    datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                 },
                                 onTitleClick = { showYearPicker = true },
                                 modifier = Modifier.padding(horizontal = 12.dp)
@@ -430,7 +431,7 @@ fun LaporanKeuanganScreen(
                                     imageVector = Icons.Default.AccountBalance,
                                     contentDescription = null,
                                     modifier = Modifier.size(64.dp),
-                                    tint = Neutral
+                                    tint = Primary.copy(alpha = 0.3f)
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
@@ -781,7 +782,7 @@ private fun SaldoRingkasanCard(
                             LaporanKeuanganViewModel.formatRupiah(totalMasuk),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = OnSurface
+                            color = Secondary
                         )
                     }
                 }
@@ -798,7 +799,7 @@ private fun SaldoRingkasanCard(
                             LaporanKeuanganViewModel.formatRupiah(totalKeluar),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = OnSurface
+                            color = Secondary
                         )
                     }
                 }
@@ -1203,14 +1204,19 @@ private fun TransaksiDetailDialog(
                 )
 
                 DetailInfoItem(
-                    // "tanggal" adalah kolom DATE saja (tanpa jam) — format
-                    // dengan HH:mm sebelumnya menampilkan jam palsu hasil
-                    // konversi timezone dari tengah malam, yang bahkan bisa
-                    // menggeser tanggal yang ditampilkan.
                     label = "Tanggal",
                     value = DateTimeUtil.formatIsoToLocal(transaksi.tanggal, "dd MMMM yyyy"),
                     icon = Icons.Default.Event
                 )
+
+                // Audit: Menampilkan pembuat transaksi
+                transaksi.createdByUser?.let { user ->
+                    DetailInfoItem(
+                        label = "Dibuat Oleh",
+                        value = user.namaLengkap ?: "System",
+                        icon = Icons.Default.Person
+                    )
+                }
 
                 if (!transaksi.metodePembayaran.isNullOrBlank()) {
                     DetailInfoItem(
@@ -1464,19 +1470,11 @@ private fun FormTransaksiDialog(
                                 YearPickerDialog(
                                     selectedYear = displayMonth.year,
                                     onYearSelected = { year ->
-                                        val tz = java.util.TimeZone.getTimeZone("UTC")
-                                        val cal = java.util.Calendar.getInstance(tz).apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                            set(java.util.Calendar.YEAR, year)
-                                        }
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
-                                        
-                                        val selCal = java.util.Calendar.getInstance(tz).apply {
-                                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                                            set(java.util.Calendar.YEAR, year)
-                                        }
-                                        datePickerState.selectedDateMillis = selCal.timeInMillis
-                                        
+                                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                        val targetMonth = currentMonth.withYear(year)
+                                        datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                         showYearPicker = false
                                     },
                                     onDismiss = { showYearPicker = false }
@@ -1493,18 +1491,20 @@ private fun FormTransaksiDialog(
                                 CustomCalendarNavigation(
                                     title = monthTitle.replaceFirstChar { it.uppercase() },
                                     onPrevClick = {
-                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                            add(java.util.Calendar.MONTH, -1)
-                                        }
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                            .withDayOfMonth(1)
+                                        val prevMonth = currentMonth.minusMonths(1)
+                                        datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                     },
                                     onNextClick = {
-                                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                            add(java.util.Calendar.MONTH, 1)
-                                        }
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                            .withDayOfMonth(1)
+                                        val nextMonth = currentMonth.plusMonths(1)
+                                        datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                     },
                                     onTitleClick = { showYearPicker = true },
                                     modifier = Modifier.padding(horizontal = 12.dp)

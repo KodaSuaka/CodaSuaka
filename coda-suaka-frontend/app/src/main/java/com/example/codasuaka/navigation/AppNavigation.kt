@@ -64,6 +64,7 @@ import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import org.koin.core.parameter.parametersOf
+import java.net.URLDecoder
 import java.net.URLEncoder
 
 object Routes {
@@ -326,7 +327,13 @@ fun AppNavigation(navController: NavHostController) {
             )
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getInt("userId") ?: return@composable
-            val userName = backStackEntry.arguments?.getString("userName") ?: "User"
+            val rawUserName = backStackEntry.arguments?.getString("userName") ?: "User"
+            val userName = try {
+                URLDecoder.decode(rawUserName, "UTF-8")
+            } catch (_: Exception) {
+                rawUserName
+            }
+            
             val chatDetailViewModel: ChatDetailViewModel = koinViewModel(
                 parameters = { parametersOf(userId, userName) }
             )

@@ -44,5 +44,5 @@ data class UserData(
     val outletId: String?,
 
     @SerializedName("nama_lengkap")
-    val namaLengkap: String
+    val namaLengkap: String?
 )

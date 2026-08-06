@@ -139,7 +139,7 @@ class NotificationViewModel(
         viewModelScope.launch {
             notificationRepository.markAsRead(notificationId)
                 .onSuccess {
-                    // Update local state
+                    // Update local state: tandai sudah dibaca
                     val updatedNotifications = _uiState.value.notifications.map { notif ->
                         if (notif.id == notificationId) notif.copy(isRead = true) else notif
                     }
@@ -147,6 +147,12 @@ class NotificationViewModel(
                         notifications = updatedNotifications,
                         unreadCount = (_uiState.value.unreadCount - 1).coerceAtLeast(0),
                     )
+
+                    // Auto-cleanup: Hapus notifikasi dari daftar setelah 5 menit agar tidak menumpuk
+                    launch {
+                        delay(5 * 60_000L) // 5 menit
+                        deleteNotification(notificationId)
+                    }
                 }
         }
     }

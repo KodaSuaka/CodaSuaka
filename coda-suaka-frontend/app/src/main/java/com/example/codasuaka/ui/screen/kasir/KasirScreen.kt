@@ -347,7 +347,7 @@ private fun ProductCard(
             Text(
                 text = formatRupiah(produk.hargaJual),
                 style = MaterialTheme.typography.titleMedium,
-                color = OnSurface,
+                color = Success, // Hijau agar kontras
                 fontWeight = FontWeight.ExtraBold
             )
 
@@ -448,11 +448,11 @@ private fun CartSummaryBar(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = formatRupiah(totalPrice),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Secondary
-                    )
+                    text = formatRupiah(totalPrice),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Success // Hijau untuk nominal utama
+                )
                 }
             }
 
@@ -564,7 +564,7 @@ private fun CartDetailsSheet(
                     text = formatRupiah(totalPrice),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Black,
-                    color = Primary
+                    color = Success // Hijau di rincian pesanan
                 )
             }
 
@@ -660,7 +660,7 @@ private fun CartItemRow(
             Text(
                 text = formatRupiah(item.produk.hargaJual),
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariant,
+                color = Success.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Bold
             )
         }
@@ -730,9 +730,9 @@ private fun EmptyStateKasir() {
     }
 }
 
-// Palet warna untuk kategori bebas-teks: dipilih via hash nama kategori supaya
-// konsisten per kategori tanpa perlu daftar `when` yang di-maintain manual.
-private val categoryColorPalette = listOf(BlueSchedule, OrangeManage, PurpleLog, TealStatus)
+// Palet warna untuk kategori: dipilih via hash nama kategori supaya
+// konsisten per kategori menggunakan identitas warna brand (Blue & Navy).
+private val categoryColorPalette = listOf(Primary, Secondary, PrimaryLight, SecondaryLight)
 
 private fun categoryColorFor(kategori: String?): Color {
     if (kategori.isNullOrBlank()) return Secondary

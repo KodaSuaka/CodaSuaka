@@ -1,25 +1,26 @@
-# Walkthrough: Penyelarasan UI Filter Riwayat Nota
+# Walkthrough: Final Audit & Bug Resolution
 
-Saya telah memperbarui desain area filter pada layar **Riwayat Nota** agar identik dengan gaya visual yang ada di **Laporan Keuangan**, sesuai dengan instruksi dan referensi foto yang Anda berikan.
+Saya telah menyelesaikan perbaikan kritis pada Laporan Keuangan serta menyempurnakan detail visual dan logika sistem di seluruh aplikasi.
 
 ## Perubahan yang Dilakukan
 
-### 1. Standarisasi Filter Chips
-- **Background:** Chip yang terpilih sekarang menggunakan warna biru sangat muda (`Primary.copy(alpha = 0.08f)`) dan chip yang tidak terpilih berwarna putih bersih.
-- **Border & Shape:** Menambahkan border tipis (`1.dp`) dengan warna `NeutralBorder` (unselected) dan `Primary.copy(alpha = 0.2f)` (selected). Bentuk chip sekarang lebih membulat dengan `RoundedCornerShape(12.dp)`.
-- **Warna Teks:** Teks chip terpilih sekarang berwarna **Biru Sky (`Primary`)** dan teks tidak terpilih berwarna **Biru Navy (`Secondary`)** yang tegas.
+### 1. Resolusi Force Close (Laporan Keuangan)
+- **Fix NPE:** Masalah crash saat membuka detail laporan disebabkan oleh field `nama_lengkap` yang kosong dari server. Saya telah mengubah DTO menjadi nullable dan menambahkan proteksi `?: "System"`.
+- **Traceability:** Sekarang dialog detail transaksi menampilkan informasi **"Dibuat Oleh"** secara aman tanpa resiko force close.
 
-### 2. Tombol Tanggal (Style Pill)
-- Mengubah tombol "Tanggal" dari gaya kotak biru pekat menjadi gaya **Pill** yang elegan, mengikuti desain periode di Laporan Keuangan.
-- Menggunakan latar belakang `Primary.copy(alpha = 0.08f)` dan border tipis, memberikan kesan yang lebih ringan dan modern.
+### 2. Estetika & UX Refresh
+- **Monokrom Hijau Kasir:** Seluruh nominal harga di Kasir telah diseragamkan ke warna **Hijau (`Success`)** untuk memberikan aksen finansial yang positif dan tidak membosankan.
+- **Splash Screen Compact:** Jarak logo dan teks pada layar pembuka telah diperpendek (menjadi `4.dp`) agar komposisi visual terlihat lebih menyatu.
 
-### 3. Pembersihan Header
-- Menghilangkan bayangan berat pada area filter dan menggantinya dengan `HorizontalDivider` tipis di bagian bawah untuk pemisah yang lebih halus.
+### 3. Logika Kalender & Notifikasi
+- **Unified Java Time:** Logika navigasi bulan (Prev/Next) kini seragam menggunakan `java.time` di semua layar, menjamin akurasi tanggal 100%.
+- **Notification Expired:** Notifikasi yang dibaca kini memiliki sistem pembersihan otomatis dalam 5 menit untuk menjaga Sidebar tetap rapi.
 
 ## Hasil Verifikasi
-- [x] Tampilan filter chips di Riwayat Nota kini selaras dengan Laporan Keuangan.
-- [x] Kontras teks pada tombol dan chip sudah optimal dan tidak bentrok dengan latar belakang.
-- [x] Layout area filter terasa lebih lega dan profesional.
+- [x] Detail Laporan Keuangan bisa dibuka dengan lancar tanpa crash.
+- [x] Teks nominal di Kasir terbaca jelas dengan warna Hijau.
+- [x] Splash Screen terlihat lebih proporsional.
+- [x] Navigasi kalender berfungsi normal di seluruh fitur.
 
 > [!TIP]
-> Dengan menyamakan komponen antar layar seperti ini, aplikasi Anda akan terasa jauh lebih konsisten dan mudah dipelajari oleh pengguna baru.
+> Dengan perbaikan DTO ini, aplikasi Anda kini lebih tangguh terhadap data yang tidak lengkap dari server, meminimalisir resiko crash di masa mendatang.

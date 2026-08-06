@@ -1,6 +1,7 @@
 package com.example.codasuaka.di
 
 import com.example.codasuaka.data.local.TokenManager
+import com.example.codasuaka.util.BluetoothPrinterManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -10,4 +11,5 @@ import org.koin.dsl.module
  */
 val appModule = module {
     single { TokenManager(androidContext()) }
+    single { BluetoothPrinterManager(androidContext()) }
 }

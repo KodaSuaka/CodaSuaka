@@ -1,33 +1,51 @@
-# Rencana Standardisasi Fitur Kalender (Benchmarking)
+# Rencana Penyempurnaan Akhir & Perbaikan Bug (Force Close)
 
-Rencana ini bertujuan untuk menyatukan logika dan tampilan kalender di seluruh aplikasi Coda Suaka, dimulai dari fitur **Nota Pembelian** sebagai standar acuan (*benchmark*). Komponen ini akan dibuat responsif dan menggunakan logika `java.time` yang lebih akurat.
+Tujuannya adalah memperbaiki crash pada Laporan Keuangan, menyelaraskan warna visual Kasir, merampingkan Splash Screen, serta menstandarisasi logika kalender di seluruh aplikasi.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Unified Component:** Saya akan membuat satu komponen `CodaSuakaDatePicker` yang menggabungkan navigasi bulan custom, pemilihan tahun, dan grid tanggal Material 3.
-> - **Logika Modern:** Mengganti penggunaan `java.util.Calendar` yang usang dengan `java.time` untuk navigasi bulan yang lebih stabil dan akurat.
+> - **Fix Force Close:** Crash saat membuka detail Laporan Keuangan disebabkan oleh data pembuat transaksi yang kosong/null. Saya akan memperbaiki DTO dan menambahkan proteksi null-safety.
+> - **Audit Pelacakan:** Menampilkan informasi pembuat transaksi pada Laporan Keuangan. Untuk Nota, nama Kasir akan disertakan pada struk cetak.
+> - **Logika Kalender:** Menyamakan logika perpindahan bulan menggunakan `java.time` agar sinkron dengan fitur Jadwal.
+> - **Notifikasi Dinamis:** Notifikasi yang sudah dibaca akan otomatis hilang setelah 5 menit.
 
 ## Proposed Changes
 
-### [Component] UI/UX Calendar Standardization
+### 1. Bug Fix & Audit (Integritas Data)
 
-#### [NEW] [CodaSuakaDatePicker.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/components/CodaSuakaDatePicker.kt)
-- Membuat komponen `@Composable fun CodaSuakaDatePickerDialog` yang bersifat mandiri (*self-contained*).
-- **Header:** Mengintegrasikan `CustomCalendarNavigation` agar user bisa berpindah bulan dengan chevron atau klik judul untuk buka `YearPickerDialog`.
-- **Logic:** Navigasi bulan (Prev/Next) ditangani secara internal menggunakan `LocalDate` dan `DatePickerState.displayMonthMillis`.
-- **Responsive:** Memastikan layout dialog tetap rapi di berbagai ukuran layar dengan batasan tinggi (*height constraints*) yang tepat.
+#### [MODIFY] [GenericResponses.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/data/remote/dto/GenericResponses.kt) & [LoginResponse.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/data/remote/dto/LoginResponse.kt)
+- Mengubah `namaLengkap` pada `UserData` menjadi nullable (`String?`) untuk mencegah crash jika data dari server kosong.
 
-#### [MODIFY] [NotaPembelianScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/nota_pembelian/NotaPembelianScreen.kt)
-- Menghapus implementasi `DatePickerDialog` standar.
-- Menggunakan `CodaSuakaDatePickerDialog` baru sebagai benchmark implementasi kalender global.
+#### [MODIFY] [LaporanKeuanganScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/laporan_keuangan/LaporanKeuanganScreen.kt)
+- Memperbaiki pemanggilan `user.namaLengkap` dengan null-safety (`?: "System"`) untuk mencegah force close.
+
+---
+
+### 2. Visual & UX Polish
+
+#### [MODIFY] [KasirScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/kasir/KasirScreen.kt)
+- Memastikan semua teks nominal uang menggunakan warna **Hijau (`Success`)** agar lebih kontras dan tidak monoton.
+
+#### [MODIFY] [AuthScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/auth/AuthScreen.kt)
+- Mengatur `Spacer` antara logo dan teks menjadi `4.dp` agar terlihat lebih padat dan profesional.
+
+---
+
+### 3. Logika Kalender & Notifikasi
+
+#### [MODIFY] [DashboardScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/dashboard/DashboardScreen.kt) & [RiwayatKehadiranScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/riwayat_kehadiran/RiwayatKehadiranScreen.kt)
+- Menerapkan logika perpindahan bulan menggunakan `YearMonth` (Java Time) agar seragam dengan fitur Kalender Jadwal.
+
+#### [MODIFY] [NotificationViewModel.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/notifikasi/NotificationViewModel.kt)
+- Implementasi penghapusan otomatis (*auto-delete*) notifikasi lokal setelah 5 menit dibaca.
 
 ---
 
 ## Verification Plan
 
 ### Manual Verification
-- Buka pemilihan tanggal pada Nota Pembelian.
-- Coba navigasi bulan (Prev/Next) dan pastikan grid tanggal terupdate dengan benar.
-- Klik judul bulan untuk membuka pilihan tahun, pilih tahun, dan pastikan kalender melompat ke tahun tersebut.
-- Pilih sebuah tanggal dan pastikan dialog tertutup serta tanggal pada form terupdate.
+- Klik salah satu transaksi di Laporan Keuangan, pastikan dialog muncul lancar (tidak crash) dan menampilkan "Dibuat Oleh".
+- Cek layar Kasir, pastikan warna harga sudah hijau.
+- Cek Splash Screen, pastikan jarak logo dan teks sudah nyaman dilihat.
+- Coba pindah bulan pada filter Omset/Kehadiran, pastikan logikanya lancar.

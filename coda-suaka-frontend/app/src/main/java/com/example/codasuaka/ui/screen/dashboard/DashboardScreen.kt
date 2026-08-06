@@ -239,48 +239,24 @@ fun DashboardScreen(
                     )
 
                     // ══════════════════════════════════════════════
-                    // SECTION TENGAH — Kelola Outlet & Log Absensi
+                    // SECTION TENGAH — Menu Utama (4 Ikon Besar)
                     // ══════════════════════════════════════════════
                     SectionMenuGrid(
                         title = "Menu Utama",
                         userRole = uiState.userRole,
                         userPermissions = uiState.userPermissions,
                         items = listOf(
-                            MenuItem("Kelola Outlet", Icons.Default.Store, OrangeManage, allowedRoles = listOf("Owner")),
-                            MenuItem("Kelola Produk", Icons.Default.Inventory2, TealStatus, requiredPermission = "manage:kasir"),
-                            MenuItem("Nota Pembelian", Icons.Default.Receipt, GreenFinance, requiredPermission = "manage:kasir"),
-                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, PurpleLog, requiredPermission = "view:kasir"),
-                            MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Color(0xFF7C3AED), allowedRoles = listOf("Owner")),
-                            MenuItem("Jadwal", Icons.Default.CalendarMonth, BlueSchedule),
-                            MenuItem("Log Absensi", Icons.AutoMirrored.Filled.FactCheck, TealStatus)
-                        ),
-                        onItemClick = { label ->
-                            when (label) {
-                                "Kelola Outlet" -> onNavigateTo("kelola_outlet")
-                                "Kelola Produk" -> onNavigateTo("kelola_barang_jasa")
-                                "Nota Pembelian" -> onNavigateTo("nota_pembelian")
-                                "Riwayat Nota" -> onNavigateTo("riwayat_nota")
-                                "Penugasan" -> onNavigateTo("penugasan")
-                                "Jadwal" -> onNavigateTo("kalender")
-                                "Log Absensi" -> onNavigateTo("log_absensi")
-                            }
-                        }
-                    )
-
-                    // ══════════════════════════════════════════════
-                    // SECTION BAWAH — Laporan Keuangan & Status Karyawan
-                    // ══════════════════════════════════════════════
-                    SectionMenuGrid(
-                        title = "Laporan & Status",
-                        userRole = uiState.userRole,
-                        items = listOf(
-                            MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, GreenFinance, allowedRoles = listOf("Owner")),
-                            MenuItem("Status Karyawan", Icons.Default.PeopleAlt, TealStatus)
+                            MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, Primary, allowedRoles = listOf("Owner")),
+                            MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Primary, allowedRoles = listOf("Owner")),
+                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, Primary, requiredPermission = "view:kasir"),
+                            MenuItem("Jadwal", Icons.Default.CalendarMonth, Primary)
                         ),
                         onItemClick = { label ->
                             when (label) {
                                 "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
-                                "Status Karyawan" -> onNavigateTo("status_karyawan")
+                                "Penugasan" -> onNavigateTo("penugasan")
+                                "Riwayat Nota" -> onNavigateTo("riwayat_nota")
+                                "Jadwal" -> onNavigateTo("kalender")
                             }
                         }
                     )
@@ -352,19 +328,11 @@ private fun SectionOmset(
                 YearPickerDialog(
                     selectedYear = displayMonth.year,
                     onYearSelected = { year ->
-                        val tz = java.util.TimeZone.getDefault()
-                        val cal = java.util.Calendar.getInstance(tz).apply {
-                            timeInMillis = datePickerState.displayedMonthMillis
-                            set(java.util.Calendar.YEAR, year)
-                        }
-                        datePickerState.displayedMonthMillis = cal.timeInMillis
-                        
-                        val selCal = java.util.Calendar.getInstance(tz).apply {
-                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                            set(java.util.Calendar.YEAR, year)
-                        }
-                        datePickerState.selectedDateMillis = selCal.timeInMillis
-                        
+                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        val targetMonth = currentMonth.withYear(year)
+                        datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                         showYearPicker = false
                     },
                     onDismiss = { showYearPicker = false }
@@ -384,18 +352,20 @@ private fun SectionOmset(
                 CustomCalendarNavigation(
                     title = monthTitle.replaceFirstChar { it.uppercase() },
                     onPrevClick = {
-                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault()).apply {
-                            timeInMillis = datePickerState.displayedMonthMillis
-                            add(java.util.Calendar.MONTH, -1)
-                        }
-                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .withDayOfMonth(1)
+                        val prevMonth = currentMonth.minusMonths(1)
+                        datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     },
                     onNextClick = {
-                        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault()).apply {
-                            timeInMillis = datePickerState.displayedMonthMillis
-                            add(java.util.Calendar.MONTH, 1)
-                        }
-                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .withDayOfMonth(1)
+                        val nextMonth = currentMonth.plusMonths(1)
+                        datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     },
                     onTitleClick = { showYearPicker = true },
                     modifier = Modifier.padding(horizontal = 12.dp)
@@ -701,113 +671,80 @@ private fun DrawerContent(
         drawerContainerColor = Surface,
         drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
     ) {
-        // ── Header Drawer ──
+        // ── Header Drawer (Profile) ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 40.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Profile Section
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                            .background(Primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = Primary,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                    
-                    Column {
-                        Text(
-                            text = uiState.userNamaLengkap,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Secondary
-                        )
-                        Surface(
-                            color = Primary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = uiState.userRole.ifEmpty { "Member" },
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Primary
-                            )
-                        }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(
+                    modifier = Modifier.size(60.dp).clip(CircleShape).background(Primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Person, null, tint = Primary, modifier = Modifier.size(32.dp))
+                }
+                Column {
+                    Text(text = uiState.userNamaLengkap, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Secondary)
+                    Surface(color = Primary.copy(alpha = 0.1f), shape = RoundedCornerShape(6.dp)) {
+                        Text(text = uiState.userRole.ifEmpty { "Member" }, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Primary)
                     }
                 }
             }
         }
 
         HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = Neutral)
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // ── Menu Drawer ──
-        DrawerItem(
-            icon = Icons.Default.Checklist,
-            label = "Data Persetujuan",
-            onClick = {
-                onCloseDrawer()
-                onNavigateTo("riwayat_kehadiran")
-            }
-        )
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .weight(1f)
+                .padding(vertical = 16.dp)
+        ) {
+            // ── Kategori: Operasional Toko ──
+            DrawerCategoryLabel("Operasional Toko")
+            DrawerItem(Icons.Default.Store, "Kelola Outlet", iconTint = Primary) { onCloseDrawer(); onNavigateTo("kelola_outlet") }
+            DrawerItem(Icons.Default.AccessTime, "Jam Operasional", iconTint = Primary) { onCloseDrawer(); onNavigateTo("jam_operasional") }
+            DrawerItem(Icons.Default.Groups, "Divisi", iconTint = Primary) { onCloseDrawer(); onNavigateTo("divisi") }
 
-        DrawerItem(
-            icon = Icons.Default.PersonAddAlt,
-            label = "Tambah Karyawan",
-            onClick = {
-                onCloseDrawer()
-                onNavigateTo("tambah_karyawan")
-            }
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        DrawerItem(
-            icon = Icons.Default.AccessTime,
-            label = "Jam Operasional",
-            onClick = {
-                onCloseDrawer()
-                onNavigateTo("jam_operasional")
-            }
-        )
+            // ── Kategori: Produk & Stok ──
+            DrawerCategoryLabel("Produk & Stok")
+            DrawerItem(Icons.Default.Receipt, "Nota Pembelian", iconTint = Primary) { onCloseDrawer(); onNavigateTo("nota_pembelian") }
+            DrawerItem(Icons.Default.Inventory2, "Kelola Produk", iconTint = Primary) { onCloseDrawer(); onNavigateTo("kelola_barang_jasa") }
 
-        DrawerItem(
-            icon = Icons.Default.Groups,
-            label = "Divisi",
-            onClick = {
-                onCloseDrawer()
-                onNavigateTo("divisi")
-            }
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = Neutral
-        )
+            // ── Kategori: Karyawan ──
+            DrawerCategoryLabel("Manajemen Karyawan")
+            DrawerItem(Icons.Default.PeopleAlt, "Kelola Karyawan", iconTint = Primary) { onCloseDrawer(); onNavigateTo("kelola_karyawan") }
+        }
 
-        // ── Logout ──
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = Neutral)
+
+        // ── Logout (Paling Bawah) ──
         DrawerItem(
             icon = Icons.AutoMirrored.Filled.Logout,
-            label = "Logout",
+            label = "Keluar dari Akun",
             iconTint = Error,
             labelColor = Error,
-            onClick = {
-                onCloseDrawer()
-                onLogout()
-            }
+            onClick = { onCloseDrawer(); onLogout() }
         )
-
         Spacer(modifier = Modifier.height(16.dp))
     }
+}
+
+@Composable
+private fun DrawerCategoryLabel(label: String) {
+    Text(
+        text = label,
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Black,
+        color = Secondary.copy(alpha = 0.4f),
+        letterSpacing = 1.sp
+    )
 }
 
 // ─── Drawer Item ────────────────────────────────────────────

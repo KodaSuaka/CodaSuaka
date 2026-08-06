@@ -20,14 +20,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.annotation.SuppressLint
+import android.os.Build
+import android.bluetooth.BluetoothDevice
 import com.example.codasuaka.data.remote.dto.NotaDto
 import com.example.codasuaka.data.remote.dto.NotaItemDto
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
-import com.example.codasuaka.ui.components.DeleteNotaDialog
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.ui.util.formatQty
 import com.example.codasuaka.ui.util.formatRupiah
+import com.example.codasuaka.util.BluetoothPrinterManager
 import com.example.codasuaka.util.ErrorMessageMapper
+import com.example.codasuaka.data.local.TokenManager
+import org.koin.compose.koinInject
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +47,35 @@ fun NotaDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val printerManager: BluetoothPrinterManager = koinInject()
+    val tokenManager: TokenManager = koinInject()
+
+    // Ambil nama user untuk audit struk
+    var currentUserName by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        currentUserName = tokenManager.getUserName()
+    }
+
+    // ─── Bluetooth State ───
+    var showPrinterDialog by remember { mutableStateOf(false) }
+    var pairedDevices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
+    var isPrinting by remember { mutableStateOf(false) }
+
+    // Launcher for Bluetooth Permissions
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        val allGranted = perms.values.all { it }
+        if (allGranted) {
+            pairedDevices = printerManager.getPairedDevices()
+            showPrinterDialog = true
+        } else {
+            scope.launch {
+                // snackbarHostState.showSnackbar("Izin Bluetooth diperlukan untuk mencetak struk")
+            }
+        }
+    }
 
     // ─── Snackbar ───
     val snackbarHostState = remember { SnackbarHostState() }
@@ -73,23 +111,7 @@ fun NotaDetailScreen(
         }
     }
 
-    // ─── Dialog konfirmasi hapus ───
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    if (showDeleteDialog) {
-        DeleteNotaDialog(
-            nomorNota = uiState.nota?.nomorNota ?: "",
-            isDeleting = uiState.isDeleting,
-            onDismiss = { showDeleteDialog = false },
-            onConfirm = {
-                viewModel.deleteNota()
-                showDeleteDialog = false
-            }
-        )
-    }
-
-    // ─── Gunakan tema aplikasi (CodaSuakaTheme) — wrapper MaterialTheme lokal
-    // dihapus karena memakai Typography bawaan Material (bukan Typography kustom
-    // di Type.kt), sehingga warna labelLarge jadi OnPrimary/putih di atas putih.
+    // ─── Gunakan tema aplikasi (CodaSuakaTheme)
     Scaffold(
             snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
             topBar = {
@@ -106,7 +128,7 @@ fun NotaDetailScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Kembali",
-                                tint = Secondary
+                                tint = Primary
                             )
                         }
                     },
@@ -162,6 +184,7 @@ fun NotaDetailScreen(
                         ItemsCard(items = nota.items.orEmpty())
                         TotalCard(nota = nota)
 
+                        // Row Aksi: Unduh PDF & Cetak Struk
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -187,30 +210,91 @@ fun NotaDetailScreen(
                             }
 
                             Button(
-                                onClick = { showDeleteDialog = true },
-                                enabled = !uiState.isDeleting,
+                                onClick = {
+                                    if (printerManager.hasPermissions()) {
+                                        pairedDevices = printerManager.getPairedDevices()
+                                        showPrinterDialog = true
+                                    } else {
+                                        val perms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+                                        } else {
+                                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+                                        }
+                                        permissionLauncher.launch(perms)
+                                    }
+                                },
+                                enabled = !isPrinting,
                                 modifier = Modifier.weight(1f).height(48.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Error,
-                                    contentColor = OnPrimary
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = Secondary, contentColor = OnPrimary)
                             ) {
-                                if (uiState.isDeleting) {
+                                if (isPrinting) {
                                     CircularProgressIndicator(
                                         color = OnPrimary,
                                         strokeWidth = 2.dp,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 } else {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(18.dp))
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Hapus", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Cetak Struk", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                         }
                     }
                 }
+            }
+            
+            // ─── Dialog Pilih Printer ───
+            if (showPrinterDialog) {
+                AlertDialog(
+                    onDismissRequest = { showPrinterDialog = false },
+                    title = { Text("Pilih Printer Bluetooth", fontWeight = FontWeight.Bold, color = Secondary) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (pairedDevices.isEmpty()) {
+                                Text("Tidak ada printer yang dipasangkan. Silakan hubungkan printer di pengaturan Bluetooth HP Anda.", fontSize = 13.sp, color = OnSurfaceVariant)
+                            } else {
+                                pairedDevices.forEach { device ->
+                                    @SuppressLint("MissingPermission")
+                                    Surface(
+                                        onClick = {
+                                            showPrinterDialog = false
+                                            isPrinting = true
+                                            scope.launch {
+                                                val result = printerManager.printNota(device, uiState.nota!!, currentUserName)
+                                                isPrinting = false
+                                                if (result.isSuccess) {
+                                                    snackbarHostState.showSnackbar("Nota berhasil dicetak")
+                                                } else {
+                                                    snackbarHostState.showSnackbar("Gagal mencetak: ${result.exceptionOrNull()?.message}")
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = InputBackground,
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralBorder.copy(alpha = 0.5f))
+                                    ) {
+                                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Bluetooth, null, tint = Primary)
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(device.name ?: "Unknown Device", fontWeight = FontWeight.Bold, color = Secondary)
+                                                Text(device.address, fontSize = 11.sp, color = OnSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        TextButton(onClick = { showPrinterDialog = false }) { Text("Batal", color = OnSurfaceVariant) }
+                    },
+                    containerColor = Surface
+                )
             }
     }
 }
@@ -220,7 +304,8 @@ fun NotaDetailScreen(
 @Composable
 private fun HeaderCard(nota: NotaDto) {
     val isPembelian = nota.tipe.equals("pembelian", ignoreCase = true)
-    val badgeColor = if (isPembelian) Primary else Secondary
+    val badgeColor = if (isPembelian) Error else Success
+    val badgeBg = if (isPembelian) Error.copy(alpha = 0.1f) else Success.copy(alpha = 0.1f)
     val badgeLabel = if (isPembelian) "Pembelian" else "Penjualan"
 
     Card(
@@ -245,14 +330,16 @@ private fun HeaderCard(nota: NotaDto) {
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(badgeColor).padding(horizontal = 10.dp, vertical = 3.dp)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = badgeBg
                 ) {
                     Text(
                         text = badgeLabel,
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = badgeColor,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
