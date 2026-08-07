@@ -19,6 +19,7 @@
         .rugi-row { font-weight: bold; background: #f8d7da; }
         .footer { margin-top: 20px; font-size: 10px; color: #777; text-align: center; }
     </style>
+    @include('laporan.watermark')
 </head>
 <body>
     <div class="header">
@@ -112,6 +113,9 @@
     </table>
 
     <div class="footer">
+        @isset($penanggung_jawab)
+            Penanggung Jawab: {{ $penanggung_jawab }}<br>
+        @endisset
         Dicetak pada: {{ $tanggal_cetak }}
     </div>
 </body>

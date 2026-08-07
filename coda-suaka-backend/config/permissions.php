@@ -177,6 +177,15 @@ return [
                 'import:kasir' => 'Mengimpor data nota pembelian dari file',
             ],
         ],
+
+        // ─── Stok (bahan baku / barang produksi) ────────────────────
+        'stok' => [
+            'label' => 'Stok (Bahan Baku / Barang Produksi)',
+            'permissions' => [
+                'view:stok' => 'Melihat data stok bahan baku/barang produksi',
+                'manage:stok' => 'Mengelola stok & mutasi (masuk/keluar/penyesuaian)',
+            ],
+        ],
     ],
 
     /*
@@ -248,6 +257,10 @@ return [
             'delete:kasir',
             'export:kasir',
             'import:kasir',
+
+            // Stok
+            'view:stok',
+            'manage:stok',
         ],
 
         'Keuangan' => [
@@ -271,6 +284,10 @@ return [
             'view:kasir',
             'manage:kasir',
             'export:kasir',
+
+            // Stok
+            'view:stok',
+            'manage:stok',
         ],
 
         'Manager' => [

@@ -905,3 +905,74 @@ data class CreateNotaRequest(
     @SerializedName("catatan") val catatan: String? = null,
     @SerializedName("items") val items: List<NotaItemRequest>
 )
+
+// ─── Stok (Bahan Baku / Barang Produksi) ──────────────────────────
+
+data class StokDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("instansi_id") val instansiId: String,
+    @SerializedName("nama") val nama: String,
+    @SerializedName("kategori") val kategori: String?,
+    @SerializedName("satuan") val satuan: String,
+    @SerializedName("stok") val stok: Double,
+    @SerializedName("stok_minimum") val stokMinimum: Double?,
+    @SerializedName("harga_beli") val hargaBeli: Double?,
+    @SerializedName("is_active") val isActive: Boolean,
+    @SerializedName("keterangan") val keterangan: String?,
+    @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("updated_at") val updatedAt: String?
+)
+
+data class StokListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<StokDto>,
+    @SerializedName("meta") val meta: PaginationMeta?
+)
+
+data class StokSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: StokDto?
+)
+
+data class StokRequest(
+    @SerializedName("nama") val nama: String,
+    @SerializedName("kategori") val kategori: String? = null,
+    @SerializedName("satuan") val satuan: String,
+    @SerializedName("stok") val stok: Double? = null,
+    @SerializedName("stok_minimum") val stokMinimum: Double? = null,
+    @SerializedName("harga_beli") val hargaBeli: Double? = null,
+    @SerializedName("is_active") val isActive: Boolean? = null,
+    @SerializedName("keterangan") val keterangan: String? = null
+)
+
+data class StokMutationDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("stok_id") val stokId: Int,
+    @SerializedName("instansi_id") val instansiId: String,
+    @SerializedName("jenis") val jenis: String, // "masuk" / "keluar" / "penyesuaian"
+    @SerializedName("jumlah") val jumlah: Double,
+    @SerializedName("stok_sebelum") val stokSebelum: Double,
+    @SerializedName("stok_sesudah") val stokSesudah: Double,
+    @SerializedName("keterangan") val keterangan: String?,
+    @SerializedName("user_id") val userId: Int?,
+    @SerializedName("created_at") val createdAt: String?
+)
+
+data class StokMutationRequest(
+    @SerializedName("jenis") val jenis: String,
+    @SerializedName("jumlah") val jumlah: Double,
+    @SerializedName("keterangan") val keterangan: String? = null
+)
+
+data class StokMutationSingleResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: StokMutationDto?
+)
+
+data class StokMutationListResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("data") val data: List<StokMutationDto>,
+    @SerializedName("meta") val meta: PaginationMeta?
+)

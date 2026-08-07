@@ -713,6 +713,7 @@ private fun DrawerContent(
             DrawerCategoryLabel("Produk & Stok")
             DrawerItem(Icons.Default.Receipt, "Nota Pembelian", iconTint = Primary) { onCloseDrawer(); onNavigateTo("nota_pembelian") }
             DrawerItem(Icons.Default.Inventory2, "Kelola Produk", iconTint = Primary) { onCloseDrawer(); onNavigateTo("kelola_barang_jasa") }
+            DrawerItem(Icons.Default.Warehouse, "Stok", iconTint = Primary) { onCloseDrawer(); onNavigateTo("stok") }
 
             Spacer(modifier = Modifier.height(16.dp))
 

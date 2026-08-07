@@ -24,6 +24,7 @@ use App\Http\Controllers\PenugasanController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\StokController;
 use App\Http\Controllers\TemplatePenugasanController;
 use App\Http\Controllers\TransaksiKasController;
 use App\Http\Controllers\TransaksiPaketController;
@@ -78,6 +79,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Karyawan CRUD ────────────────────────────────────────
     Route::get('/karyawans/me', [KaryawanController::class, 'me']);
     Route::apiResource('/karyawans', KaryawanController::class);
+
+    // ─── Stok (bahan baku / barang produksi) ─────────────────
+    // Izin: view:stok | manage:stok (dicek lewat StokPolicy)
+    Route::get('/stoks', [StokController::class, 'index']);
+    Route::post('/stoks', [StokController::class, 'store']);
+    Route::get('/stoks/{stok}', [StokController::class, 'show']);
+    Route::put('/stoks/{stok}', [StokController::class, 'update']);
+    Route::delete('/stoks/{stok}', [StokController::class, 'destroy']);
+    Route::post('/stoks/{stok}/mutasi', [StokController::class, 'mutasi']);
+    Route::get('/stoks/{stok}/riwayat', [StokController::class, 'riwayat']);
 
     // ─── Divisi CRUD ──────────────────────────────────────────
     Route::apiResource('/divisis', DivisiController::class);
@@ -230,5 +241,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/pakets', [SuperAdminController::class, 'storePaket']);
         Route::put('/pakets/{paket}', [SuperAdminController::class, 'updatePaket']);
         Route::delete('/pakets/{paket}', [SuperAdminController::class, 'destroyPaket']);
+
+        // ─── Data Logging (Trace Request) ──────────────────────
+        Route::get('/request-logs', [SuperAdminController::class, 'indexRequestLog']);
+        Route::get('/request-logs/{requestLog}', [SuperAdminController::class, 'showRequestLog']);
+        Route::delete('/request-logs/{requestLog}', [SuperAdminController::class, 'destroyRequestLog']);
     });
 });

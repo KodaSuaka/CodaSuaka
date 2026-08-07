@@ -531,6 +531,40 @@ interface ApiService {
     @Streaming
     suspend fun getNotaPdf(@Path("id") id: Int): Response<ResponseBody>
 
+    // ─── Stok (Bahan Baku / Barang Produksi) ─────────────────────
+
+    @GET("api/stoks")
+    suspend fun getStokList(
+        @Query("page") page: Int? = null,
+        @Query("kategori") kategori: String? = null,
+        @Query("is_active") isActive: Boolean? = null,
+        @Query("search") search: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<StokListResponse>
+
+    @POST("api/stoks")
+    suspend fun createStok(@Body request: StokRequest): Response<StokSingleResponse>
+
+    @GET("api/stoks/{id}")
+    suspend fun getStokDetail(@Path("id") id: Int): Response<StokSingleResponse>
+
+    @PUT("api/stoks/{id}")
+    suspend fun updateStok(@Path("id") id: Int, @Body request: StokRequest): Response<StokSingleResponse>
+
+    @DELETE("api/stoks/{id}")
+    suspend fun deleteStok(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    @POST("api/stoks/{id}/mutasi")
+    suspend fun mutateStok(@Path("id") id: Int, @Body request: StokMutationRequest): Response<StokMutationSingleResponse>
+
+    @GET("api/stoks/{id}/riwayat")
+    suspend fun getStokRiwayat(
+        @Path("id") id: Int,
+        @Query("page") page: Int? = null,
+        @Query("jenis") jenis: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<StokMutationListResponse>
+
     @Multipart
     @POST("api/notas/import")
     suspend fun importNotaPembelian(

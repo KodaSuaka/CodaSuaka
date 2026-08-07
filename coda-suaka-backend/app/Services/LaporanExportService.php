@@ -4,8 +4,8 @@ namespace App\Services;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
-use OpenSpout\Common\Entity\Row;
-use OpenSpout\Writer\XLSX\Writer;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 
 class LaporanExportService
 {
@@ -18,7 +18,8 @@ class LaporanExportService
         string $endDate,
         string $instansiNama = '',
         float $totalMasuk = 0,
-        float $totalKeluar = 0
+        float $totalKeluar = 0,
+        ?string $penanggungJawab = null
     ) {
         $data = [
             'judul' => 'Laporan Buku Kas',
@@ -28,6 +29,7 @@ class LaporanExportService
             'total_masuk' => $totalMasuk,
             'total_keluar' => $totalKeluar,
             'saldo_bersih' => $totalMasuk - $totalKeluar,
+            'penanggung_jawab' => $penanggungJawab,
             'tanggal_cetak' => now()->isoFormat('DD MMMM YYYY'),
         ];
 
@@ -39,18 +41,18 @@ class LaporanExportService
     /**
      * Generate Excel Buku Kas — dikelompokkan per kategori (Pemasukan & Pengeluaran).
      */
-    public function generateBukuKasExcel(array $transaksis, array $grouped, string $startDate, string $endDate)
+    public function generateBukuKasExcel(array $transaksis, array $grouped, string $startDate, string $endDate, ?string $penanggungJawab = null)
     {
-        $writer = new Writer;
-        $filename = storage_path('app/public/buku_kas_'.$startDate.'_'.Str::random(8).'.xlsx');
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
 
-        $writer->openToFile($filename);
+        $rows = [];
 
-        // ─── Sheet 1: Semua Transaksi (detail) ───
-        $writer->addRow(Row::fromValues(['No', 'Tanggal', 'Kategori', 'Tipe', 'Nominal', 'Metode', 'Keterangan']));
+        // ─── Bagian 1: Semua Transaksi (detail) ───
+        $rows[] = ['No', 'Tanggal', 'Kategori', 'Tipe', 'Nominal', 'Metode', 'Keterangan'];
         $no = 1;
         foreach ($transaksis as $t) {
-            $writer->addRow(Row::fromValues([
+            $rows[] = [
                 $no++,
                 $t['tanggal'],
                 $t['kategori'] ?? '-',
@@ -58,54 +60,69 @@ class LaporanExportService
                 (float) $t['nominal'],
                 $t['metode_pembayaran'] ?? '-',
                 $t['keterangan'] ?? '',
-            ]));
+            ];
         }
 
-        // ─── Sheet 2: Ringkasan per Kategori Pemasukan ───
-        $writer->addRow(Row::fromValues([])); // baris kosong
-        $writer->addRow(Row::fromValues(['RINGKASAN PER KATEGORI - PEMASUKAN']));
-        $writer->addRow(Row::fromValues(['Kategori', 'Jumlah Transaksi', 'Total Nominal']));
+        // ─── Bagian 2: Ringkasan per Kategori Pemasukan ───
+        $rows[] = []; // baris kosong
+        $rows[] = ['RINGKASAN PER KATEGORI - PEMASUKAN'];
+        $rows[] = ['Kategori', 'Jumlah Transaksi', 'Total Nominal'];
         $grandTotalMasuk = 0;
         if (! empty($grouped['pemasukan'])) {
             foreach ($grouped['pemasukan'] as $kategori => $items) {
                 $total = array_sum(array_column($items, 'nominal'));
                 $grandTotalMasuk += $total;
-                $writer->addRow(Row::fromValues([
+                $rows[] = [
                     $kategori,
                     count($items),
                     (float) $total,
-                ]));
+                ];
             }
         }
-        $writer->addRow(Row::fromValues([
+        $rows[] = [
             'TOTAL PEMASUKAN',
             '',
             (float) $grandTotalMasuk,
-        ]));
+        ];
 
-        // ─── Sheet 3: Ringkasan per Kategori Pengeluaran ───
-        $writer->addRow(Row::fromValues([])); // baris kosong
-        $writer->addRow(Row::fromValues(['RINGKASAN PER KATEGORI - PENGELUARAN']));
-        $writer->addRow(Row::fromValues(['Kategori', 'Jumlah Transaksi', 'Total Nominal']));
+        // ─── Bagian 3: Ringkasan per Kategori Pengeluaran ───
+        $rows[] = []; // baris kosong
+        $rows[] = ['RINGKASAN PER KATEGORI - PENGELUARAN'];
+        $rows[] = ['Kategori', 'Jumlah Transaksi', 'Total Nominal'];
         $grandTotalKeluar = 0;
         if (! empty($grouped['pengeluaran'])) {
             foreach ($grouped['pengeluaran'] as $kategori => $items) {
                 $total = array_sum(array_column($items, 'nominal'));
                 $grandTotalKeluar += $total;
-                $writer->addRow(Row::fromValues([
+                $rows[] = [
                     $kategori,
                     count($items),
                     (float) $total,
-                ]));
+                ];
             }
         }
-        $writer->addRow(Row::fromValues([
+        $rows[] = [
             'TOTAL PENGELUARAN',
             '',
             (float) $grandTotalKeluar,
-        ]));
+        ];
 
-        $writer->close();
+        // ─── Footer: identitas penanggung jawab ───
+        $rows[] = [];
+        $rows[] = [
+            'Penanggung Jawab',
+            $penanggungJawab ?? '-',
+            '',
+            '',
+            '',
+        ];
+
+        $sheet->fromArray($rows, null, 'A1');
+        $this->applyWatermark($sheet);
+
+        $filename = storage_path('app/public/buku_kas_'.$startDate.'_'.Str::random(8).'.xlsx');
+        (new XlsxWriter($spreadsheet))->save($filename);
+        $spreadsheet->disconnectWorksheets();
 
         return response()->download($filename)->deleteFileAfterSend(true);
     }
@@ -113,7 +130,7 @@ class LaporanExportService
     /**
      * Generate PDF Laba Rugi — dengan rincian per kategori.
      */
-    public function generateLabaRugiPdf(array $data, string $startDate, string $endDate, string $instansiNama = '')
+    public function generateLabaRugiPdf(array $data, string $startDate, string $endDate, string $instansiNama = '', ?string $penanggungJawab = null)
     {
         $pdfData = [
             'judul' => 'Laporan Laba Rugi',
@@ -126,6 +143,7 @@ class LaporanExportService
             'pendapatan_per_kategori' => $data['pendapatan_per_kategori'] ?? [],
             'hpp_per_kategori' => $data['hpp_per_kategori'] ?? [],
             'beban_per_kategori' => $data['beban_per_kategori'] ?? [],
+            'penanggung_jawab' => $penanggungJawab,
             'tanggal_cetak' => now()->isoFormat('DD MMMM YYYY'),
         ];
 
@@ -137,13 +155,14 @@ class LaporanExportService
     /**
      * Generate PDF Arus Kas.
      */
-    public function generateArusKasPdf(array $data, string $startDate, string $endDate, string $instansiNama = '')
+    public function generateArusKasPdf(array $data, string $startDate, string $endDate, string $instansiNama = '', ?string $penanggungJawab = null)
     {
         $pdfData = [
             'judul' => 'Laporan Arus Kas',
             'periode' => "$startDate s/d $endDate",
             'instansi' => $instansiNama,
             'data' => $data,
+            'penanggung_jawab' => $penanggungJawab,
             'tanggal_cetak' => now()->isoFormat('DD MMMM YYYY'),
         ];
 
@@ -155,43 +174,65 @@ class LaporanExportService
     /**
      * Generate Excel Arus Kas.
      */
-    public function generateArusKasExcel(array $data, string $startDate, string $endDate)
+    public function generateArusKasExcel(array $data, string $startDate, string $endDate, ?string $penanggungJawab = null)
     {
-        $writer = new Writer;
-        $filename = storage_path('app/public/arus_kas_'.$startDate.'_'.Str::random(8).'.xlsx');
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
 
-        $writer->openToFile($filename);
-        $writer->addRow(Row::fromValues(['Aktivitas', 'Kategori', 'Masuk', 'Keluar', 'Bersih']));
+        $rows = [];
+        $rows[] = ['Aktivitas', 'Kategori', 'Masuk', 'Keluar', 'Bersih'];
 
         // Operasi
         foreach ($data['detail_operasi'] ?? [] as $item) {
             $bersih = ($item['masuk'] ?? 0) - ($item['keluar'] ?? 0);
-            $writer->addRow(Row::fromValues([
+            $rows[] = [
                 'Operasi', $item['kategori'],
                 (float) ($item['masuk'] ?? 0),
                 (float) ($item['keluar'] ?? 0),
                 (float) $bersih,
-            ]));
+            ];
         }
 
         // Pendanaan
         foreach ($data['detail_pendanaan'] ?? [] as $item) {
             $bersih = ($item['masuk'] ?? 0) - ($item['keluar'] ?? 0);
-            $writer->addRow(Row::fromValues([
+            $rows[] = [
                 'Pendanaan', $item['kategori'],
                 (float) ($item['masuk'] ?? 0),
                 (float) ($item['keluar'] ?? 0),
                 (float) $bersih,
-            ]));
+            ];
         }
 
-        $writer->addRow(Row::fromValues(['', 'Kenaikan Bersih Kas', '', '',
-            (float) ($data['kenaikan_bersih_kas'] ?? 0)]));
-        $writer->addRow(Row::fromValues(['', 'Saldo Akhir', '', '',
-            (float) ($data['saldo_akhir'] ?? 0)]));
+        $rows[] = ['', 'Kenaikan Bersih Kas', '', '',
+            (float) ($data['kenaikan_bersih_kas'] ?? 0)];
+        $rows[] = ['', 'Saldo Akhir', '', '',
+            (float) ($data['saldo_akhir'] ?? 0)];
 
-        $writer->close();
+        // ─── Footer: identitas penanggung jawab ───
+        $rows[] = [];
+        $rows[] = ['', 'Penanggung Jawab', '', '',
+            $penanggungJawab ?? '-'];
+
+        $sheet->fromArray($rows, null, 'A1');
+        $this->applyWatermark($sheet);
+
+        $filename = storage_path('app/public/arus_kas_'.$startDate.'_'.Str::random(8).'.xlsx');
+        (new XlsxWriter($spreadsheet))->save($filename);
+        $spreadsheet->disconnectWorksheets();
 
         return response()->download($filename)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Tempelkan gambar watermark di lapisan kedua worksheet (di balik data).
+     */
+    private function applyWatermark(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): void
+    {
+        $wmPath = resource_path('watermarks/koda-suaka.png');
+
+        if (is_file($wmPath)) {
+            $sheet->setBackgroundImage((string) file_get_contents($wmPath));
+        }
     }
 }

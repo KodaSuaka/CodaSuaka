@@ -19,6 +19,7 @@
         .summary .saldo-positif { color: #10731c; font-weight: bold; }
         .summary .saldo-negatif { color: #b00020; font-weight: bold; }
     </style>
+    @include('laporan.watermark')
 </head>
 <body>
     <div class="header">
@@ -86,6 +87,9 @@
     </p>
 
     <div class="footer">
+        @isset($penanggung_jawab)
+            Penanggung Jawab: {{ $penanggung_jawab }}<br>
+        @endisset
         Dicetak pada: {{ $tanggal_cetak }}
     </div>
 </body>

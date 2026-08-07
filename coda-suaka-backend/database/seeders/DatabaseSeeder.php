@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             RolePermissionSeeder::class,
+            PaketSeeder::class,
             KategoriTransaksiSeeder::class,
             TemplatePenugasanSeeder::class,
         ]);
@@ -25,6 +26,11 @@ class DatabaseSeeder extends Seeder
         // 2. Dummy data lengkap untuk presentasi
         $this->call([
             DummyDataSeeder::class,
+        ]);
+
+        // 3. Data akun pemilik UMKM (variasi paket standart & pro) untuk kebutuhan laporan
+        $this->call([
+            UmkmOwnerSeeder::class,
         ]);
     }
 }

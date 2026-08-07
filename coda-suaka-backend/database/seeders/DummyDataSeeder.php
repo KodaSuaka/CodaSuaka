@@ -77,22 +77,23 @@ class DummyDataSeeder extends Seeder
 
         // ─── 1. Buat Paket Langganan ─────────────────────────────
         $this->command?->info('📦 Membuat paket langganan...');
-        $paketBasic = $this->createPaketBasic();
+        $paketStandart = $this->createPaketStandart();
         $paketPro = $this->createPaketPro();
 
         // ─── 2. Buat Instansi (2 bisnis) ─────────────────────────
         $this->command?->info('🏢 Membuat instansi/bisnis...');
         $instansi1 = $this->createInstansi('Toko Berkah Mart', $paketPro->id, 'Asia/Jakarta');
-        $instansi2 = $this->createInstansi('Kopi Nusantara', $paketBasic->id, 'Asia/Makassar');
+        $instansi2 = $this->createInstansi('Kopi Nusantara', $paketStandart->id, 'Asia/Makassar');
 
-        // Batas karyawan per paket (termasuk role users: owner, manager, keuangan, staff)
-        $maxKaryawanInstansi1 = $paketPro->max_karyawan_per_outlet;    // Pro: 50
-        $maxKaryawanInstansi2 = $paketBasic->max_karyawan_per_outlet;  // Basic: 5
+        // Batas karyawan per paket. Pemilik (Owner) TIDAK dihitung sebagai karyawan.
+        // Yang dihitung: Manager, Keuangan, Staff, Karyawan (konsisten dgn KaryawanController::store)
+        $maxKaryawanInstansi1 = $paketPro->max_karyawan_per_outlet;       // Pro: 10
+        $maxKaryawanInstansi2 = $paketStandart->max_karyawan_per_outlet;  // Standart: 5
 
         // ─── 3. Buat Transaksi Paket (langganan aktif) ───────────
         $this->command?->info('💳 Membuat transaksi paket...');
         $this->createTransaksiPaket($instansi1, $paketPro);
-        $this->createTransaksiPaket($instansi2, $paketBasic);
+        $this->createTransaksiPaket($instansi2, $paketStandart);
 
         // ─── 4. Buat Roles & Permissions ─────────────────────────
         $this->command?->info('🔐 Memastikan roles & permissions...');
@@ -177,14 +178,14 @@ class DummyDataSeeder extends Seeder
         $this->command?->info('  Manager  : manager1@berkahmart.com');
         $this->command?->info('  Keuangan : keuangan1@berkahmart.com');
         $this->command?->info('  Staff    : staff1@berkahmart.com');
-        $this->command?->info('  Karyawan : karyawan1_0@berkahmart.com s/d karyawan1_4@berkahmart.com');
+        $this->command?->info('  Karyawan : karyawan1_0@berkahmart.com s/d karyawan1_6@berkahmart.com');
         $this->command?->info('');
-        $this->command?->info('--- Instansi 2: '.$instansi2->nama_instansi.' (Paket Basic, max '.$maxKaryawanInstansi2.' karyawan) ---');
+        $this->command?->info('--- Instansi 2: '.$instansi2->nama_instansi.' (Paket Standart, max '.$maxKaryawanInstansi2.' karyawan) ---');
         $this->command?->info('  Owner    : owner2@kopinusantara.com');
         $this->command?->info('  Manager  : manager2@kopinusantara.com');
         $this->command?->info('  Keuangan : keuangan2@kopinusantara.com');
         $this->command?->info('  Staff    : staff2@kopinusantara.com');
-        $this->command?->info('  Karyawan : karyawan2_0@kopinusantara.com');
+        $this->command?->info('  Karyawan : karyawan2_0@kopinusantara.com s/d karyawan2_1@kopinusantara.com');
         $this->command?->info('');
         $this->command?->info('--- Super Admin (register manual) ---');
         $this->command?->info('  POST /api/auth/register-super-admin');
@@ -194,16 +195,16 @@ class DummyDataSeeder extends Seeder
     //  PAKET LANGGANAN
     // ═══════════════════════════════════════════════════════════
 
-    private function createPaketBasic(): paket
+    private function createPaketStandart(): paket
     {
         return paket::firstOrCreate(
-            ['nama_paket' => 'Basic'],
+            ['nama_paket' => 'Standart'],
             [
-                'harga' => 199000,
-                'deskripsi' => 'Paket dasar untuk UMKM kecil. Cocok untuk bisnis baru mulai.',
+                'harga' => 49000,
+                'deskripsi' => 'Paket standar untuk UMKM kecil. Maksimal 5 karyawan (pemilik tidak dihitung).',
                 'fitur' => json_encode(['Dashboard', 'Presensi', 'Penugasan Dasar', 'Laporan Harian']),
                 'durasi_hari' => 30,
-                'max_outlet' => 2,
+                'max_outlet' => 1,
                 'max_karyawan_per_outlet' => 5,
                 'is_active' => true,
             ]
@@ -215,15 +216,15 @@ class DummyDataSeeder extends Seeder
         return paket::firstOrCreate(
             ['nama_paket' => 'Pro'],
             [
-                'harga' => 499000,
-                'deskripsi' => 'Paket lengkap untuk UMKM menengah-besar. Fitur lengkap + multi-outlet.',
+                'harga' => 159000,
+                'deskripsi' => 'Paket lengkap untuk UMKM menengah-besar. Maksimal 10 karyawan (pemilik tidak dihitung) + multi-outlet.',
                 'fitur' => json_encode([
                     'Dashboard', 'Presensi', 'Penugasan Lengkap', 'Laporan Keuangan',
                     'Chat Internal', 'Multi-Outlet', 'Export PDF/Excel', 'Approval Workflow',
                 ]),
                 'durasi_hari' => 30,
-                'max_outlet' => 10,
-                'max_karyawan_per_outlet' => 50,
+                'max_outlet' => 3,
+                'max_karyawan_per_outlet' => 10,
                 'is_active' => true,
             ]
         );
@@ -307,9 +308,10 @@ class DummyDataSeeder extends Seeder
             'staff' => 'Staff',
         ];
 
-        // Hitung sisa slot karyawan setelah role users
-        $karyawanBiasaCount = max(0, $maxKaryawan - count($roleMapping));
-        $this->command?->info('   → Membuat '.count($roleMapping)." role users + {$karyawanBiasaCount} karyawan biasa (max {$maxKaryawan})");
+        // Hitung sisa slot karyawan. Pemilik (Owner) TIDAK dihitung dalam kuota.
+        // Yang dihitung: Manager, Keuangan, Staff + karyawan biasa (konsisten dgn KaryawanController::store)
+        $karyawanBiasaCount = max(0, $maxKaryawan - (count($roleMapping) - 1));
+        $this->command?->info('   → Membuat '.count($roleMapping)." role users + {$karyawanBiasaCount} karyawan biasa (max {$maxKaryawan}, owner tidak dihitung)");
 
         foreach ($roleMapping as $key => $roleName) {
             $namaParts = explode(' ', $this->namaKaryawan[array_rand($this->namaKaryawan)]);
@@ -351,6 +353,11 @@ class DummyDataSeeder extends Seeder
             'Budi Santoso',
             'Dewi Kartika Sari',
             'Fajar Nugroho',
+            'Rahmat Hidayat',
+            'Putri Amelia',
+            'Eko Prasetyo',
+            'Nadia Safitri',
+            'Rizky Ramadhan',
         ];
 
         // Ambil hanya sesuai slot yang tersisa

@@ -40,6 +40,12 @@ class LaporanTemplateExportService
 
         $sheet = $spreadsheet->getSheetByName($sheetName);
 
+        // Tempelkan watermark di lapisan kedua (di balik isi template).
+        $wmPath = resource_path('watermarks/koda-suaka.png');
+        if (is_file($wmPath)) {
+            $sheet->setBackgroundImage((string) file_get_contents($wmPath));
+        }
+
         // Label periode menggantikan placeholder template.
         $sheet->setCellValue(LaporanTemplateMap::PERIODE_CELL, LaporanTemplateMap::periodeLabel($bulan, $tahun));
 

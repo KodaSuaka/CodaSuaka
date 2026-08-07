@@ -59,6 +59,8 @@ import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaScreen
 import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaViewModel
 import com.example.codasuaka.ui.screen.nota_detail.NotaDetailScreen
 import com.example.codasuaka.ui.screen.nota_detail.NotaDetailViewModel
+import com.example.codasuaka.ui.screen.stok.StokScreen
+import com.example.codasuaka.ui.screen.stok.StokViewModel
 import com.example.codasuaka.ui.screen.login.LoginScreen
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterScreen
@@ -94,6 +96,7 @@ object Routes {
     const val NOTA_PEMBELIAN = "nota_pembelian"
     const val RIWAYAT_NOTA = "riwayat_nota"
     const val NOTA_DETAIL = "nota_detail/{notaId}"
+    const val STOK = "stok"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -455,6 +458,15 @@ fun AppNavigation(navController: NavHostController) {
                     }
                 },
                 viewModel = riwayatNotaViewModel
+            )
+        }
+
+        // ── Stok ──
+        composable(Routes.STOK) {
+            val stokViewModel: StokViewModel = koinViewModel()
+            StokScreen(
+                onBack = { safePopBackStack() },
+                viewModel = stokViewModel
             )
         }
 

@@ -11,6 +11,7 @@ use App\Http\Requests\UpdatepaketRequest;
 use App\Models\Instansi;
 use App\Models\karyawan;
 use App\Models\paket;
+use App\Models\RequestLog;
 use App\Models\role;
 use App\Models\User;
 use App\Traits\ApiResponse;
@@ -320,5 +321,74 @@ class SuperAdminController extends Controller
             'total_paket_aktif' => $totalPaketAktif,
             'total_karyawan' => $totalKaryawan,
         ]);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  DATA LOGGING (Trace Request) — hanya Super Admin
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET /api/super-admin/request-logs
+     * Daftar trace request API dengan filter (instansi, user, method,
+     * status, path, rentang tanggal). Endpoint ini TIDAK tercatat sendiri
+     * oleh middleware logging (path request-logs di-skip).
+     */
+    public function indexRequestLog(Request $request)
+    {
+        $query = RequestLog::query()->with('user:id,nama_lengkap,email,username');
+
+        if ($request->filled('instansi_id')) {
+            $query->where('instansi_id', $request->input('instansi_id'));
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        if ($request->filled('method')) {
+            $query->where('method', strtoupper($request->input('method')));
+        }
+
+        if ($request->filled('status_code')) {
+            $query->where('status_code', (int) $request->input('status_code'));
+        }
+
+        if ($request->filled('path')) {
+            $query->where('path', 'like', '%'.$request->input('path').'%');
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->input('date_to'));
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        return $this->paginated($query->paginate($request->integer('per_page', 20)));
+    }
+
+    /**
+     * GET /api/super-admin/request-logs/{requestLog}
+     * Detail satu trace request (termasuk body & query params).
+     */
+    public function showRequestLog(RequestLog $requestLog)
+    {
+        $requestLog->load('user:id,nama_lengkap,email,username');
+
+        return $this->success($requestLog);
+    }
+
+    /**
+     * DELETE /api/super-admin/request-logs/{requestLog}
+     * Hapus satu log.
+     */
+    public function destroyRequestLog(RequestLog $requestLog)
+    {
+        $requestLog->delete();
+
+        return $this->success(null, 'Log berhasil dihapus');
     }
 }

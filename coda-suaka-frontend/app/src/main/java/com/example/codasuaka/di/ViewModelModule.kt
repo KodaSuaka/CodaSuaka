@@ -13,6 +13,7 @@ import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
 import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletViewModel
 import com.example.codasuaka.ui.screen.kelola_barang_jasa.KelolaBarangJasaViewModel
+import com.example.codasuaka.ui.screen.stok.StokViewModel
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
@@ -122,6 +123,9 @@ val viewModelModule = module {
 
     // Kelola Barang/Jasa
     viewModel { KelolaBarangJasaViewModel(kasirRepository = get()) }
+
+    // Stok
+    viewModel { StokViewModel(stokRepository = get()) }
 
     // Nota Pembelian
     viewModel { NotaPembelianViewModel(kasirRepository = get(), outletRepository = get()) }

@@ -57,7 +57,8 @@ class LaporanExportController extends Controller
             $endDate,
             $instansiNama,
             (float) $totalMasuk,
-            (float) $totalKeluar
+            (float) $totalKeluar,
+            $this->penanggungJawab($user)
         );
     }
 
@@ -99,7 +100,13 @@ class LaporanExportController extends Controller
             $grouped[$grpTipe][$key][] = $t;
         }
 
-        return $this->exportService->generateBukuKasExcel($transaksis, $grouped, $startDate, $endDate);
+        return $this->exportService->generateBukuKasExcel(
+            $transaksis,
+            $grouped,
+            $startDate,
+            $endDate,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -117,7 +124,13 @@ class LaporanExportController extends Controller
         $data = $this->getLabaRugiData($user, $startDate, $endDate, $request->outlet_id);
         $instansiNama = $user->instansi->nama_instansi ?? '';
 
-        return $this->exportService->generateLabaRugiPdf($data, $startDate, $endDate, $instansiNama);
+        return $this->exportService->generateLabaRugiPdf(
+            $data,
+            $startDate,
+            $endDate,
+            $instansiNama,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -134,7 +147,13 @@ class LaporanExportController extends Controller
         $data = $this->getArusKasData($user, $startDate, $endDate, $request->outlet_id);
         $instansiNama = $user->instansi->nama_instansi ?? '';
 
-        return $this->exportService->generateArusKasPdf($data, $startDate, $endDate, $instansiNama);
+        return $this->exportService->generateArusKasPdf(
+            $data,
+            $startDate,
+            $endDate,
+            $instansiNama,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -150,7 +169,31 @@ class LaporanExportController extends Controller
 
         $data = $this->getArusKasData($user, $startDate, $endDate, $request->outlet_id);
 
-        return $this->exportService->generateArusKasExcel($data, $startDate, $endDate);
+        return $this->exportService->generateArusKasExcel(
+            $data,
+            $startDate,
+            $endDate,
+            $this->penanggungJawab($user)
+        );
+    }
+
+    /**
+     * Helper: ambil data laba rugi dengan breakdown per kategori.
+     */
+    /**
+     * Helper: identitas penanggung jawab export (nama + role).
+     * Karyawan role Keuangan → namanya tercatat sebagai penanggung jawab.
+     */
+    private function penanggungJawab($user): string
+    {
+        if (! $user) {
+            return '-';
+        }
+
+        $nama = $user->nama_lengkap ?? $user->name ?? '';
+        $role = $user->role?->nama_role ?? '';
+
+        return trim($nama.($role ? " ($role)" : ''));
     }
 
     /**

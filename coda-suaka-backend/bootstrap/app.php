@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\LogRequestMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -26,7 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
+            'log.request' => LogRequestMiddleware::class,
         ]);
+
+        // Trace semua request API (kecuali path request-logs yang di-skip di service).
+        $middleware->appendToGroup('api', LogRequestMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Always return JSON for API routes on error

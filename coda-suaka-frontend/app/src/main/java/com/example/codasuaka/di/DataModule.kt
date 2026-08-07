@@ -138,4 +138,9 @@ val dataModule = module {
     single<KasirRepository> {
         KasirRepositoryImpl(apiService = get())
     }
+
+    // Stok
+    single<StokRepository> {
+        StokRepositoryImpl(apiService = get())
+    }
 }

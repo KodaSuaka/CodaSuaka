@@ -15,6 +15,7 @@
         .total-row td { font-weight: bold; }
         .footer { margin-top: 20px; font-size: 10px; color: #777; text-align: center; }
     </style>
+    @include('laporan.watermark')
 </head>
 <body>
     <div class="header">
