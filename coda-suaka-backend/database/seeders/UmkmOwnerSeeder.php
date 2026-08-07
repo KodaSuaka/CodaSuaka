@@ -268,8 +268,7 @@ class UmkmOwnerSeeder extends Seeder
                 }
                 foreach ($divisis as $divisi) {
                     AnggotaDivisi::firstOrCreate(
-                        ['karyawan_id' => $karyawan->id, 'divisi_id' => $divisi->id],
-                        ['peran' => $karyawanCount === 0 ? 'ketua' : 'anggota']
+                        ['karyawan_id' => $karyawan->id, 'divisi_id' => $divisi->id]
                     );
                 }
                 $karyawanCount++;

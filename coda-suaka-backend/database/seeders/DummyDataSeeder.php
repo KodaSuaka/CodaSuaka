@@ -499,8 +499,7 @@ class DummyDataSeeder extends Seeder
                         $karyawan = karyawan::where('user_id', $users[$key]->id)->first();
                         if ($karyawan && $karyawan->outlet_id == $outletId) {
                             AnggotaDivisi::firstOrCreate(
-                                ['karyawan_id' => $karyawan->id, 'divisi_id' => $divisi->id],
-                                ['peran' => $karyawanCount === 0 ? 'ketua' : 'anggota']
+                                ['karyawan_id' => $karyawan->id, 'divisi_id' => $divisi->id]
                             );
                             $karyawanCount++;
                             if ($karyawanCount >= 2) {
