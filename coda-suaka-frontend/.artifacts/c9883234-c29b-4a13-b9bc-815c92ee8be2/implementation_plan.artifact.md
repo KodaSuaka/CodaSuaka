@@ -1,51 +1,36 @@
-# Rencana Penyempurnaan Akhir & Perbaikan Bug (Force Close)
+# Rencana Perbaikan Bug: Dialog Scroll & Fitur Stok
 
-Tujuannya adalah memperbaiki crash pada Laporan Keuangan, menyelaraskan warna visual Kasir, merampingkan Splash Screen, serta menstandarisasi logika kalender di seluruh aplikasi.
+Tujuannya adalah memperbaiki masalah teknis pada form input karyawan yang tidak bisa di-scroll dan mendiagnosa/memperbaiki kegagalan pada fitur Stok.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Fix Force Close:** Crash saat membuka detail Laporan Keuangan disebabkan oleh data pembuat transaksi yang kosong/null. Saya akan memperbaiki DTO dan menambahkan proteksi null-safety.
-> - **Audit Pelacakan:** Menampilkan informasi pembuat transaksi pada Laporan Keuangan. Untuk Nota, nama Kasir akan disertakan pada struk cetak.
-> - **Logika Kalender:** Menyamakan logika perpindahan bulan menggunakan `java.time` agar sinkron dengan fitur Jadwal.
-> - **Notifikasi Dinamis:** Notifikasi yang sudah dibaca akan otomatis hilang setelah 5 menit.
+> - **Kelola Karyawan:** Saya akan menambahkan fitur scroll pada pop-up Tambah/Edit Karyawan. Ini sangat krusial jika input form melebihi tinggi layar HP Anda.
+> - **Fitur Stok:** Masalah "Kesalahan tidak terduga" biasanya terjadi karena adanya ketidakcocokan data antara aplikasi dan server, atau pesan error server yang tersembunyi. Saya akan meningkatkan sistem pelaporan error agar kita bisa melihat alasan sebenarnya dari kegagalan tersebut (misal: "Nama stok sudah ada" atau "Format salah").
 
 ## Proposed Changes
 
-### 1. Bug Fix & Audit (Integritas Data)
+### [Component] Kelola Karyawan - UI Fix
 
-#### [MODIFY] [GenericResponses.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/data/remote/dto/GenericResponses.kt) & [LoginResponse.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/data/remote/dto/LoginResponse.kt)
-- Mengubah `namaLengkap` pada `UserData` menjadi nullable (`String?`) untuk mencegah crash jika data dari server kosong.
-
-#### [MODIFY] [LaporanKeuanganScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/laporan_keuangan/LaporanKeuanganScreen.kt)
-- Memperbaiki pemanggilan `user.namaLengkap` dengan null-safety (`?: "System"`) untuk mencegah force close.
+#### [MODIFY] [KelolaKaryawanScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/kelola_karyawan/KelolaKaryawanScreen.kt)
+- Menambahkan `Modifier.verticalScroll(rememberScrollState())` pada `Column` utama di dalam `DialogTambahKaryawan` dan `DialogEditKaryawan`.
+- Memberikan batasan tinggi maksimal (`heightIn(max = ...)`) agar dialog tidak "terpotong" di layar kecil.
 
 ---
 
-### 2. Visual & UX Polish
+### [Component] Stok & Error Handling - Diagnosis & Fix
 
-#### [MODIFY] [KasirScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/kasir/KasirScreen.kt)
-- Memastikan semua teks nominal uang menggunakan warna **Hijau (`Success`)** agar lebih kontras dan tidak monoton.
+#### [MODIFY] [ErrorMessageMapper.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/util/ErrorMessageMapper.kt)
+- Memperbaiki logika fallback agar tidak langsung menampilkan "Kesalahan tidak terduga" jika pesan error aslinya mengandung informasi berguna dari server.
 
-#### [MODIFY] [AuthScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/auth/AuthScreen.kt)
-- Mengatur `Spacer` antara logo dan teks menjadi `4.dp` agar terlihat lebih padat dan profesional.
-
----
-
-### 3. Logika Kalender & Notifikasi
-
-#### [MODIFY] [DashboardScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/dashboard/DashboardScreen.kt) & [RiwayatKehadiranScreen.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/riwayat_kehadiran/RiwayatKehadiranScreen.kt)
-- Menerapkan logika perpindahan bulan menggunakan `YearMonth` (Java Time) agar seragam dengan fitur Kalender Jadwal.
-
-#### [MODIFY] [NotificationViewModel.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/ui/screen/notifikasi/NotificationViewModel.kt)
-- Implementasi penghapusan otomatis (*auto-delete*) notifikasi lokal setelah 5 menit dibaca.
+#### [MODIFY] [StokRepositoryImpl.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/data/repository/StokRepositoryImpl.kt)
+- Menambahkan log atau meningkatkan parsing error body untuk memastikan kita menangkap alasan kegagalan dari API Laravel.
 
 ---
 
 ## Verification Plan
 
 ### Manual Verification
-- Klik salah satu transaksi di Laporan Keuangan, pastikan dialog muncul lancar (tidak crash) dan menampilkan "Dibuat Oleh".
-- Cek layar Kasir, pastikan warna harga sudah hijau.
-- Cek Splash Screen, pastikan jarak logo dan teks sudah nyaman dilihat.
-- Coba pindah bulan pada filter Omset/Kehadiran, pastikan logikanya lancar.
+- **Karyawan:** Buka Tambah Karyawan, pastikan Anda bisa melakukan scroll dari Nama hingga tombol Simpan.
+- **Stok:** Coba muat ulang halaman stok. Jika masih gagal, pesan error sekarang seharusnya lebih spesifik (bukan lagi "Kesalahan tidak terduga").
+- **Tambah Stok:** Coba tambah stok lagi, dan lihat pesan error barunya untuk mengetahui apakah masalahnya ada di isian data atau server.

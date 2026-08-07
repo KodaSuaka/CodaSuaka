@@ -3,6 +3,7 @@ package com.example.codasuaka.ui.screen.stok
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,6 +31,7 @@ import com.example.codasuaka.data.remote.dto.StokMutationDto
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 import com.example.codasuaka.ui.util.formatRupiah
+import com.example.codasuaka.util.ErrorMessageMapper
 
 /**
  * Screen Stok (bahan baku / barang produksi).
@@ -518,6 +520,7 @@ private fun DialogFormStok(
                 HorizontalDivider(color = Neutral, thickness = 1.dp)
 
                 if (uiState.errorMessage != null) {
+                    val mapped = ErrorMessageMapper.map(uiState.errorMessage)
                     Surface(shape = RoundedCornerShape(8.dp), color = Error.copy(alpha = 0.1f)) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -525,7 +528,7 @@ private fun DialogFormStok(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(18.dp))
-                            Text(uiState.errorMessage, color = Error, style = MaterialTheme.typography.bodySmall)
+                            Text(mapped.message, color = Error, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -811,6 +814,7 @@ private fun DialogMutasiStok(
                 }
 
                 if (uiState.mutasiError != null) {
+                    val mapped = ErrorMessageMapper.map(uiState.mutasiError)
                     Surface(shape = RoundedCornerShape(8.dp), color = Error.copy(alpha = 0.1f)) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -818,7 +822,7 @@ private fun DialogMutasiStok(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(18.dp))
-                            Text(uiState.mutasiError, color = Error, style = MaterialTheme.typography.bodySmall)
+                            Text(mapped.message, color = Error, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -1001,6 +1005,7 @@ private fun DialogRiwayatStok(
                     }
 
                     uiState.riwayatError != null -> {
+                        val mapped = ErrorMessageMapper.map(uiState.riwayatError)
                         Surface(shape = RoundedCornerShape(8.dp), color = Error.copy(alpha = 0.1f)) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
@@ -1008,7 +1013,7 @@ private fun DialogRiwayatStok(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(18.dp))
-                                Text(uiState.riwayatError, color = Error, style = MaterialTheme.typography.bodySmall)
+                                Text(mapped.message, color = Error, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

@@ -1,14 +1,12 @@
-# Task List: Final Polish & Crash Fix
+# Task List: Bug Fixes (Scroll & Stok)
 
-- [/] **Step 1: Bug Fix (Force Close)**
-    - [ ] Update `UserData` DTO to make `namaLengkap` nullable.
-    - [ ] Add null-safety to "Created By" field in `LaporanKeuanganScreen.kt`.
-- [ ] **Step 2: Visual & UI Restoration**
-    - [ ] Consolidate Green price color in `KasirScreen.kt`.
-    - [ ] Fix logo-to-text spacing in `AuthScreen.kt` (4.dp).
-- [ ] **Step 3: Standardization**
-    - [ ] Align Calendar logic to `java.time` in all remaining screens.
-- [ ] **Step 4: Notification Management**
-    - [ ] Scheduled auto-delete for read notifications.
-- [ ] **Step 5: Verification**
-    - [ ] Comprehensive testing.
+- [ ] **Step 1: Fix Kelola Karyawan Dialog Scroll**
+    - [ ] Add vertical scroll to `DialogTambahKaryawan` in `KelolaKaryawanScreen.kt`.
+    - [ ] Add vertical scroll to `DialogEditKaryawan` in `KelolaKaryawanScreen.kt`.
+    - [ ] Add height constraints to cards.
+- [ ] **Step 2: Improve Error Diagnostics for Stok**
+    - [ ] Update `ErrorMessageMapper.kt` fallback logic.
+    - [ ] Verify `StokRepositoryImpl.kt` error parsing.
+- [ ] **Step 3: Verification**
+    - [ ] Test scroll in Karyawan popups.
+    - [ ] Inspect new error messages in Stok feature.
