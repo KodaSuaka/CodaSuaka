@@ -128,7 +128,7 @@ val viewModelModule = module {
     viewModel { StokViewModel(stokRepository = get()) }
 
     // Nota Pembelian
-    viewModel { NotaPembelianViewModel(kasirRepository = get(), outletRepository = get()) }
+    viewModel { NotaPembelianViewModel(kasirRepository = get(), outletRepository = get(), stokRepository = get()) }
 
     // Riwayat Nota
     viewModel { RiwayatNotaViewModel(kasirRepository = get(), outletRepository = get()) }

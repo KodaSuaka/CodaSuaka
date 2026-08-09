@@ -40,9 +40,10 @@ class LaporanTemplateExportService
 
         $sheet = $spreadsheet->getSheetByName($sheetName);
 
-        // Tempelkan watermark di lapisan kedua (di balik isi template).
+        // Tempelkan watermark (butuh GD; dilewati bila GD tak ada agar file
+        // tidak rusak saat disimpan). Muncul di produksi yang punya ext-gd.
         $wmPath = resource_path('watermarks/koda-suaka.png');
-        if (is_file($wmPath)) {
+        if (function_exists('imagecreatetruecolor') && is_file($wmPath)) {
             $sheet->setBackgroundImage((string) file_get_contents($wmPath));
         }
 

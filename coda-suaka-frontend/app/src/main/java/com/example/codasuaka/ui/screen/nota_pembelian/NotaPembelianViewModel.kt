@@ -10,7 +10,9 @@ import com.example.codasuaka.data.remote.dto.NotaDto
 import com.example.codasuaka.data.remote.dto.NotaItemRequest
 import com.example.codasuaka.domain.repository.KasirRepository
 import com.example.codasuaka.domain.repository.OutletRepository
+import com.example.codasuaka.domain.repository.StokRepository
 import com.example.codasuaka.data.remote.dto.OutletDto
+import com.example.codasuaka.data.remote.dto.StokDto
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,11 +29,17 @@ data class PembelianCartItem(
     val namaItem: String,
     val jenis: String,
     val barangJasaId: Int?,
+    // Barang produksi → diarahkan ke tabel Stok. Salah satu dari barangJasaId/stokId
+    // yang terisi; keduanya null = item lepas (tidak menambah stok mana pun).
+    val stokId: Int? = null,
     val kuantitas: Double,
     val satuan: String,
     val hargaSatuan: Double
 ) {
     val subtotal: Double get() = kuantitas * hargaSatuan
+
+    /** true bila item ini barang produksi (menunjuk Stok). */
+    val isProduksi: Boolean get() = stokId != null
 }
 
 /** File Excel terpilih untuk impor nota pembelian. */
@@ -67,12 +75,18 @@ data class NotaPembelianUiState(
     val isManualInputOpen: Boolean = false,
     val isQtyPromptOpen: Boolean = false,
 
+    // Katalog barang produksi (Stok)
+    val stokKatalog: List<StokDto> = emptyList(),
+    val filteredStok: List<StokDto> = emptyList(),
+    val isStokKatalogOpen: Boolean = false,
+
     // Keranjang manual
     val cartItems: List<PembelianCartItem> = emptyList(),
     val cartTotal: Double = 0.0,
 
     // Field item yang sedang diinput
     val itemKatalogId: Int? = null,
+    val itemStokId: Int? = null,
     val itemNama: String = "",
     val itemJenis: String = "barang",
     val itemKuantitas: String = "",
@@ -90,7 +104,8 @@ data class NotaPembelianUiState(
 
 class NotaPembelianViewModel(
     private val kasirRepository: KasirRepository,
-    private val outletRepository: OutletRepository
+    private val outletRepository: OutletRepository,
+    private val stokRepository: StokRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotaPembelianUiState())
@@ -107,15 +122,19 @@ class NotaPembelianViewModel(
                 coroutineScope {
                     val katalogDeferred = async { kasirRepository.getBarangJasaList(isActive = true) }
                     val outletDeferred = async { outletRepository.getOutlets() }
+                    val stokDeferred = async { stokRepository.getStokList(isActive = true) }
 
                     val katalogResult = katalogDeferred.await()
                     val outletResult = outletDeferred.await()
+                    val stokList = stokDeferred.await().getOrNull()?.first ?: emptyList()
 
                     val katalog = katalogResult.getOrNull() ?: emptyList()
                     _uiState.update { state ->
                         state.copy(
                             katalog = katalog,
                             filteredKatalog = katalog,
+                            stokKatalog = stokList,
+                            filteredStok = stokList,
                             outletList = outletResult.getOrNull() ?: emptyList(),
                             isLoadingKatalog = false,
                             loadError = katalogResult.exceptionOrNull()?.message
@@ -149,6 +168,10 @@ class NotaPembelianViewModel(
         _uiState.update { it.copy(isKatalogOpen = open, searchQuery = "", filteredKatalog = it.katalog) }
     }
 
+    fun toggleStokKatalog(open: Boolean) {
+        _uiState.update { it.copy(isStokKatalogOpen = open, searchQuery = "", filteredStok = it.stokKatalog) }
+    }
+
     fun toggleManualInput(open: Boolean) {
         _uiState.update { 
             it.copy(
@@ -162,8 +185,11 @@ class NotaPembelianViewModel(
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { state ->
-            val filtered = state.katalog.filter { it.nama.contains(query, ignoreCase = true) }
-            state.copy(searchQuery = query, filteredKatalog = filtered)
+            state.copy(
+                searchQuery = query,
+                filteredKatalog = state.katalog.filter { it.nama.contains(query, ignoreCase = true) },
+                filteredStok = state.stokKatalog.filter { it.nama.contains(query, ignoreCase = true) },
+            )
         }
     }
 
@@ -173,6 +199,7 @@ class NotaPembelianViewModel(
         _uiState.update { state ->
             state.copy(
                 itemKatalogId = produk.id,
+                itemStokId = null,
                 itemNama = produk.nama,
                 itemJenis = produk.jenis,
                 itemSatuan = produk.satuan,
@@ -180,6 +207,23 @@ class NotaPembelianViewModel(
                 itemKuantitas = "1",
                 isKatalogOpen = false,
                 isQtyPromptOpen = true // Buka prompt jumlah setelah pilih produk
+            )
+        }
+    }
+
+    /** Pilih item barang produksi dari katalog Stok → diarahkan ke tabel Stok. */
+    fun selectStokItem(stok: StokDto) {
+        _uiState.update { state ->
+            state.copy(
+                itemStokId = stok.id,
+                itemKatalogId = null,
+                itemNama = stok.nama,
+                itemJenis = "barang",
+                itemSatuan = stok.satuan,
+                itemHarga = (stok.hargaBeli ?: 0.0).let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() },
+                itemKuantitas = "1",
+                isStokKatalogOpen = false,
+                isQtyPromptOpen = true
             )
         }
     }
@@ -223,6 +267,7 @@ class NotaPembelianViewModel(
                     namaItem = nama,
                     jenis = state.itemJenis,
                     barangJasaId = state.itemKatalogId,
+                    stokId = state.itemStokId,
                     kuantitas = qty,
                     satuan = state.itemSatuan.ifBlank { "pcs" },
                     hargaSatuan = harga
@@ -234,6 +279,7 @@ class NotaPembelianViewModel(
                         cartTotal = newCart.sumOf { it.subtotal },
                         submitError = null,
                         itemKatalogId = null,
+                        itemStokId = null,
                         itemNama = "",
                         itemJenis = "barang",
                         itemKuantitas = "",
@@ -296,6 +342,7 @@ class NotaPembelianViewModel(
                 items = state.cartItems.map { item ->
                     NotaItemRequest(
                         barangJasaId = item.barangJasaId,
+                        stokId = item.stokId,
                         namaItem = item.namaItem,
                         jenis = item.jenis,
                         kuantitas = item.kuantitas,

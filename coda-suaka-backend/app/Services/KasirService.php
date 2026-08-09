@@ -6,6 +6,7 @@ use App\Models\BarangJasa;
 use App\Models\KategoriTransaksi;
 use App\Models\Nota;
 use App\Models\NotaItem;
+use App\Models\Stok;
 use App\Models\TransaksiKas;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -194,13 +195,15 @@ class KasirService
         $rows = [];
         foreach ($items as $item) {
             $barangJasa = ($item['barang_jasa_id'] ?? null) ? BarangJasa::find($item['barang_jasa_id']) : null;
-            $namaItem = $item['nama_item'] ?? $barangJasa?->nama;
-            $jenis = $item['jenis'] ?? $barangJasa?->jenis;
-            $satuan = $item['satuan'] ?? $barangJasa?->satuan ?? 'pcs';
+            // Item produksi menunjuk stok_id → target tabel Stok (bukan BarangJasa).
+            $stok = ($item['stok_id'] ?? null) ? Stok::find($item['stok_id']) : null;
+            $namaItem = $item['nama_item'] ?? $barangJasa?->nama ?? $stok?->nama;
+            $jenis = $item['jenis'] ?? $barangJasa?->jenis ?? 'barang';
+            $satuan = $item['satuan'] ?? $barangJasa?->satuan ?? $stok?->satuan ?? 'pcs';
             $hargaSatuan = $item['harga_satuan'];
             $subtotal = $item['kuantitas'] * $hargaSatuan;
             $total += $subtotal;
-            $rows[] = compact('barangJasa', 'namaItem', 'jenis', 'satuan', 'hargaSatuan', 'subtotal', 'item');
+            $rows[] = compact('barangJasa', 'stok', 'namaItem', 'jenis', 'satuan', 'hargaSatuan', 'subtotal', 'item');
         }
 
         return ['total' => $total, 'rows' => $rows];
@@ -234,6 +237,7 @@ class KasirService
             NotaItem::create([
                 'nota_id' => $nota->id,
                 'barang_jasa_id' => $row['barangJasa']?->id,
+                'stok_id' => $row['stok']?->id,
                 'nama_item' => $row['namaItem'],
                 'jenis' => $row['jenis'],
                 'kuantitas' => $row['item']['kuantitas'],
@@ -242,7 +246,17 @@ class KasirService
                 'subtotal' => $row['subtotal'],
             ]);
 
-            if ($arahStok !== 0 && $row['barangJasa'] && $row['jenis'] === 'barang') {
+            if (($row['stok'] ?? null) && $arahStok > 0) {
+                // Item produksi pada pembelian → mutasi masuk ke tabel Stok.
+                // (Penjualan/arah negatif tidak berlaku untuk barang produksi.)
+                app(StokService::class)->mutasi(
+                    $row['stok'],
+                    'masuk',
+                    $row['item']['kuantitas'],
+                    null,
+                    "Pembelian {$nota->nomor_nota}",
+                );
+            } elseif ($arahStok !== 0 && $row['barangJasa'] && $row['jenis'] === 'barang') {
                 // NULL stok dianggap 0 (MySQL: NULL + 5 = NULL). Pakai update
                 // eksplisit + max(0, ...) supaya stok tidak pernah negatif.
                 $stokSaatIni = (int) ($row['barangJasa']->stok ?? 0);

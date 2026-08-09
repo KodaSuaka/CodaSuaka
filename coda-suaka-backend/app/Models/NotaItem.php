@@ -15,6 +15,7 @@ class NotaItem extends Model
     protected $fillable = [
         'nota_id',
         'barang_jasa_id',
+        'stok_id',
         'nama_item',
         'jenis',
         'kuantitas',
@@ -49,6 +50,11 @@ class NotaItem extends Model
     public function nota(): BelongsTo
     {
         return $this->belongsTo(Nota::class);
+    }
+
+    public function stok(): BelongsTo
+    {
+        return $this->belongsTo(Stok::class);
     }
 
     public function barangJasa(): BelongsTo

@@ -33,7 +33,8 @@ class NotaController extends Controller
     {
         $this->authorize('viewAny', Nota::class);
 
-        $query = Nota::query();
+        // withCount('items') supaya accessor jumlah_item tidak N+1 di listing.
+        $query = Nota::query()->withCount('items');
 
         if ($request->has('tipe')) {
             $query->where('tipe', $request->tipe);
@@ -113,7 +114,8 @@ class NotaController extends Controller
     {
         $this->authorize('view', $nota);
 
-        $nota->load('items.barangJasa', 'outlet', 'kategoriTransaksi', 'transaksiKas', 'createdByUser');
+        $nota->load('items.barangJasa', 'items.stok', 'outlet', 'kategoriTransaksi', 'transaksiKas', 'createdByUser')
+            ->loadCount('items');
 
         return $this->success($nota);
     }

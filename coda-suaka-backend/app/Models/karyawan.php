@@ -53,8 +53,9 @@ class karyawan extends Model
             return '0 bulan';
         }
 
-        $tahun = $mulai->diffInYears(now());
-        $bulan = $mulai->copy()->addYears($tahun)->diffInMonths(now());
+        // (int): diffInYears/diffInMonths mengembalikan float sejak Carbon 3.
+        $tahun = (int) $mulai->diffInYears(now());
+        $bulan = (int) $mulai->copy()->addYears($tahun)->diffInMonths(now());
 
         $bagian = [];
         if ($tahun > 0) {

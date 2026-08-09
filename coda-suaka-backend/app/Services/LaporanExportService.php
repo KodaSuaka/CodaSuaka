@@ -231,7 +231,9 @@ class LaporanExportService
     {
         $wmPath = resource_path('watermarks/koda-suaka.png');
 
-        if (is_file($wmPath)) {
+        // setBackgroundImage butuh ekstensi GD; tanpa GD sheet berakhir rusak
+        // (cellCollection uninitialized) saat disimpan. Lewati bila GD absen.
+        if (function_exists('imagecreatetruecolor') && is_file($wmPath)) {
             $sheet->setBackgroundImage((string) file_get_contents($wmPath));
         }
     }

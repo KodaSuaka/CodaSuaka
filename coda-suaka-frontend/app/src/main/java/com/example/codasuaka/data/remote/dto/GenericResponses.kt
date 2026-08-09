@@ -888,6 +888,8 @@ data class NotaSingleResponse(
 
 data class NotaItemRequest(
     @SerializedName("barang_jasa_id") val barangJasaId: Int? = null,
+    // Item barang produksi → diarahkan ke tabel Stok (bukan katalog jual).
+    @SerializedName("stok_id") val stokId: Int? = null,
     @SerializedName("nama_item") val namaItem: String? = null,
     @SerializedName("jenis") val jenis: String? = null,
     @SerializedName("kuantitas") val kuantitas: Double,

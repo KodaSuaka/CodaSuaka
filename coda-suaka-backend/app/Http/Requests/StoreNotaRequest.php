@@ -39,8 +39,13 @@ class StoreNotaRequest extends FormRequest
                 'nullable',
                 Rule::exists('barang_jasas', 'id')->where('instansi_id', $user->instansi_id),
             ],
-            'items.*.nama_item' => 'required_without:items.*.barang_jasa_id|string|max:150',
-            'items.*.jenis' => 'required_without:items.*.barang_jasa_id|in:barang,jasa',
+            // Item produksi menunjuk stok_id → diarahkan ke tabel Stok (bukan BarangJasa).
+            'items.*.stok_id' => [
+                'nullable',
+                Rule::exists('stoks', 'id')->where('instansi_id', $user->instansi_id),
+            ],
+            'items.*.nama_item' => 'required_without_all:items.*.barang_jasa_id,items.*.stok_id|string|max:150',
+            'items.*.jenis' => 'required_without_all:items.*.barang_jasa_id,items.*.stok_id|in:barang,jasa',
             'items.*.kuantitas' => 'required|numeric|min:0.01',
             'items.*.satuan' => 'nullable|string|max:50',
             'items.*.harga_satuan' => 'required|numeric|min:0',

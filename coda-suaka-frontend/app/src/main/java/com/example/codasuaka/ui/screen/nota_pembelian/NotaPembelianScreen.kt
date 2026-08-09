@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.codasuaka.data.remote.dto.BarangJasaDto
+import com.example.codasuaka.data.remote.dto.StokDto
 import com.example.codasuaka.ui.components.CodaSuakaDatePickerDialog
 import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.theme.*
@@ -136,6 +137,7 @@ fun NotaPembelianScreen(
                     MainManualContent(
                         uiState = uiState,
                         onOpenKatalog = { viewModel.toggleKatalog(true) },
+                        onOpenStok = { viewModel.toggleStokKatalog(true) },
                         onOpenManual = { viewModel.toggleManualInput(true) },
                         onRemoveItem = { viewModel.removeCartItem(it) },
                         onClearCart = { viewModel.clearCart() }
@@ -166,6 +168,21 @@ fun NotaPembelianScreen(
                 uiState = uiState,
                 onSearch = { viewModel.onSearchQueryChange(it) },
                 onSelect = { viewModel.selectKatalogItem(it) }
+            )
+        }
+    }
+
+    // ─── Bottom Sheet: Katalog Barang Produksi (Stok) ───
+    if (uiState.isStokKatalogOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.toggleStokKatalog(false) },
+            sheetState = sheetState,
+            containerColor = Surface
+        ) {
+            StokSheetContent(
+                uiState = uiState,
+                onSearch = { viewModel.onSearchQueryChange(it) },
+                onSelect = { viewModel.selectStokItem(it) }
             )
         }
     }
@@ -295,6 +312,7 @@ private fun ExpandableFormUmum(
 private fun MainManualContent(
     uiState: NotaPembelianUiState,
     onOpenKatalog: () -> Unit,
+    onOpenStok: () -> Unit,
     onOpenManual: () -> Unit,
     onRemoveItem: (Int) -> Unit,
     onClearCart: () -> Unit
@@ -309,7 +327,7 @@ private fun MainManualContent(
             ) {
                 Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Cari di Katalog", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("Produk Jual", fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
             OutlinedButton(
                 onClick = onOpenManual,
@@ -321,6 +339,20 @@ private fun MainManualContent(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Isi Manual", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Primary)
             }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Barang produksi → diarahkan ke tabel Stok (tidak muncul di produk penjualan).
+        OutlinedButton(
+            onClick = onOpenStok,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.5.dp, Secondary)
+        ) {
+            Icon(Icons.Default.Inventory2, null, modifier = Modifier.size(18.dp), tint = Secondary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Barang Produksi (Stok)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Secondary)
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -364,9 +396,22 @@ private fun CartItemRow(item: PembelianCartItem, onRemove: () -> Unit) {
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.namaItem, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Secondary)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(item.namaItem, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Secondary)
+                    if (item.isProduksi) {
+                        Text(
+                            "Produksi",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = OnPrimary,
+                            modifier = Modifier
+                                .background(Secondary, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 1.dp)
+                        )
+                    }
+                }
                 Text(
-                    text = "${formatQty(item.kuantitas)} ${item.satuan} × ${formatRupiah(item.hargaSatuan)}", 
+                    text = "${formatQty(item.kuantitas)} ${item.satuan} × ${formatRupiah(item.hargaSatuan)}",
                     fontSize = 12.sp, 
                     color = Secondary.copy(alpha = 0.6f), // Navy transparan agar jelas
                     fontWeight = FontWeight.Medium
@@ -437,6 +482,34 @@ private fun KatalogSheetContent(uiState: NotaPembelianUiState, onSearch: (String
                         Column(modifier = Modifier.weight(1f)) {
                             Text(p.nama, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text("${p.satuan} • Harga: ${formatRupiah(p.hargaBeli ?: 0.0)}", fontSize = 12.sp, color = OnSurfaceVariant)
+                        }
+                        Icon(Icons.Default.AddCircle, null, tint = Primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StokSheetContent(uiState: NotaPembelianUiState, onSearch: (String) -> Unit, onSelect: (StokDto) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("Pilih Barang Produksi", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Secondary)
+        OutlinedTextField(
+            value = uiState.searchQuery, onValueChange = onSearch, placeholder = { Text("Cari barang produksi...") },
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = Primary) },
+            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), singleLine = true
+        )
+        if (uiState.filteredStok.isEmpty()) {
+            Text("Belum ada barang produksi. Tambahkan dulu di menu Stok.", fontSize = 12.sp, color = OnSurfaceVariant)
+        }
+        LazyColumn(modifier = Modifier.heightIn(max = 400.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(uiState.filteredStok) { _, s ->
+                Card(onClick = { onSelect(s) }, shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = InputBackground)) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(s.nama, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Stok: ${s.stok} ${s.satuan} • Beli: ${formatRupiah(s.hargaBeli ?: 0.0)}", fontSize = 12.sp, color = OnSurfaceVariant)
                         }
                         Icon(Icons.Default.AddCircle, null, tint = Primary)
                     }

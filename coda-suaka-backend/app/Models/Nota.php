@@ -39,6 +39,11 @@ class Nota extends Model
         'created_by',
     ];
 
+    /**
+     * jumlah_item (ringkasan) disertakan otomatis di response JSON.
+     */
+    protected $appends = ['jumlah_item'];
+
     protected function casts(): array
     {
         return [
@@ -50,6 +55,23 @@ class Nota extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope('instansi_id'));
+    }
+
+    /**
+     * Jumlah baris item pada nota. Aman dari N+1: pakai hasil withCount
+     * (items_count) atau relasi yang sudah di-load; query hanya sebagai
+     * fallback terakhir.
+     */
+    public function getJumlahItemAttribute(): int
+    {
+        if (array_key_exists('items_count', $this->attributes)) {
+            return (int) $this->attributes['items_count'];
+        }
+        if ($this->relationLoaded('items')) {
+            return $this->items->count();
+        }
+
+        return $this->items()->count();
     }
 
     public function instansi(): BelongsTo
