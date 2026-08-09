@@ -246,6 +246,7 @@ fun DashboardScreen(
                         userPermissions = uiState.userPermissions,
                         items = listOf(
                             MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, Primary, allowedRoles = listOf("Owner")),
+                            MenuItem("Approval Keuangan", Icons.Default.FactCheck, Primary, requiredPermission = "approve:keuangan"),
                             MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Primary, allowedRoles = listOf("Owner")),
                             MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, Primary, requiredPermission = "view:kasir"),
                             MenuItem("Jadwal", Icons.Default.CalendarMonth, Primary)
@@ -253,6 +254,7 @@ fun DashboardScreen(
                         onItemClick = { label ->
                             when (label) {
                                 "Laporan Keuangan" -> onNavigateTo("laporan_keuangan")
+                                "Approval Keuangan" -> onNavigateTo("approval_keuangan")
                                 "Penugasan" -> onNavigateTo("penugasan")
                                 "Riwayat Nota" -> onNavigateTo("riwayat_nota")
                                 "Jadwal" -> onNavigateTo("kalender")
