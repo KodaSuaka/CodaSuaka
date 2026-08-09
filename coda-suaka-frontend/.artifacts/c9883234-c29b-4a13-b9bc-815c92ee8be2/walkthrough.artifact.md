@@ -1,26 +1,21 @@
-# Walkthrough: Final Audit & Bug Resolution
+# Walkthrough: Perbaikan Dialog Scroll & Diagnosa Fitur Stok
 
-Saya telah menyelesaikan perbaikan kritis pada Laporan Keuangan serta menyempurnakan detail visual dan logika sistem di seluruh aplikasi.
+Saya telah memperbaiki masalah teknis pada pop-up kelola karyawan serta meningkatkan sistem pelaporan error pada fitur Stok agar masalah utamanya dapat teridentifikasi.
 
 ## Perubahan yang Dilakukan
 
-### 1. Resolusi Force Close (Laporan Keuangan)
-- **Fix NPE:** Masalah crash saat membuka detail laporan disebabkan oleh field `nama_lengkap` yang kosong dari server. Saya telah mengubah DTO menjadi nullable dan menambahkan proteksi `?: "System"`.
-- **Traceability:** Sekarang dialog detail transaksi menampilkan informasi **"Dibuat Oleh"** secara aman tanpa resiko force close.
+### 1. Perbaikan Scroll (Kelola Karyawan)
+- **Aksesibilitas Form:** Menambahkan fitur **vertical scroll** pada pop-up Tambah dan Edit Karyawan.
+- **Adaptasi Layar:** Memberikan batasan tinggi maksimal pada dialog agar tetap nyaman digunakan di HP dengan layar kecil tanpa ada tombol yang terpotong di bagian bawah.
 
-### 2. Estetika & UX Refresh
-- **Monokrom Hijau Kasir:** Seluruh nominal harga di Kasir telah diseragamkan ke warna **Hijau (`Success`)** untuk memberikan aksen finansial yang positif dan tidak membosankan.
-- **Splash Screen Compact:** Jarak logo dan teks pada layar pembuka telah diperpendek (menjadi `4.dp`) agar komposisi visual terlihat lebih menyatu.
-
-### 3. Logika Kalender & Notifikasi
-- **Unified Java Time:** Logika navigasi bulan (Prev/Next) kini seragam menggunakan `java.time` di semua layar, menjamin akurasi tanggal 100%.
-- **Notification Expired:** Notifikasi yang dibaca kini memiliki sistem pembersihan otomatis dalam 5 menit untuk menjaga Sidebar tetap rapi.
+### 2. Diagnosa & Perbaikan Error (Fitur Stok)
+- **Pesan Error Spesifik:** Memperbarui sistem [ErrorMessageMapper.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/util/ErrorMessageMapper.kt) agar tidak langsung menyembunyikan error di balik pesan "Kesalahan tidak terduga". Jika server mengirimkan alasan kegagalan, aplikasi sekarang akan menampilkannya.
+- **Parsing Error Robust:** Meningkatkan kemampuan [StokRepositoryImpl.kt](file:///C:/Users/ASUS/AndroidStudioProjects/CodaSuaka/coda-suaka-frontend/app/src/main/java/com/example/codasuaka/data/repository/StokRepositoryImpl.kt) dalam membaca pesan error mentah dari server, baik dalam format JSON maupun teks biasa.
+- **Transparansi Dialog:** Menerapkan sistem pemetaan error yang sama ke dalam dialog Tambah/Mutasi Stok agar user tahu persis kolom mana yang bermasalah.
 
 ## Hasil Verifikasi
-- [x] Detail Laporan Keuangan bisa dibuka dengan lancar tanpa crash.
-- [x] Teks nominal di Kasir terbaca jelas dengan warna Hijau.
-- [x] Splash Screen terlihat lebih proporsional.
-- [x] Navigasi kalender berfungsi normal di seluruh fitur.
+- [x] Pop-up Karyawan sekarang bisa digulir hingga ke tombol paling bawah.
+- [x] Fitur Stok akan menampilkan pesan error yang lebih informatif jika terjadi kegagalan (membantu proses debugging lebih cepat).
 
 > [!TIP]
-> Dengan perbaikan DTO ini, aplikasi Anda kini lebih tangguh terhadap data yang tidak lengkap dari server, meminimalisir resiko crash di masa mendatang.
+> Dengan perbaikan ini, jika fitur Stok masih gagal, Anda akan melihat alasan teknisnya di layar (misal: "API tidak ditemukan" atau "Data wajib belum diisi"). Mohon infokan pesan tersebut jika masalah masih berlanjut.

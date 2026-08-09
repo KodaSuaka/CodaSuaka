@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -634,12 +636,15 @@ private fun DialogTambahKaryawan(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(24.dp)
+                .heightIn(max = 640.dp), // Beri batas tinggi agar tetap bisa di-scroll di layar kecil
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()), // Aktifkan scroll
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Header
@@ -874,12 +879,15 @@ private fun DialogEditKaryawan(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(24.dp)
+                .heightIn(max = 640.dp), // Beri batas tinggi agar tetap bisa di-scroll di layar kecil
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()), // Aktifkan scroll
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Header

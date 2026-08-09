@@ -92,10 +92,14 @@ class StokRepositoryImpl(
 
     private fun parseErrorMessage(response: retrofit2.Response<*>, fallback: String): String {
         return try {
-            response.errorBody()?.string()?.let { raw ->
+            val raw = response.errorBody()?.string() ?: return fallback
+            try {
                 val json = org.json.JSONObject(raw)
                 json.optString("message", fallback)
-            } ?: fallback
+            } catch (e: Exception) {
+                // Jika bukan JSON, ambil raw string jika pendek (menghindari stack trace panjang)
+                if (raw.length < 200) raw else fallback
+            }
         } catch (e: Exception) {
             fallback
         }

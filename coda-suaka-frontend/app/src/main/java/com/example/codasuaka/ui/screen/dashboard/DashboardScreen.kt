@@ -45,8 +45,7 @@ import androidx.compose.ui.draw.clipToBounds
 import com.example.codasuaka.util.ClickHelper
 import com.example.codasuaka.util.DateTimeUtil
 
-// ─── Data class menu items ───────────────────────────────────
-
+// ─── Data class menu items ───
 private data class MenuItem(
     val label: String,
     val icon: ImageVector,

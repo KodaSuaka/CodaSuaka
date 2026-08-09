@@ -76,7 +76,16 @@ object ErrorMessageMapper {
             return serverMapped
         }
 
-        // ── 5. Fallback: gunakan pesan konteks atau generic ──
+        // ── 5. Jika pesan mengandung kata kunci "Gagal" atau sejenisnya, tampilkan apa adanya ──
+        // daripada fallback ke generic message.
+        if (msg.length < 100 && (msg.contains("Gagal") || msg.contains("Error") || msg.contains("Tidak"))) {
+            return MappedMessage(
+                message = msg,
+                type = NotificationType.ERROR
+            )
+        }
+
+        // ── 6. Fallback: gunakan pesan konteks atau generic ──
         return MappedMessage(
             message = mapContextToDefault(context),
             type = NotificationType.ERROR
