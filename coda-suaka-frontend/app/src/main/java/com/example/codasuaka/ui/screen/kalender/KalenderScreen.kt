@@ -30,6 +30,7 @@ import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -296,10 +297,11 @@ private fun CalendarSection(
 ) {
     val daysInMonth = currentMonth.lengthOfMonth()
     val firstDayOfMonth = currentMonth.atDay(1)
+    
+    // startDayOfWeek: 1 (Mon) to 7 (Sun)
     val startDayOfWeek = firstDayOfMonth.dayOfWeek.value
     
     var showYearPicker by remember { mutableStateOf(value = false) }
-    
     val locale = remember { Locale("id", "ID") }
 
     if (showYearPicker) {
@@ -349,22 +351,23 @@ private fun CalendarSection(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ── Grid Tanggal ──
-            // Hitung jumlah baris yang dibutuhkan
-            val totalCells = startDayOfWeek - 1 + daysInMonth
+            // Monday start: 1, Tuesday: 2 ... Sunday: 7
+            // Offset for Monday start is startDayOfWeek - 1
+            val offset = startDayOfWeek - 1
+            val totalCells = offset + daysInMonth
             val rows = (totalCells + 6) / 7
 
             for (row in 0 until rows) {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     for (col in 0..6) {
                         val cellIndex = row * 7 + col
-                        val dayNumber = cellIndex - (startDayOfWeek - 1) + 1
+                        val dayNumber = cellIndex - offset + 1
 
                         if (dayNumber in 1..daysInMonth) {
                             val date = currentMonth.atDay(dayNumber)
                             val eventOnDate = events.filter { it.tanggal == date }
                             val hasEvent = eventOnDate.isNotEmpty()
 
-                            // Tentukan warna berdasarkan event dengan prioritas: LIBUR > TUGAS > EVENT
                             val dotColor = if (hasEvent) {
                                 when {
                                     eventOnDate.any { it.kategori == EventCategory.LIBUR } -> CategoryColorLibur
@@ -373,8 +376,7 @@ private fun CalendarSection(
                                 }
                             } else null
 
-                            // Cek apakah hari ini
-                            val isToday = date == LocalDate.now()
+                            val isToday = date == LocalDate.now(DateTimeUtil.zoneId)
                             val isSelected = date == selectedDate
 
                             DateCell(
@@ -385,7 +387,6 @@ private fun CalendarSection(
                                 onClick = { onDateClick(date) }
                             )
                         } else {
-                            // Sel kosong
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         }
                     }
@@ -697,19 +698,11 @@ private fun DialogTambahEvent(
                                 YearPickerDialog(
                                     selectedYear = displayMonth.year,
                                     onYearSelected = { year ->
-                                        val tz = java.util.TimeZone.getTimeZone("UTC")
-                                        val cal = java.util.Calendar.getInstance(tz).apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                            set(java.util.Calendar.YEAR, year)
-                                        }
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
-                                        
-                                        val selCal = java.util.Calendar.getInstance(tz).apply {
-                                            timeInMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                                            set(java.util.Calendar.YEAR, year)
-                                        }
-                                        datePickerState.selectedDateMillis = selCal.timeInMillis
-                                        
+                                        val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(java.time.ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                        val targetMonth = currentMonth.withYear(year)
+                                        datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
                                         showYearPicker = false
                                     },
                                     onDismiss = { showYearPicker = false }

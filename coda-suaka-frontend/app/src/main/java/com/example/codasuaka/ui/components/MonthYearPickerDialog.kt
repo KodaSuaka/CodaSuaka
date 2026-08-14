@@ -32,9 +32,8 @@ fun MonthYearPickerDialog(
     var selectedMonth by remember { mutableStateOf(initialMonth) }
     var selectedYear by remember { mutableStateOf(initialYear) }
     
-    val currentYear = java.time.LocalDate.now().year
-    val years = (currentYear - 20..currentYear + 10).toList()
-    val months = Month.values()
+    val years = (2020..2040).toList()
+    val months = Month.entries.toTypedArray()
 
     Dialog(onDismissRequest = onDismiss) {
         Card(

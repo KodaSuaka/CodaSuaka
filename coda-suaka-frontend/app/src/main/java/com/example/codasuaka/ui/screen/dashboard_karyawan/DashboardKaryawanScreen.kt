@@ -157,7 +157,7 @@ fun DashboardKaryawanScreen(
         }
     }
 
-    NotificationSidebar(uiState = notificationUiState, onClose = { notificationViewModel.toggleSidebar(false) }, onMarkAsRead = { notificationViewModel.markAsRead(it) }, onMarkAllAsRead = { notificationViewModel.markAllAsRead() }, onRefresh = { notificationViewModel.refresh() })
+    NotificationSidebar(uiState = notificationUiState, onClose = { notificationViewModel.toggleSidebar(false) }, onMarkAsRead = { notificationViewModel.markAsRead(it) }, onMarkAllAsRead = { notificationViewModel.markAllAsRead() }, onDelete = { notificationViewModel.deleteNotification(it) }, onRefresh = { notificationViewModel.refresh() })
 }
 
 @Composable

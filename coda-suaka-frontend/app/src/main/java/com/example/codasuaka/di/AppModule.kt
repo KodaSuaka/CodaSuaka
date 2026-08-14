@@ -11,5 +11,6 @@ import org.koin.dsl.module
  */
 val appModule = module {
     single { TokenManager(androidContext()) }
-    single { BluetoothPrinterManager(androidContext()) }
+    single { com.example.codasuaka.data.local.PreferenceManager(androidContext()) }
+    single { BluetoothPrinterManager(androidContext(), get<com.example.codasuaka.data.local.PreferenceManager>()) }
 }

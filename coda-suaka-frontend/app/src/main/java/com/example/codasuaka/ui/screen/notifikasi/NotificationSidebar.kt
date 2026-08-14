@@ -39,6 +39,7 @@ fun NotificationSidebar(
     onClose: () -> Unit,
     onMarkAsRead: (Int) -> Unit,
     onMarkAllAsRead: () -> Unit,
+    onDelete: (Int) -> Unit,
     onRefresh: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize().zIndex(100f)) {
@@ -105,7 +106,8 @@ fun NotificationSidebar(
                             else -> {
                                 NotificationList(
                                     notifications = uiState.notifications,
-                                    onMarkAsRead = onMarkAsRead
+                                    onMarkAsRead = onMarkAsRead,
+                                    onDelete = onDelete
                                 )
                             }
                         }
@@ -168,10 +170,12 @@ private fun SidebarHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NotificationList(
     notifications: List<NotificationDto>,
-    onMarkAsRead: (Int) -> Unit
+    onMarkAsRead: (Int) -> Unit,
+    onDelete: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -179,9 +183,45 @@ private fun NotificationList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(notifications, key = { it.id }) { notification ->
-            SidebarNotificationItem(
-                notification = notification,
-                onClick = { if (!notification.isRead) onMarkAsRead(notification.id) }
+            val dismissState = rememberSwipeToDismissBoxState(
+                confirmValueChange = {
+                    if (it == SwipeToDismissBoxValue.EndToStart) {
+                        onDelete(notification.id)
+                        true
+                    } else false
+                }
+            )
+
+            SwipeToDismissBox(
+                state = dismissState,
+                backgroundContent = {
+                    val color = when (dismissState.dismissDirection) {
+                        SwipeToDismissBoxValue.EndToStart -> Error.copy(alpha = 0.8f)
+                        else -> Color.Transparent
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(color)
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Hapus",
+                            tint = Color.White
+                        )
+                    }
+                },
+                enableDismissFromStartToEnd = false,
+                content = {
+                    SidebarNotificationItem(
+                        notification = notification,
+                        onClick = { if (!notification.isRead) onMarkAsRead(notification.id) },
+                        onDelete = { onDelete(notification.id) }
+                    )
+                }
             )
         }
     }
@@ -190,7 +230,8 @@ private fun NotificationList(
 @Composable
 private fun SidebarNotificationItem(
     notification: NotificationDto,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val iconColor = when (notification.color) {
         "#F59E0B" -> WarningColor
@@ -278,6 +319,18 @@ private fun SidebarNotificationItem(
                         .clip(CircleShape)
                         .background(Primary)
                 )
+            } else {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(24.dp).padding(top = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Hapus",
+                        tint = OnSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
