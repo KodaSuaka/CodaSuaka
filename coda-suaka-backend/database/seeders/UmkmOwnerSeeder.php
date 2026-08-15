@@ -35,29 +35,31 @@ class UmkmOwnerSeeder extends Seeder
     private string $defaultPassword = 'password';
 
     // ─── Variasi instansi UMKM ──────────────────────────────────────
-    // [nama_instansi, paket, jumlah outlet, jumlah karyawan biasa, timezone, domain]
+    // [nama_instansi, paket, jumlah outlet, jumlah karyawan biasa, timezone, domain, nama_pemilik]
+    // Semua di wilayah Kediri/Nganjuk (Jawa Timur) → WIB → Asia/Jakarta.
+    // nama_pemilik dipakai untuk email owner organik: firstname.lastname@domain.
     private array $umkm = [
         // Paket Standart (max 5 karyawan)
-        ['Bunda Catering',    'Standart', 1, 2, 'Asia/Jakarta',   'bundacatering.com'],
-        ['Loundry Bersih',    'Standart', 1, 3, 'Asia/Jakarta',   'loundrybersih.com'],
-        ['Warung Sederhana',  'Standart', 1, 5, 'Asia/Makassar',  'warungsederhana.com'],
-        ['Laundry Kilat',     'Standart', 1, 1, 'Asia/Makassar',  'laundrykilat.com'],
-        ['Toko Roti Manis',   'Standart', 1, 4, 'Asia/Jakarta',   'tokorotimanis.com'],
-        ['Fotokopi Cepat',    'Standart', 1, 3, 'Asia/Jakarta',   'fotokopicepat.com'],
-        ['Cuci Mobil Kinclong', 'Standart', 1, 5, 'Asia/Makassar', 'cucimobilkinclong.com'],
-        ['Warnet Gaming Zone', 'Standart', 1, 2, 'Asia/Jakarta',  'warnetgamingzone.com'],
-        ['Toko Bunga Melati', 'Standart', 1, 4, 'Asia/Makassar',  'tokobungamelati.com'],
-        ['Es Krim Gelato Roma', 'Standart', 1, 5, 'Asia/Jayapura', 'eskrimgelatoroma.com'],
+        ['Bunda Catering',      'Standart', 1, 2, 'Asia/Jakarta', 'bundacatering.com',     'Sri Wahyuni'],
+        ['Loundry Bersih',      'Standart', 1, 3, 'Asia/Jakarta', 'loundrybersih.com',     'Budi Santoso'],
+        ['Warung Sederhana',    'Standart', 1, 5, 'Asia/Jakarta', 'warungsederhana.com',   'Dewi Lestari'],
+        ['Laundry Kilat',       'Standart', 1, 1, 'Asia/Jakarta', 'laundrykilat.com',      'Agus Salim'],
+        ['Toko Roti Manis',     'Standart', 1, 4, 'Asia/Jakarta', 'tokorotimanis.com',     'Rina Marlina'],
+        ['Fotokopi Cepat',      'Standart', 1, 3, 'Asia/Jakarta', 'fotokopicepat.com',     'Hendra Wijaya'],
+        ['Cuci Mobil Kinclong', 'Standart', 1, 5, 'Asia/Jakarta', 'cucimobilkinclong.com', 'Joko Susilo'],
+        ['Warnet Gaming Zone',  'Standart', 1, 2, 'Asia/Jakarta', 'warnetgamingzone.com',  'Rizky Pratama'],
+        ['Toko Bunga Melati',   'Standart', 1, 4, 'Asia/Jakarta', 'tokobungamelati.com',   'Melati Puspita'],
+        ['Es Krim Gelato Roma', 'Standart', 1, 5, 'Asia/Jakarta', 'eskrimgelatoroma.com',  'Andi Kurniawan'],
 
         // Paket Pro (max 10 karyawan)
-        ['Salon Cantik',      'Pro', 2, 6,  'Asia/Jakarta',   'saloncantik.com'],
-        ['Barber Keren',      'Pro', 2, 8,  'Asia/Jakarta',   'barberkeren.com'],
-        ['Gym Sehat',         'Pro', 3, 10, 'Asia/Makassar',  'gymsehat.com'],
-        ['Kopi Kenangan Senja', 'Pro', 2, 7, 'Asia/Jakarta',  'kopikenangansenja.com'],
-        ['Bengkel Motor Jaya', 'Pro', 2, 8, 'Asia/Makassar',  'bengkelmotorjaya.com'],
-        ['Apotek Sehat Selalu', 'Pro', 1, 5, 'Asia/Jakarta',  'apoteksehatselalu.com'],
-        ['Klinik Gigi Ceria', 'Pro', 1, 6, 'Asia/Jakarta',    'klinikgigiceria.com'],
-        ['Studio Foto Kenangan', 'Pro', 1, 4, 'Asia/Jakarta', 'studiofotokenangan.com'],
+        ['Salon Cantik',         'Pro', 2, 6,  'Asia/Jakarta', 'saloncantik.com',        'Ayu Anggraini'],
+        ['Barber Keren',         'Pro', 2, 8,  'Asia/Jakarta', 'barberkeren.com',        'Dimas Prasetyo'],
+        ['Gym Sehat',            'Pro', 3, 10, 'Asia/Jakarta', 'gymsehat.com',           'Bayu Nugroho'],
+        ['Kopi Kenangan Senja',  'Pro', 2, 7,  'Asia/Jakarta', 'kopikenangansenja.com',  'Fitri Handayani'],
+        ['Bengkel Motor Jaya',   'Pro', 2, 8,  'Asia/Jakarta', 'bengkelmotorjaya.com',   'Slamet Riyadi'],
+        ['Apotek Sehat Selalu',  'Pro', 1, 5,  'Asia/Jakarta', 'apoteksehatselalu.com',  'Ratna Sari'],
+        ['Klinik Gigi Ceria',    'Pro', 1, 6,  'Asia/Jakarta', 'klinikgigiceria.com',    'Nia Ramadhani'],
+        ['Studio Foto Kenangan', 'Pro', 1, 4,  'Asia/Jakarta', 'studiofotokenangan.com', 'Eko Purnomo'],
     ];
 
     private array $namaKaryawan = [
@@ -88,7 +90,8 @@ class UmkmOwnerSeeder extends Seeder
         $index = 0;
         $instansiList = [];
 
-        foreach ($this->umkm as [$namaInstansi, $namaPaket, $jumlahOutlet, $jmlKaryawan, $timezone, $domain]) {
+        // domain (elemen ke-6) hanya metadata bisnis; email kini pakai gmail.com → slot dilewati.
+        foreach ($this->umkm as [$namaInstansi, $namaPaket, $jumlahOutlet, $jmlKaryawan, $timezone, , $ownerNama]) {
             $index++;
             $paket = $pakets[$namaPaket];
 
@@ -100,8 +103,8 @@ class UmkmOwnerSeeder extends Seeder
             // Transaksi paket aktif
             $this->createTransaksiPaket($instansi, $paket);
 
-            // Owner (tidak dihitung kuota)
-            $owner = $this->createUser($instansi, $roles, $domain, 'owner', 'Owner', $index);
+            // Owner (tidak dihitung kuota) — nama & email organik (firstname.lastname@gmail.com)
+            $owner = $this->createUser($instansi, $roles, 'owner', 'Owner', $index, $ownerNama);
 
             // Outlet
             $outlets = $this->createOutletsForInstansi($instansi, $jumlahOutlet);
@@ -110,14 +113,14 @@ class UmkmOwnerSeeder extends Seeder
             // Role users: manager, keuangan, staff (dihitung kuota)
             $roleUsers = [];
             foreach (['manager' => 'Manager', 'keuangan' => 'Keuangan', 'staff' => 'Staff'] as $key => $roleName) {
-                $roleUsers[$key] = $this->createUser($instansi, $roles, $domain, $key, $roleName, $index);
+                $roleUsers[$key] = $this->createUser($instansi, $roles, $key, $roleName, $index);
                 $roleUsers[$key]->update(['outlet_id' => $outlets[0]->id]);
             }
 
             // Karyawan biasa (sisanya dari kuota)
             $karyawanUsers = [];
             for ($i = 0; $i < $jmlKaryawan; $i++) {
-                $user = $this->createUser($instansi, $roles, $domain, "karyawan_{$i}", 'Staff', $index);
+                $user = $this->createUser($instansi, $roles, "karyawan_{$i}", 'Staff', $index);
                 $user->update(['outlet_id' => $outlets[$i % count($outlets)]->id]);
                 $karyawanUsers["karyawan_{$i}"] = $user;
             }
@@ -168,10 +171,17 @@ class UmkmOwnerSeeder extends Seeder
         return $roles;
     }
 
-    private function createUser(Instansi $instansi, array $roles, string $domain, string $key, string $roleName, int $instansiNum): User
+    private function createUser(Instansi $instansi, array $roles, string $key, string $roleName, int $instansiNum, ?string $namaFix = null): User
     {
-        $nama = $this->generateName($key, $instansiNum);
-        $email = strtolower($key).$instansiNum.'@'.$domain;
+        // Semua email akun memakai domain publik gmail.com (lebih organik).
+        if ($namaFix !== null) {
+            // Email organik dari nama pemilik: "Sri Wahyuni" → sri.wahyuni@gmail.com
+            $nama = $namaFix.' ('.$roleName.')';
+            $email = Str::of($namaFix)->lower()->replace(' ', '.').'@gmail.com';
+        } else {
+            $nama = $this->generateName($key, $instansiNum);
+            $email = strtolower($key).$instansiNum.'@gmail.com';
+        }
 
         $user = User::firstOrCreate(
             ['email' => $email],
