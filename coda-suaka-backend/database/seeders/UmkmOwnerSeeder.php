@@ -2,12 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\BarangJasa;
 use App\Models\Divisi;
 use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\karyawan;
 use App\Models\paket;
 use App\Models\role;
+use App\Models\Stok;
 use App\Models\TransaksiKas;
 use App\Models\User;
 use App\Models\AnggotaDivisi;
@@ -18,9 +20,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Seeder akun pemilik UMKM (Owner) dengan variasi paket:
- *   - Paket Standart (5 karyawan max, harga 49.000)  → 4 instansi
- *   - Paket Pro      (10 karyawan max, harga 159.000) → 3 instansi
+ * Seeder akun pemilik UMKM (Owner) dengan variasi paket — 18 UMKM untuk kebutuhan laporan:
+ *   - Paket Standart (5 karyawan max, harga 49.000)  → 10 instansi
+ *   - Paket Pro      (10 karyawan max, harga 159.000) → 8 instansi
  *
  * Ketentuan:
  *   - Pemilik (Owner) TIDAK dihitung sebagai karyawan (konsisten KaryawanController::store).
@@ -36,15 +38,26 @@ class UmkmOwnerSeeder extends Seeder
     // [nama_instansi, paket, jumlah outlet, jumlah karyawan biasa, timezone, domain]
     private array $umkm = [
         // Paket Standart (max 5 karyawan)
-        ['Bunda Catering',   'Standart', 1, 2, 'Asia/Jakarta',    'bundacatering.com'],
-        ['Loundry Bersih',   'Standart', 1, 3, 'Asia/Jakarta',    'loundrybersih.com'],
-        ['Warung Sederhana', 'Standart', 1, 5, 'Asia/Makassar',   'warungsederhana.com'],
-        ['Laundry Kilat',    'Standart', 1, 1, 'Asia/Makassar',   'laundrykilat.com'],
+        ['Bunda Catering',    'Standart', 1, 2, 'Asia/Jakarta',   'bundacatering.com'],
+        ['Loundry Bersih',    'Standart', 1, 3, 'Asia/Jakarta',   'loundrybersih.com'],
+        ['Warung Sederhana',  'Standart', 1, 5, 'Asia/Makassar',  'warungsederhana.com'],
+        ['Laundry Kilat',     'Standart', 1, 1, 'Asia/Makassar',  'laundrykilat.com'],
+        ['Toko Roti Manis',   'Standart', 1, 4, 'Asia/Jakarta',   'tokorotimanis.com'],
+        ['Fotokopi Cepat',    'Standart', 1, 3, 'Asia/Jakarta',   'fotokopicepat.com'],
+        ['Cuci Mobil Kinclong', 'Standart', 1, 5, 'Asia/Makassar', 'cucimobilkinclong.com'],
+        ['Warnet Gaming Zone', 'Standart', 1, 2, 'Asia/Jakarta',  'warnetgamingzone.com'],
+        ['Toko Bunga Melati', 'Standart', 1, 4, 'Asia/Makassar',  'tokobungamelati.com'],
+        ['Es Krim Gelato Roma', 'Standart', 1, 5, 'Asia/Jayapura', 'eskrimgelatoroma.com'],
 
         // Paket Pro (max 10 karyawan)
-        ['Salon Cantik',     'Pro',      2, 6, 'Asia/Jakarta',    'saloncantik.com'],
-        ['Barber Keren',     'Pro',      2, 8, 'Asia/Jakarta',    'barberkeren.com'],
-        ['Gym Sehat',        'Pro',      3, 10, 'Asia/Makassar',  'gymsehat.com'],
+        ['Salon Cantik',      'Pro', 2, 6,  'Asia/Jakarta',   'saloncantik.com'],
+        ['Barber Keren',      'Pro', 2, 8,  'Asia/Jakarta',   'barberkeren.com'],
+        ['Gym Sehat',         'Pro', 3, 10, 'Asia/Makassar',  'gymsehat.com'],
+        ['Kopi Kenangan Senja', 'Pro', 2, 7, 'Asia/Jakarta',  'kopikenangansenja.com'],
+        ['Bengkel Motor Jaya', 'Pro', 2, 8, 'Asia/Makassar',  'bengkelmotorjaya.com'],
+        ['Apotek Sehat Selalu', 'Pro', 1, 5, 'Asia/Jakarta',  'apoteksehatselalu.com'],
+        ['Klinik Gigi Ceria', 'Pro', 1, 6, 'Asia/Jakarta',    'klinikgigiceria.com'],
+        ['Studio Foto Kenangan', 'Pro', 1, 4, 'Asia/Jakarta', 'studiofotokenangan.com'],
     ];
 
     private array $namaKaryawan = [
@@ -52,6 +65,11 @@ class UmkmOwnerSeeder extends Seeder
         'Fajar Nugroho', 'Rahmat Hidayat', 'Putri Amelia', 'Eko Prasetyo',
         'Nadia Safitri', 'Rizky Ramadhan', 'Intan Permata', 'Yoga Pratama',
         'Maya Anggraini', 'Bagus Setiawan', 'Lestari Wulandari',
+    ];
+
+    private array $kotaLahir = [
+        'Bandung', 'Surabaya', 'Yogyakarta', 'Semarang', 'Makassar', 'Medan',
+        'Malang', 'Solo', 'Bekasi', 'Depok', 'Bogor', 'Cirebon', 'Purwokerto',
     ];
 
     public function run(): void
@@ -116,6 +134,9 @@ class UmkmOwnerSeeder extends Seeder
             // Transaksi keuangan 30 hari
             $this->createTransaksiKeuangan($instansi, $outlets, $kategoris, $users);
 
+            // Katalog Barang/Jasa (produk jual) + Stok bahan/barang produksi — organik per jenis usaha
+            $this->seedKatalogDanStok($instansi, $namaInstansi);
+
             // Simpan untuk laporan
             $instansiList[] = [
                 'nama' => $instansi->nama_instansi,
@@ -170,6 +191,9 @@ class UmkmOwnerSeeder extends Seeder
                 'nama_lengkap' => $nama,
                 'kontak' => '0812'.rand(10000000, 99999999),
                 'alamat' => $this->getRandomAddress(),
+                'tempat_lahir' => $this->kotaLahir[array_rand($this->kotaLahir)],
+                'tanggal_lahir' => now()->subYears(rand(20, 45))->subDays(rand(0, 364))->toDateString(),
+                'tanggal_mulai_kerja' => now()->subMonths(rand(3, 60))->toDateString(),
                 'sisa_cuti' => rand(6, 12),
             ]
         );
@@ -346,6 +370,310 @@ class UmkmOwnerSeeder extends Seeder
                 ]);
             }
         }
+    }
+
+    /**
+     * Seed katalog Barang/Jasa (produk jual) + Stok (bahan/barang produksi)
+     * organik sesuai jenis usaha: catering punya bahan masak, laundry punya
+     * deterjen, salon punya shampo, gym punya suplemen, dst.
+     */
+    private function seedKatalogDanStok(Instansi $instansi, string $namaInstansi): void
+    {
+        [$barangJasa, $stok] = $this->katalogUntuk($namaInstansi);
+
+        foreach ($barangJasa as $bj) {
+            BarangJasa::firstOrCreate(
+                ['instansi_id' => $instansi->id, 'nama' => $bj['nama']],
+                [
+                    'jenis' => $bj['jenis'],
+                    'kategori' => $bj['kategori'] ?? null,
+                    'satuan' => $bj['satuan'],
+                    'harga_jual' => $bj['harga_jual'],
+                    'harga_beli' => $bj['harga_beli'] ?? null,
+                    'stok' => $bj['jenis'] === 'barang' ? ($bj['stok'] ?? rand(10, 100)) : 0,
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        foreach ($stok as $s) {
+            Stok::firstOrCreate(
+                ['instansi_id' => $instansi->id, 'nama' => $s['nama']],
+                [
+                    'kategori' => $s['kategori'] ?? 'Bahan Baku',
+                    'satuan' => $s['satuan'],
+                    'stok' => $s['stok'],
+                    'stok_minimum' => $s['stok_minimum'] ?? 5,
+                    'harga_beli' => $s['harga_beli'],
+                    'is_active' => true,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Data katalog & stok per jenis usaha.
+     *
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+     */
+    private function katalogUntuk(string $namaInstansi): array
+    {
+        return match ($namaInstansi) {
+            'Bunda Catering' => [
+                [
+                    ['nama' => 'Nasi Box Ayam', 'jenis' => 'barang', 'kategori' => 'Makanan', 'satuan' => 'box', 'harga_jual' => 25000, 'harga_beli' => 15000, 'stok' => 40],
+                    ['nama' => 'Snack Box', 'jenis' => 'barang', 'kategori' => 'Makanan', 'satuan' => 'box', 'harga_jual' => 15000, 'harga_beli' => 9000, 'stok' => 60],
+                    ['nama' => 'Tumpeng Mini', 'jenis' => 'barang', 'kategori' => 'Makanan', 'satuan' => 'porsi', 'harga_jual' => 150000, 'harga_beli' => 90000, 'stok' => 8],
+                    ['nama' => 'Paket Prasmanan', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'pax', 'harga_jual' => 35000],
+                ],
+                [
+                    ['nama' => 'Beras', 'satuan' => 'kg', 'stok' => 50, 'stok_minimum' => 10, 'harga_beli' => 12000],
+                    ['nama' => 'Ayam Potong', 'satuan' => 'kg', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 35000],
+                    ['nama' => 'Minyak Goreng', 'satuan' => 'liter', 'stok' => 15, 'stok_minimum' => 5, 'harga_beli' => 18000],
+                    ['nama' => 'Telur Ayam', 'satuan' => 'kg', 'stok' => 12, 'stok_minimum' => 3, 'harga_beli' => 28000],
+                ],
+            ],
+            'Loundry Bersih', 'Laundry Kilat' => [
+                [
+                    ['nama' => 'Cuci Kering Kiloan', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'kg', 'harga_jual' => 7000],
+                    ['nama' => 'Cuci Setrika Kiloan', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'kg', 'harga_jual' => 10000],
+                    ['nama' => 'Setrika Saja', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'kg', 'harga_jual' => 5000],
+                    ['nama' => 'Cuci Bed Cover', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'pcs', 'harga_jual' => 25000],
+                ],
+                [
+                    ['nama' => 'Deterjen', 'satuan' => 'kg', 'stok' => 25, 'stok_minimum' => 5, 'harga_beli' => 25000],
+                    ['nama' => 'Pewangi Pakaian', 'satuan' => 'liter', 'stok' => 12, 'stok_minimum' => 3, 'harga_beli' => 30000],
+                    ['nama' => 'Pelembut', 'satuan' => 'liter', 'stok' => 10, 'stok_minimum' => 3, 'harga_beli' => 28000],
+                ],
+            ],
+            'Warung Sederhana' => [
+                [
+                    ['nama' => 'Nasi Rames', 'jenis' => 'barang', 'kategori' => 'Makanan', 'satuan' => 'porsi', 'harga_jual' => 15000, 'harga_beli' => 8000, 'stok' => 50],
+                    ['nama' => 'Ayam Goreng', 'jenis' => 'barang', 'kategori' => 'Makanan', 'satuan' => 'potong', 'harga_jual' => 12000, 'harga_beli' => 7000, 'stok' => 40],
+                    ['nama' => 'Es Teh Manis', 'jenis' => 'barang', 'kategori' => 'Minuman', 'satuan' => 'gelas', 'harga_jual' => 4000, 'harga_beli' => 1500, 'stok' => 100],
+                    ['nama' => 'Gorengan', 'jenis' => 'barang', 'kategori' => 'Snack', 'satuan' => 'pcs', 'harga_jual' => 2000, 'harga_beli' => 800, 'stok' => 80],
+                ],
+                [
+                    ['nama' => 'Beras', 'satuan' => 'kg', 'stok' => 40, 'stok_minimum' => 10, 'harga_beli' => 12000],
+                    ['nama' => 'Minyak Goreng', 'satuan' => 'liter', 'stok' => 15, 'stok_minimum' => 5, 'harga_beli' => 18000],
+                    ['nama' => 'Telur Ayam', 'satuan' => 'kg', 'stok' => 8, 'stok_minimum' => 3, 'harga_beli' => 28000],
+                    ['nama' => 'Gula Pasir', 'satuan' => 'kg', 'stok' => 6, 'stok_minimum' => 2, 'harga_beli' => 15000],
+                ],
+            ],
+            'Salon Cantik' => [
+                [
+                    ['nama' => 'Potong Rambut', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 35000],
+                    ['nama' => 'Creambath', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 50000],
+                    ['nama' => 'Facial', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 75000],
+                    ['nama' => 'Cat Rambut', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 120000],
+                    ['nama' => 'Smoothing', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 250000],
+                ],
+                [
+                    ['nama' => 'Shampo Salon', 'satuan' => 'botol', 'stok' => 12, 'stok_minimum' => 3, 'harga_beli' => 45000],
+                    ['nama' => 'Pewarna Rambut', 'satuan' => 'box', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 35000],
+                    ['nama' => 'Krim Creambath', 'satuan' => 'kg', 'stok' => 5, 'stok_minimum' => 2, 'harga_beli' => 60000],
+                ],
+            ],
+            'Barber Keren' => [
+                [
+                    ['nama' => 'Potong Rambut Pria', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 25000],
+                    ['nama' => 'Cukur Jenggot', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 15000],
+                    ['nama' => 'Potong + Keramas', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 35000],
+                    ['nama' => 'Semir Rambut', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 40000],
+                ],
+                [
+                    ['nama' => 'Pomade', 'satuan' => 'kaleng', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 30000],
+                    ['nama' => 'Sabun Cukur', 'satuan' => 'botol', 'stok' => 10, 'stok_minimum' => 3, 'harga_beli' => 20000],
+                    ['nama' => 'Cologne', 'satuan' => 'botol', 'stok' => 8, 'stok_minimum' => 2, 'harga_beli' => 35000],
+                ],
+            ],
+            'Gym Sehat' => [
+                [
+                    ['nama' => 'Membership Bulanan', 'jenis' => 'jasa', 'kategori' => 'Membership', 'satuan' => 'bulan', 'harga_jual' => 200000],
+                    ['nama' => 'Membership Tahunan', 'jenis' => 'jasa', 'kategori' => 'Membership', 'satuan' => 'tahun', 'harga_jual' => 1800000],
+                    ['nama' => 'Personal Trainer', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 150000],
+                    ['nama' => 'Day Pass', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'kali', 'harga_jual' => 35000],
+                ],
+                [
+                    ['nama' => 'Suplemen Protein', 'satuan' => 'botol', 'stok' => 10, 'stok_minimum' => 2, 'harga_beli' => 250000],
+                    ['nama' => 'Handuk Gym', 'satuan' => 'pcs', 'stok' => 30, 'stok_minimum' => 5, 'harga_beli' => 25000],
+                    ['nama' => 'Air Mineral', 'satuan' => 'dus', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 30000],
+                ],
+            ],
+            'Toko Roti Manis' => [
+                [
+                    ['nama' => 'Roti Tawar', 'jenis' => 'barang', 'kategori' => 'Roti', 'satuan' => 'bungkus', 'harga_jual' => 15000, 'harga_beli' => 8000, 'stok' => 40],
+                    ['nama' => 'Donat Coklat', 'jenis' => 'barang', 'kategori' => 'Roti', 'satuan' => 'pcs', 'harga_jual' => 5000, 'harga_beli' => 2500, 'stok' => 80],
+                    ['nama' => 'Bolu Pandan', 'jenis' => 'barang', 'kategori' => 'Kue', 'satuan' => 'loyang', 'harga_jual' => 35000, 'harga_beli' => 20000, 'stok' => 15],
+                    ['nama' => 'Roti Sobek', 'jenis' => 'barang', 'kategori' => 'Roti', 'satuan' => 'bungkus', 'harga_jual' => 18000, 'harga_beli' => 10000, 'stok' => 30],
+                    ['nama' => 'Kue Ulang Tahun', 'jenis' => 'barang', 'kategori' => 'Kue', 'satuan' => 'pcs', 'harga_jual' => 150000, 'harga_beli' => 90000, 'stok' => 5],
+                ],
+                [
+                    ['nama' => 'Tepung Terigu', 'satuan' => 'kg', 'stok' => 50, 'stok_minimum' => 10, 'harga_beli' => 12000],
+                    ['nama' => 'Mentega', 'satuan' => 'kg', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 45000],
+                    ['nama' => 'Gula Halus', 'satuan' => 'kg', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 15000],
+                    ['nama' => 'Telur Ayam', 'satuan' => 'kg', 'stok' => 25, 'stok_minimum' => 5, 'harga_beli' => 28000],
+                    ['nama' => 'Ragi Instan', 'satuan' => 'bungkus', 'stok' => 30, 'stok_minimum' => 8, 'harga_beli' => 8000],
+                ],
+            ],
+            'Fotokopi Cepat' => [
+                [
+                    ['nama' => 'Fotokopi HVS', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'lembar', 'harga_jual' => 500],
+                    ['nama' => 'Print Warna', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'lembar', 'harga_jual' => 2000],
+                    ['nama' => 'Jilid Spiral', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'buku', 'harga_jual' => 15000],
+                    ['nama' => 'Laminating', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'lembar', 'harga_jual' => 5000],
+                    ['nama' => 'Scan Dokumen', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'lembar', 'harga_jual' => 2000],
+                ],
+                [
+                    ['nama' => 'Kertas HVS A4', 'satuan' => 'rim', 'stok' => 30, 'stok_minimum' => 8, 'harga_beli' => 55000],
+                    ['nama' => 'Tinta Printer', 'satuan' => 'botol', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 85000],
+                    ['nama' => 'Toner', 'satuan' => 'pcs', 'stok' => 10, 'stok_minimum' => 2, 'harga_beli' => 350000],
+                    ['nama' => 'Plastik Laminating', 'satuan' => 'pack', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 45000],
+                ],
+            ],
+            'Cuci Mobil Kinclong' => [
+                [
+                    ['nama' => 'Cuci Mobil Reguler', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 35000],
+                    ['nama' => 'Cuci Mobil + Wax', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 60000],
+                    ['nama' => 'Cuci Motor', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 15000],
+                    ['nama' => 'Salon Interior', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 150000],
+                    ['nama' => 'Poles Body', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 250000],
+                ],
+                [
+                    ['nama' => 'Sabun Cuci Mobil', 'satuan' => 'liter', 'stok' => 25, 'stok_minimum' => 5, 'harga_beli' => 35000],
+                    ['nama' => 'Wax Poles', 'satuan' => 'botol', 'stok' => 12, 'stok_minimum' => 3, 'harga_beli' => 55000],
+                    ['nama' => 'Semir Ban', 'satuan' => 'botol', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 25000],
+                    ['nama' => 'Kanebo', 'satuan' => 'pcs', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 15000],
+                ],
+            ],
+            'Warnet Gaming Zone' => [
+                [
+                    ['nama' => 'Paket 1 Jam Reguler', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'jam', 'harga_jual' => 4000],
+                    ['nama' => 'Paket 3 Jam', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'paket', 'harga_jual' => 10000],
+                    ['nama' => 'Paket VIP 1 Jam', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'jam', 'harga_jual' => 6000],
+                    ['nama' => 'Paket Malam', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'paket', 'harga_jual' => 20000],
+                ],
+                [
+                    ['nama' => 'Voucher Game', 'satuan' => 'pcs', 'stok' => 100, 'stok_minimum' => 20, 'harga_beli' => 10000],
+                    ['nama' => 'Snack Ringan', 'satuan' => 'pcs', 'stok' => 50, 'stok_minimum' => 10, 'harga_beli' => 3000],
+                    ['nama' => 'Minuman Kaleng', 'satuan' => 'pcs', 'stok' => 60, 'stok_minimum' => 12, 'harga_beli' => 5000],
+                ],
+            ],
+            'Toko Bunga Melati' => [
+                [
+                    ['nama' => 'Buket Mawar', 'jenis' => 'barang', 'kategori' => 'Buket', 'satuan' => 'buket', 'harga_jual' => 150000, 'harga_beli' => 80000, 'stok' => 10],
+                    ['nama' => 'Karangan Bunga Papan', 'jenis' => 'barang', 'kategori' => 'Karangan', 'satuan' => 'papan', 'harga_jual' => 350000, 'harga_beli' => 200000, 'stok' => 5],
+                    ['nama' => 'Bunga Meja', 'jenis' => 'barang', 'kategori' => 'Rangkaian', 'satuan' => 'pcs', 'harga_jual' => 75000, 'harga_beli' => 40000, 'stok' => 15],
+                    ['nama' => 'Buket Wisuda', 'jenis' => 'barang', 'kategori' => 'Buket', 'satuan' => 'buket', 'harga_jual' => 100000, 'harga_beli' => 55000, 'stok' => 12],
+                ],
+                [
+                    ['nama' => 'Mawar Segar', 'satuan' => 'ikat', 'stok' => 30, 'stok_minimum' => 6, 'harga_beli' => 45000],
+                    ['nama' => 'Pita Dekorasi', 'satuan' => 'roll', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 15000],
+                    ['nama' => 'Kertas Buket', 'satuan' => 'pack', 'stok' => 25, 'stok_minimum' => 5, 'harga_beli' => 25000],
+                    ['nama' => 'Floral Foam', 'satuan' => 'pcs', 'stok' => 40, 'stok_minimum' => 10, 'harga_beli' => 8000],
+                ],
+            ],
+            'Es Krim Gelato Roma' => [
+                [
+                    ['nama' => 'Gelato Single Scoop', 'jenis' => 'barang', 'kategori' => 'Es Krim', 'satuan' => 'cup', 'harga_jual' => 18000, 'harga_beli' => 7000, 'stok' => 60],
+                    ['nama' => 'Gelato Double Scoop', 'jenis' => 'barang', 'kategori' => 'Es Krim', 'satuan' => 'cup', 'harga_jual' => 30000, 'harga_beli' => 12000, 'stok' => 50],
+                    ['nama' => 'Es Krim Cone', 'jenis' => 'barang', 'kategori' => 'Es Krim', 'satuan' => 'cone', 'harga_jual' => 12000, 'harga_beli' => 5000, 'stok' => 80],
+                    ['nama' => 'Milkshake', 'jenis' => 'barang', 'kategori' => 'Minuman', 'satuan' => 'gelas', 'harga_jual' => 25000, 'harga_beli' => 10000, 'stok' => 40],
+                    ['nama' => 'Banana Split', 'jenis' => 'barang', 'kategori' => 'Es Krim', 'satuan' => 'porsi', 'harga_jual' => 35000, 'harga_beli' => 15000, 'stok' => 25],
+                ],
+                [
+                    ['nama' => 'Susu Full Cream', 'satuan' => 'liter', 'stok' => 40, 'stok_minimum' => 8, 'harga_beli' => 20000],
+                    ['nama' => 'Gula Pasir', 'satuan' => 'kg', 'stok' => 25, 'stok_minimum' => 5, 'harga_beli' => 15000],
+                    ['nama' => 'Perisa Buah', 'satuan' => 'botol', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 55000],
+                    ['nama' => 'Cone Wafer', 'satuan' => 'box', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 45000],
+                    ['nama' => 'Topping Coklat', 'satuan' => 'kg', 'stok' => 10, 'stok_minimum' => 2, 'harga_beli' => 65000],
+                ],
+            ],
+            'Kopi Kenangan Senja' => [
+                [
+                    ['nama' => 'Kopi Susu Gula Aren', 'jenis' => 'barang', 'kategori' => 'Minuman', 'satuan' => 'cup', 'harga_jual' => 18000, 'harga_beli' => 7000, 'stok' => 60],
+                    ['nama' => 'Americano', 'jenis' => 'barang', 'kategori' => 'Minuman', 'satuan' => 'cup', 'harga_jual' => 15000, 'harga_beli' => 5000, 'stok' => 50],
+                    ['nama' => 'Cappuccino', 'jenis' => 'barang', 'kategori' => 'Minuman', 'satuan' => 'cup', 'harga_jual' => 22000, 'harga_beli' => 8000, 'stok' => 50],
+                    ['nama' => 'Matcha Latte', 'jenis' => 'barang', 'kategori' => 'Minuman', 'satuan' => 'cup', 'harga_jual' => 25000, 'harga_beli' => 10000, 'stok' => 40],
+                    ['nama' => 'Croissant', 'jenis' => 'barang', 'kategori' => 'Snack', 'satuan' => 'pcs', 'harga_jual' => 20000, 'harga_beli' => 12000, 'stok' => 30],
+                ],
+                [
+                    ['nama' => 'Biji Kopi Arabika', 'satuan' => 'kg', 'stok' => 15, 'stok_minimum' => 3, 'harga_beli' => 120000],
+                    ['nama' => 'Susu UHT', 'satuan' => 'liter', 'stok' => 30, 'stok_minimum' => 8, 'harga_beli' => 18000],
+                    ['nama' => 'Gula Aren Cair', 'satuan' => 'liter', 'stok' => 10, 'stok_minimum' => 3, 'harga_beli' => 25000],
+                    ['nama' => 'Sirup Vanilla', 'satuan' => 'botol', 'stok' => 8, 'stok_minimum' => 2, 'harga_beli' => 45000],
+                ],
+            ],
+            'Bengkel Motor Jaya' => [
+                [
+                    ['nama' => 'Servis Ringan', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 50000],
+                    ['nama' => 'Ganti Oli', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 45000],
+                    ['nama' => 'Servis Besar', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'unit', 'harga_jual' => 150000],
+                    ['nama' => 'Tambal Ban', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'titik', 'harga_jual' => 15000],
+                    ['nama' => 'Ganti Kampas Rem', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'set', 'harga_jual' => 80000],
+                ],
+                [
+                    ['nama' => 'Oli Mesin', 'satuan' => 'botol', 'stok' => 40, 'stok_minimum' => 8, 'harga_beli' => 45000],
+                    ['nama' => 'Kampas Rem', 'satuan' => 'set', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 55000],
+                    ['nama' => 'Busi', 'satuan' => 'pcs', 'stok' => 30, 'stok_minimum' => 8, 'harga_beli' => 25000],
+                    ['nama' => 'Ban Dalam', 'satuan' => 'pcs', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 35000],
+                ],
+            ],
+            'Apotek Sehat Selalu' => [
+                [
+                    ['nama' => 'Paracetamol', 'jenis' => 'barang', 'kategori' => 'Obat', 'satuan' => 'strip', 'harga_jual' => 5000, 'harga_beli' => 3000, 'stok' => 100],
+                    ['nama' => 'Vitamin C', 'jenis' => 'barang', 'kategori' => 'Suplemen', 'satuan' => 'botol', 'harga_jual' => 25000, 'harga_beli' => 15000, 'stok' => 50],
+                    ['nama' => 'Masker Medis', 'jenis' => 'barang', 'kategori' => 'Alkes', 'satuan' => 'box', 'harga_jual' => 35000, 'harga_beli' => 20000, 'stok' => 40],
+                    ['nama' => 'Minyak Kayu Putih', 'jenis' => 'barang', 'kategori' => 'Obat', 'satuan' => 'botol', 'harga_jual' => 18000, 'harga_beli' => 11000, 'stok' => 35],
+                    ['nama' => 'Plester Luka', 'jenis' => 'barang', 'kategori' => 'Alkes', 'satuan' => 'box', 'harga_jual' => 12000, 'harga_beli' => 7000, 'stok' => 45],
+                ],
+                [
+                    ['nama' => 'Obat Generik', 'satuan' => 'box', 'stok' => 100, 'stok_minimum' => 20, 'harga_beli' => 30000],
+                    ['nama' => 'Alkohol 70%', 'satuan' => 'botol', 'stok' => 40, 'stok_minimum' => 8, 'harga_beli' => 15000],
+                    ['nama' => 'Perban', 'satuan' => 'roll', 'stok' => 50, 'stok_minimum' => 10, 'harga_beli' => 8000],
+                    ['nama' => 'Hand Sanitizer', 'satuan' => 'botol', 'stok' => 30, 'stok_minimum' => 6, 'harga_beli' => 20000],
+                ],
+            ],
+            'Klinik Gigi Ceria' => [
+                [
+                    ['nama' => 'Scaling / Bersih Karang', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 150000],
+                    ['nama' => 'Tambal Gigi', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'gigi', 'harga_jual' => 200000],
+                    ['nama' => 'Cabut Gigi', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'gigi', 'harga_jual' => 250000],
+                    ['nama' => 'Konsultasi', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 50000],
+                    ['nama' => 'Pemutihan Gigi', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 500000],
+                ],
+                [
+                    ['nama' => 'Bahan Tambal Gigi', 'satuan' => 'box', 'stok' => 15, 'stok_minimum' => 3, 'harga_beli' => 250000],
+                    ['nama' => 'Anestesi Lokal', 'satuan' => 'ampul', 'stok' => 40, 'stok_minimum' => 8, 'harga_beli' => 35000],
+                    ['nama' => 'Sarung Tangan Medis', 'satuan' => 'box', 'stok' => 25, 'stok_minimum' => 5, 'harga_beli' => 45000],
+                    ['nama' => 'Masker Medis', 'satuan' => 'box', 'stok' => 30, 'stok_minimum' => 6, 'harga_beli' => 30000],
+                ],
+            ],
+            'Studio Foto Kenangan' => [
+                [
+                    ['nama' => 'Foto Studio Keluarga', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 150000],
+                    ['nama' => 'Pas Foto', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'paket', 'harga_jual' => 25000],
+                    ['nama' => 'Foto Wisuda', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 100000],
+                    ['nama' => 'Cetak Foto 4R', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'lembar', 'harga_jual' => 5000],
+                    ['nama' => 'Foto Produk', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 200000],
+                ],
+                [
+                    ['nama' => 'Kertas Foto Glossy', 'satuan' => 'pack', 'stok' => 30, 'stok_minimum' => 6, 'harga_beli' => 65000],
+                    ['nama' => 'Tinta Foto', 'satuan' => 'set', 'stok' => 15, 'stok_minimum' => 4, 'harga_beli' => 120000],
+                    ['nama' => 'Bingkai Foto', 'satuan' => 'pcs', 'stok' => 40, 'stok_minimum' => 8, 'harga_beli' => 35000],
+                    ['nama' => 'Background Kain', 'satuan' => 'pcs', 'stok' => 8, 'stok_minimum' => 2, 'harga_beli' => 150000],
+                ],
+            ],
+            default => [
+                [
+                    ['nama' => 'Produk Umum', 'jenis' => 'barang', 'kategori' => 'Umum', 'satuan' => 'pcs', 'harga_jual' => 20000, 'harga_beli' => 12000, 'stok' => 30],
+                    ['nama' => 'Layanan Umum', 'jenis' => 'jasa', 'kategori' => 'Layanan', 'satuan' => 'sesi', 'harga_jual' => 30000],
+                ],
+                [
+                    ['nama' => 'Bahan Baku Umum', 'satuan' => 'kg', 'stok' => 20, 'stok_minimum' => 5, 'harga_beli' => 15000],
+                ],
+            ],
+        };
     }
 
     private function getRandomAddress(): string

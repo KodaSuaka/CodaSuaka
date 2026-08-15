@@ -246,5 +246,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/request-logs', [SuperAdminController::class, 'indexRequestLog']);
         Route::get('/request-logs/{requestLog}', [SuperAdminController::class, 'showRequestLog']);
         Route::delete('/request-logs/{requestLog}', [SuperAdminController::class, 'destroyRequestLog']);
+
+        // ─── Invoice Pembelian Paket (transaksi_paket) ─────────
+        Route::get('/transaksi-pakets', [SuperAdminController::class, 'indexTransaksiPaket']);
+        Route::post('/transaksi-pakets', [SuperAdminController::class, 'storeTransaksiPaket']);
+        Route::get('/transaksi-pakets/{id}/invoice', [SuperAdminController::class, 'invoicePaketPdf']);
+        Route::get('/transaksi-pakets/{id}', [SuperAdminController::class, 'showTransaksiPaket']);
+        Route::put('/transaksi-pakets/{id}', [SuperAdminController::class, 'updateTransaksiPaket']);
     });
 });
