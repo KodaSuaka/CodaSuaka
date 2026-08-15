@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
 
 data class ChatContactUiState(
     val contactGroups: List<ContactGroupDto> = emptyList(),
+    val filteredGroups: List<ContactGroupDto> = emptyList(),
+    val searchQuery: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
@@ -38,6 +40,7 @@ class ChatContactViewModel(
                 .onSuccess { groups ->
                     _uiState.value = _uiState.value.copy(
                         contactGroups = groups,
+                        filteredGroups = filterGroups(groups, _uiState.value.searchQuery),
                         isLoading = false
                     )
                 }
@@ -62,12 +65,31 @@ class ChatContactViewModel(
                     .onSuccess { groups ->
                         _uiState.value = _uiState.value.copy(
                             contactGroups = groups,
+                            filteredGroups = filterGroups(groups, _uiState.value.searchQuery),
                             errorMessage = null
                         )
                     }
                 // Abaikan error polling agar tidak mengganggu UI
             }
         }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.value = _uiState.value.copy(
+            searchQuery = query,
+            filteredGroups = filterGroups(_uiState.value.contactGroups, query)
+        )
+    }
+
+    private fun filterGroups(groups: List<ContactGroupDto>, query: String): List<ContactGroupDto> {
+        if (query.isBlank()) return groups
+        
+        return groups.map { group ->
+            val filteredContacts = group.contacts.filter { contact ->
+                (contact.namaLengkap ?: contact.name ?: "").contains(query, ignoreCase = true)
+            }
+            group.copy(contacts = filteredContacts)
+        }.filter { it.contacts.isNotEmpty() }
     }
 
     fun clearError() {

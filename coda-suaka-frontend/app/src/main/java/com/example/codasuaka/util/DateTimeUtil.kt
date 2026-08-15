@@ -15,7 +15,7 @@ object DateTimeUtil {
     private var serverZoneId: ZoneId? = null
 
     /** Zona waktu instansi (dari server) jika sudah di-set, jika belum fallback ke zona device. */
-    private val zoneId: ZoneId
+    val zoneId: ZoneId
         get() = serverZoneId ?: ZoneId.systemDefault()
 
     /**

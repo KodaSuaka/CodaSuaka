@@ -248,8 +248,7 @@ fun DashboardScreen(
                             MenuItem("Laporan Keuangan", Icons.Default.AccountBalance, Primary, allowedRoles = listOf("Owner")),
                             MenuItem("Approval Keuangan", Icons.Default.FactCheck, Primary, requiredPermission = "approve:keuangan"),
                             MenuItem("Penugasan", Icons.AutoMirrored.Filled.Assignment, Primary, allowedRoles = listOf("Owner")),
-                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, Primary, requiredPermission = "view:kasir"),
-                            MenuItem("Jadwal", Icons.Default.CalendarMonth, Primary)
+                            MenuItem("Riwayat Nota", Icons.Default.ReceiptLong, Primary, requiredPermission = "view:kasir")
                         ),
                         onItemClick = { label ->
                             when (label) {
@@ -257,7 +256,6 @@ fun DashboardScreen(
                                 "Approval Keuangan" -> onNavigateTo("approval_keuangan")
                                 "Penugasan" -> onNavigateTo("penugasan")
                                 "Riwayat Nota" -> onNavigateTo("riwayat_nota")
-                                "Jadwal" -> onNavigateTo("kalender")
                             }
                         }
                     )
@@ -273,6 +271,7 @@ fun DashboardScreen(
         onClose = { notificationViewModel.toggleSidebar(false) },
         onMarkAsRead = { notificationViewModel.markAsRead(it) },
         onMarkAllAsRead = { notificationViewModel.markAllAsRead() },
+        onDelete = { notificationViewModel.deleteNotification(it) },
         onRefresh = { notificationViewModel.refresh() }
     )
 }
@@ -323,17 +322,17 @@ private fun SectionOmset(
         ) {
             if (showYearPicker) {
                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(java.time.ZoneOffset.UTC)
                     .toLocalDate()
                     
                 YearPickerDialog(
                     selectedYear = displayMonth.year,
                     onYearSelected = { year ->
                         val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(java.time.ZoneOffset.UTC)
                             .toLocalDate()
                         val targetMonth = currentMonth.withYear(year)
-                        datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                         showYearPicker = false
                     },
                     onDismiss = { showYearPicker = false }
@@ -345,7 +344,7 @@ private fun SectionOmset(
             ) {
                 // Header Kustom < Bulan Tahun >
                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(java.time.ZoneOffset.UTC)
                     .toLocalDate()
                 
                 val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -354,19 +353,19 @@ private fun SectionOmset(
                     title = monthTitle.replaceFirstChar { it.uppercase() },
                     onPrevClick = {
                         val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(java.time.ZoneOffset.UTC)
                             .toLocalDate()
                             .withDayOfMonth(1)
                         val prevMonth = currentMonth.minusMonths(1)
-                        datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                     },
                     onNextClick = {
                         val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(java.time.ZoneOffset.UTC)
                             .toLocalDate()
                             .withDayOfMonth(1)
                         val nextMonth = currentMonth.plusMonths(1)
-                        datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                     },
                     onTitleClick = { showYearPicker = true },
                     modifier = Modifier.padding(horizontal = 12.dp)
@@ -707,6 +706,8 @@ private fun DrawerContent(
             DrawerItem(Icons.Default.Store, "Kelola Outlet", iconTint = Primary) { onCloseDrawer(); onNavigateTo("kelola_outlet") }
             DrawerItem(Icons.Default.AccessTime, "Jam Operasional", iconTint = Primary) { onCloseDrawer(); onNavigateTo("jam_operasional") }
             DrawerItem(Icons.Default.Groups, "Divisi", iconTint = Primary) { onCloseDrawer(); onNavigateTo("divisi") }
+            DrawerItem(Icons.Default.CalendarMonth, "Jadwal", iconTint = Primary) { onCloseDrawer(); onNavigateTo("kalender") }
+            DrawerItem(Icons.Default.Print, "Pengaturan Struk", iconTint = Primary) { onCloseDrawer(); onNavigateTo("receipt_settings") }
 
             Spacer(modifier = Modifier.height(16.dp))
 

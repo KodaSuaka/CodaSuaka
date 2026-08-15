@@ -17,7 +17,10 @@ import kotlinx.coroutines.withContext
 import java.io.OutputStream
 import java.util.*
 
-class BluetoothPrinterManager(private val context: Context) {
+class BluetoothPrinterManager(
+    private val context: Context,
+    private val preferenceManager: com.example.codasuaka.data.local.PreferenceManager
+) {
 
     private val bluetoothManager: BluetoothManager? = 
         context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -58,11 +61,15 @@ class BluetoothPrinterManager(private val context: Context) {
             
             val outputStream = socket.outputStream
             
-            // Format Struk
+            // Format Struk (Dinamis dari PreferenceManager)
             outputStream.write(ESC_POS.INIT)
             outputStream.write(ESC_POS.ALIGN_CENTER)
-            outputStream.write("CODA SUAKA\n".toByteArray())
-            outputStream.write("Penyegar Dahaga & Jiwa\n".toByteArray())
+            outputStream.write("${preferenceManager.getHeaderText()}\n".toByteArray())
+            
+            val tagline = preferenceManager.getTaglineText()
+            if (tagline.isNotBlank()) {
+                outputStream.write("$tagline\n".toByteArray())
+            }
             outputStream.write("--------------------------------\n".toByteArray())
             
             outputStream.write(ESC_POS.ALIGN_LEFT)
@@ -70,6 +77,9 @@ class BluetoothPrinterManager(private val context: Context) {
             outputStream.write("Tgl: ${nota.tanggal}\n".toByteArray())
             operatorName?.let {
                 outputStream.write("Kasir: $it\n".toByteArray())
+            }
+            nota.pihakTerkait?.let {
+                if (it.isNotBlank()) outputStream.write("Plgn: $it\n".toByteArray())
             }
             outputStream.write("--------------------------------\n".toByteArray())
             
@@ -89,8 +99,24 @@ class BluetoothPrinterManager(private val context: Context) {
             outputStream.write("TOTAL: ${formatRupiah(nota.total)}\n".toByteArray())
             
             outputStream.write(ESC_POS.ALIGN_CENTER)
-            outputStream.write("\nTerima Kasih\n".toByteArray())
-            outputStream.write("Selamat Menikmati!\n\n\n\n".toByteArray())
+            
+            val footer1 = preferenceManager.getFooterText1()
+            if (footer1.isNotBlank()) {
+                outputStream.write("\n$footer1\n".toByteArray())
+            }
+            
+            val footer2 = preferenceManager.getFooterText2()
+            if (footer2.isNotBlank()) {
+                outputStream.write("$footer2\n".toByteArray())
+            }
+
+            nota.catatan?.let {
+                if (it.isNotBlank()) {
+                    outputStream.write("\nNote: $it\n".toByteArray())
+                }
+            }
+
+            outputStream.write("\n\n\n".toByteArray())
             
             outputStream.flush()
             Result.success(Unit)

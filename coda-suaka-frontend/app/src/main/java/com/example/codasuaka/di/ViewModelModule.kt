@@ -27,6 +27,7 @@ import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewMod
 import com.example.codasuaka.ui.screen.nota_pembelian.NotaPembelianViewModel
 import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaViewModel
 import com.example.codasuaka.ui.screen.nota_detail.NotaDetailViewModel
+import com.example.codasuaka.ui.screen.receipt_settings.ReceiptSettingsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -144,4 +145,7 @@ val viewModelModule = module {
 
     // Notifikasi
     viewModel { NotificationViewModel(notificationRepository = get()) }
+
+    // Pengaturan Struk
+    viewModel { ReceiptSettingsViewModel(preferenceManager = get()) }
 }

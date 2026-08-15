@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -34,40 +35,52 @@ fun ChatContactListScreen(
     viewModel: ChatContactViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var isSearchActive by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Kontak",
-                        fontWeight = FontWeight.Bold,
-                        color = OnPrimary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = OnPrimary
-                        )
+            if (isSearchActive) {
+                SearchTopAppBar(
+                    searchQuery = uiState.searchQuery,
+                    onQueryChange = { viewModel.onSearchQueryChange(it) },
+                    onCancelSearch = { 
+                        isSearchActive = false
+                        viewModel.onSearchQueryChange("")
                     }
-                },
-                actions = {
-                    IconButton(onClick = { /* Implementasi Pencarian */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Cari",
-                            tint = OnPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Primary
                 )
-            )
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "Kontak",
+                            fontWeight = FontWeight.Bold,
+                            color = OnPrimary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Kembali",
+                                tint = OnPrimary
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Cari",
+                                tint = OnPrimary
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Primary
+                    )
+                )
+            }
         }
     ) { innerPadding ->
         Box(
@@ -104,11 +117,21 @@ fun ChatContactListScreen(
                         Text("Coba Lagi")
                     }
                 }
+            } else if (uiState.filteredGroups.isEmpty() && uiState.searchQuery.isNotEmpty()) {
+                // Empty search results
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Search, null, modifier = Modifier.size(64.dp), tint = Neutral)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Kontak tidak ditemukan", style = MaterialTheme.typography.titleMedium, color = OnSurfaceVariant)
+                        Text("\"${uiState.searchQuery}\"", style = MaterialTheme.typography.bodyMedium, color = Primary, fontWeight = FontWeight.Bold)
+                    }
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    uiState.contactGroups.forEach { group ->
+                    uiState.filteredGroups.forEach { group ->
                         // Section header per role
                         item {
                             Text(
@@ -140,6 +163,52 @@ fun ChatContactListScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchTopAppBar(
+    searchQuery: String,
+    onQueryChange: (String) -> Unit,
+    onCancelSearch: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            TextField(
+                value = searchQuery,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Cari nama kontak...", color = OnPrimary.copy(alpha = 0.7f)) },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    cursorColor = OnPrimary,
+                    focusedTextColor = OnPrimary,
+                    unfocusedTextColor = OnPrimary,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onCancelSearch) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = OnPrimary)
+            }
+        },
+        actions = {
+            if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Close, "Hapus", tint = OnPrimary)
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Primary
+        )
+    )
 }
 
 @Composable

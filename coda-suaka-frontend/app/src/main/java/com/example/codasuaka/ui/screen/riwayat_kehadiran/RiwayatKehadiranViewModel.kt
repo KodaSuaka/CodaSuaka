@@ -37,7 +37,7 @@ data class RiwayatKehadiranUiState(
     val presensiList: List<Presensi> = emptyList(),
     val persetujuanList: List<PengajuanPersetujuan> = emptyList(),
     val rekapBulanan: RekapBulanan = RekapBulanan(),
-    val currentRecapMonth: YearMonth = YearMonth.now()
+    val currentRecapMonth: YearMonth = YearMonth.now(DateTimeUtil.zoneId)
 )
 
 class RiwayatKehadiranViewModel(
@@ -48,7 +48,30 @@ class RiwayatKehadiranViewModel(
     private val _uiState = MutableStateFlow(RiwayatKehadiranUiState())
     val uiState: StateFlow<RiwayatKehadiranUiState> = _uiState
 
-    init { loadInitialData() }
+
+    private var pollingJob: kotlinx.coroutines.Job? = null
+
+    init {
+        loadInitialData()
+        startPeriodicPolling()
+    }
+
+    private fun startPeriodicPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(POLL_INTERVAL_MS)
+                refreshData(showLoading = false)
+            }
+        }
+    }
+
+    private fun refreshData(showLoading: Boolean = true) {
+        if (showLoading) _uiState.update { it.copy(isLoading = true) }
+        loadPresensi()
+        loadPersetujuan()
+        loadRekapBulanan()
+    }
 
     private fun loadInitialData() {
         viewModelScope.launch {
@@ -62,12 +85,16 @@ class RiwayatKehadiranViewModel(
     }
 
     fun onTabSelected(tab: TabRiwayat) = _uiState.update { it.copy(selectedTab = tab) }
-    fun onOutletSelected(id: Int?) { _uiState.update { it.copy(selectedOutletId = id) }; loadPresensi(); loadPersetujuan(); loadRekapBulanan() }
+    fun onOutletSelected(id: Int?) { _uiState.update { it.copy(selectedOutletId = id) }; refreshData() }
     fun onDateSelected(date: String) { _uiState.update { it.copy(selectedDate = date) }; loadPresensi() }
 
     fun onRecapPrevMonth() { _uiState.update { it.copy(currentRecapMonth = it.currentRecapMonth.minusMonths(1)) }; loadRekapBulanan() }
     fun onRecapNextMonth() { _uiState.update { it.copy(currentRecapMonth = it.currentRecapMonth.plusMonths(1)) }; loadRekapBulanan() }
     fun onRecapMonthYearSelected(m: Int, y: Int) { _uiState.update { it.copy(currentRecapMonth = YearMonth.of(y, m + 1)) }; loadRekapBulanan() }
+
+    fun onRefresh() {
+        refreshData(showLoading = true)
+    }
 
     private fun loadPresensi() {
         viewModelScope.launch {
@@ -103,16 +130,24 @@ class RiwayatKehadiranViewModel(
 
     fun setujuiPersetujuan(id: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isApproving = true) }
             pengajuanRepository.approvePengajuan(id.toInt()).onSuccess {
-                _uiState.update { s -> s.copy(persetujuanList = s.persetujuanList.map { if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DISETUJUI) else it }, successMessage = "Berhasil disetujui") }
+                _uiState.update { s -> s.copy(persetujuanList = s.persetujuanList.map { if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DISETUJUI) else it }, successMessage = "Berhasil disetujui", isApproving = false) }
+                refreshData(showLoading = false)
+            }.onFailure { e ->
+                _uiState.update { it.copy(isApproving = false, errorMessage = e.message) }
             }
         }
     }
 
     fun tolakPersetujuan(id: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isApproving = true) }
             pengajuanRepository.rejectPengajuan(id.toInt(), "Ditolak admin").onSuccess {
-                _uiState.update { s -> s.copy(persetujuanList = s.persetujuanList.map { if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DITOLAK) else it }, successMessage = "Berhasil ditolak") }
+                _uiState.update { s -> s.copy(persetujuanList = s.persetujuanList.map { if (it.id == id) it.copy(statusPersetujuan = StatusPersetujuan.DITOLAK) else it }, successMessage = "Berhasil ditolak", isApproving = false) }
+                refreshData(showLoading = false)
+            }.onFailure { e ->
+                _uiState.update { it.copy(isApproving = false, errorMessage = e.message) }
             }
         }
     }
@@ -121,7 +156,14 @@ class RiwayatKehadiranViewModel(
     fun clearError() = _uiState.update { it.copy(errorMessage = null) }
     fun clearSuccess() = _uiState.update { it.copy(successMessage = null) }
 
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
+    }
+
     companion object {
+        private const val POLL_INTERVAL_MS = 30_000L
+
         fun PresensiDto.toPresensi() = Presensi(id.toString(), userId ?: 0, user?.name ?: "", "", user?.outletId ?: 0, user?.role?.namaRole ?: "", DateTimeUtil.formatIsoToTime(jamCheckin), when (status?.lowercase()) { "terlambat" -> StatusKehadiran.TERLAMBAT; "izin" -> StatusKehadiran.IZIN; "sakit" -> StatusKehadiran.SAKIT; "alpha" -> StatusKehadiran.ALPHA; else -> StatusKehadiran.HADIR })
         fun PengajuanDto.toPengajuanPersetujuan() = PengajuanPersetujuan(id.toString(), userId, user?.name ?: "", "", user?.outletId ?: 0, keterangan ?: "", tanggalMulai ?: createdAt ?: "", when (status.lowercase()) { "disetujui" -> StatusPersetujuan.DISETUJUI; "ditolak" -> StatusPersetujuan.DITOLAK; else -> StatusPersetujuan.PENDING })
         fun RekapKehadiranDto.toRekapKaryawan() = RekapKaryawan(userId, namaLengkap ?: "", "", "", outletId ?: 0, totalHadir, 0, totalIzin, totalSakit, totalAlpha)

@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +45,7 @@ fun RiwayatKehadiranScreen(
     viewModel: RiwayatKehadiranViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -60,27 +63,33 @@ fun RiwayatKehadiranScreen(
             )
         }
     ) { innerPadding ->
-        if (uiState.isLoading && uiState.presensiList.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Primary)
-            }
-            return@Scaffold
-        }
-
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = { viewModel.onRefresh() },
+            state = pullRefreshState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Tertiary)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(Tertiary),
+            contentAlignment = Alignment.TopCenter
         ) {
+            if (uiState.isLoading && uiState.presensiList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Primary)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Tertiary)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
             // ── Success Message ──
             if (uiState.successMessage != null) {
                 item {
@@ -191,6 +200,8 @@ fun RiwayatKehadiranScreen(
             }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
+                }
+            }
         }
     }
 }
@@ -364,7 +375,7 @@ private fun DatePickerField(
                         onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
                                 val ld = java.time.Instant.ofEpochMilli(millis)
-                                    .atZone(java.time.ZoneId.of("UTC"))
+                                    .atZone(java.time.ZoneOffset.UTC)
                                     .toLocalDate()
                                 onDateSelected(ld.toString())
                             }
@@ -385,17 +396,17 @@ private fun DatePickerField(
             ) {
                 if (showYearPicker) {
                     val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(java.time.ZoneId.of("UTC"))
+                        .atZone(java.time.ZoneOffset.UTC)
                         .toLocalDate()
                         
                     YearPickerDialog(
                         selectedYear = displayMonth.year,
                         onYearSelected = { year ->
                             val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(java.time.ZoneId.of("UTC"))
+                                .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
                             val targetMonth = currentMonth.withYear(year)
-                            datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
+                            datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                             showYearPicker = false
                         },
                         onDismiss = { showYearPicker = false }
@@ -404,7 +415,7 @@ private fun DatePickerField(
 
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(java.time.ZoneId.of("UTC"))
+                        .atZone(java.time.ZoneOffset.UTC)
                         .toLocalDate()
                     
                     val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -413,19 +424,19 @@ private fun DatePickerField(
                         title = monthTitle.replaceFirstChar { it.uppercase() },
                         onPrevClick = {
                             val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(java.time.ZoneId.of("UTC"))
+                                .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
                                 .withDayOfMonth(1)
                             val prevMonth = currentMonth.minusMonths(1)
-                            datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
+                            datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                         },
                         onNextClick = {
                             val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(java.time.ZoneId.of("UTC"))
+                                .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
                                 .withDayOfMonth(1)
                             val nextMonth = currentMonth.plusMonths(1)
-                            datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
+                            datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                         },
                         onTitleClick = { showYearPicker = true },
                         modifier = Modifier.padding(horizontal = 12.dp)

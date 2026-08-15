@@ -49,6 +49,8 @@ import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaScreen
 import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
 import com.example.codasuaka.ui.screen.penugasan.PenugasanScreen
 import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
+import com.example.codasuaka.ui.screen.receipt_settings.ReceiptSettingsScreen
+import com.example.codasuaka.ui.screen.receipt_settings.ReceiptSettingsViewModel
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalScreen
 import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
 import com.example.codasuaka.ui.screen.kasir.KasirScreen
@@ -97,6 +99,7 @@ object Routes {
     const val RIWAYAT_NOTA = "riwayat_nota"
     const val NOTA_DETAIL = "nota_detail/{notaId}"
     const val STOK = "stok"
+    const val RECEIPT_SETTINGS = "receipt_settings"
 
     fun chatDetail(userId: Int, userName: String): String {
         val encodedName = URLEncoder.encode(userName, "UTF-8")
@@ -498,6 +501,15 @@ fun AppNavigation(navController: NavHostController) {
             KelolaKaryawanScreen(
                 onBack = { safePopBackStack() },
                 viewModel = kelolaKaryawanViewModel
+            )
+        }
+
+        // ── Pengaturan Struk ──
+        composable(Routes.RECEIPT_SETTINGS) {
+            val receiptSettingsViewModel: ReceiptSettingsViewModel = koinViewModel()
+            ReceiptSettingsScreen(
+                onBack = { safePopBackStack() },
+                viewModel = receiptSettingsViewModel
             )
         }
     }

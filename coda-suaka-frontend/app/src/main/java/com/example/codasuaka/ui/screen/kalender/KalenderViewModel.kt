@@ -47,7 +47,7 @@ sealed class KalenderDialogMode {
  * State halaman Kalender.
  */
 data class KalenderUiState(
-    val currentMonth: YearMonth = YearMonth.now(),
+    val currentMonth: YearMonth = YearMonth.now(DateTimeUtil.zoneId),
     /** Tanggal yang sedang difilter di kalender (null = tampilkan semua event bulan ini). */
     val selectedDate: LocalDate? = null,
     val events: List<KalenderEvent> = emptyList(),
