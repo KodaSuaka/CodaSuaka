@@ -103,7 +103,7 @@ class UmkmOwnerSeeder extends Seeder
             // Transaksi paket aktif
             $this->createTransaksiPaket($instansi, $paket);
 
-            // Owner (tidak dihitung kuota) — nama & email organik (firstname.lastname@gmail.com)
+            // Owner (tidak dihitung kuota) — nama pemilik tetap, email = namainstansi@gmail.com
             $owner = $this->createUser($instansi, $roles, 'owner', 'Owner', $index, $ownerNama);
 
             // Outlet
@@ -173,14 +173,16 @@ class UmkmOwnerSeeder extends Seeder
 
     private function createUser(Instansi $instansi, array $roles, string $key, string $roleName, int $instansiNum, ?string $namaFix = null): User
     {
-        // Semua email akun memakai domain publik gmail.com (lebih organik).
+        // Email berbasis nama instansi @gmail.com.
+        //   Owner      : namainstansi@gmail.com        (mis. bundacatering@gmail.com)
+        //   Peran lain : peran.namainstansi@gmail.com  (mis. manager.bundacatering@gmail.com)
+        $slug = strtolower(str_replace(' ', '', $instansi->nama_instansi));
         if ($namaFix !== null) {
-            // Email organik dari nama pemilik: "Sri Wahyuni" → sri.wahyuni@gmail.com
             $nama = $namaFix.' ('.$roleName.')';
-            $email = Str::of($namaFix)->lower()->replace(' ', '.').'@gmail.com';
+            $email = $slug.'@gmail.com';
         } else {
             $nama = $this->generateName($key, $instansiNum);
-            $email = strtolower($key).$instansiNum.'@gmail.com';
+            $email = strtolower($key).'.'.$slug.'@gmail.com';
         }
 
         $user = User::firstOrCreate(
