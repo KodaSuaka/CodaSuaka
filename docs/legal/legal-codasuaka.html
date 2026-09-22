@@ -1,0 +1,529 @@
+<title>Legal CodaSuaka</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#fbfaf8;
+    --card:#ffffff;
+    --ink:#1c1d22;
+    --ink-soft:#4a4d57;
+    --line:#dcdee3;
+    --accent:#7a1f2b;
+    --accent-soft:#a34756;
+    --accent-wash:#f4e6e8;
+    --app-bg:#eceef1;
+    --fill-empty:#9aa0ab;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#20222a;
+      --card:#26282f;
+      --ink:#ececee;
+      --ink-soft:#b7bac2;
+      --line:#3a3d47;
+      --accent:#e0616f;
+      --accent-soft:#c23a4a;
+      --accent-wash:#3a222a;
+      --app-bg:#15161b;
+      --fill-empty:#75798a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#20222a;
+    --card:#26282f;
+    --ink:#ececee;
+    --ink-soft:#b7bac2;
+    --line:#3a3d47;
+    --accent:#e0616f;
+    --accent-soft:#c23a4a;
+    --accent-wash:#3a222a;
+    --app-bg:#15161b;
+    --fill-empty:#75798a;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--app-bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    margin:0;
+  }
+
+  .app{max-width:900px;margin:0 auto;padding:0 16px 64px;}
+
+  .topbar{
+    position:sticky;
+    top:env(safe-area-inset-top,0px);
+    z-index:10;
+    background:var(--app-bg);
+    padding:16px 0 12px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:12px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:24px;
+  }
+  .brand{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--accent);
+    letter-spacing:.01em;
+    margin-right:auto;
+  }
+  .brand small{
+    display:block;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:500;
+    font-size:.68rem;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;}
+  .tab-btn{
+    appearance:none;border:none;background:transparent;color:var(--ink-soft);
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:.82rem;
+    padding:8px 16px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s;
+    white-space:nowrap;
+  }
+  .tab-btn.active{background:var(--accent);color:#fff;}
+  .print-btn{
+    appearance:none;border:1px solid var(--accent);background:var(--accent);color:#fff;
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:.82rem;
+    padding:9px 18px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  }
+  .print-btn:hover{background:var(--accent-soft);border-color:var(--accent-soft);}
+  .hint{
+    width:100%;
+    font-size:.76rem;
+    color:var(--ink-soft);
+    line-height:1.4;
+  }
+  .hint b{color:var(--accent);}
+
+  .stage{display:block;}
+  .doc-panel{display:none;}
+  .doc-panel.active{display:block;}
+
+  .paper{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06), 0 8px 24px -12px rgba(0,0,0,.15);
+    padding:48px 44px 56px;
+    font-family:'Source Serif 4',Georgia,serif;
+    line-height:1.65;
+    color:var(--ink);
+  }
+  @media (max-width:640px){ .paper{padding:28px 20px 40px;} }
+
+  .doc-kicker{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:.72rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    text-align:center;
+    margin-bottom:6px;
+  }
+  .doc-title{
+    font-size:1.7rem;
+    font-weight:700;
+    text-align:center;
+    margin:0 0 4px;
+    text-wrap:balance;
+  }
+  .doc-sub{
+    text-align:center;
+    font-style:italic;
+    color:var(--ink-soft);
+    margin:0 0 28px;
+    font-size:1rem;
+  }
+  .doc-num{
+    text-align:center;
+    font-size:.88rem;
+    color:var(--ink-soft);
+    margin-bottom:28px;
+  }
+
+  p{margin:0 0 1rem;text-align:justify;}
+  .pasal{margin-top:2.1rem;}
+  .pasal .num{
+    display:block;text-align:center;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:700;font-size:.78rem;letter-spacing:.12em;
+    color:var(--accent);margin-bottom:2px;
+  }
+  .pasal h2{
+    text-align:center;
+    font-size:1.05rem;margin:0 0 1rem;
+    text-decoration:underline;
+    text-decoration-color:var(--line);
+  }
+  h2.plain{font-size:1.05rem;margin:0 0 .8rem;}
+
+  ol,ul{margin:0 0 1rem;padding-left:1.4rem;}
+  ol li,ul li{margin-bottom:.55rem;text-align:justify;}
+
+  .party-table{width:100%;border-collapse:collapse;margin:.5rem 0 1rem;font-size:.95rem;}
+  .party-table td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;}
+  .party-table td.label{width:34%;font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;color:var(--ink-soft);}
+
+  .paket-table{width:100%;border-collapse:collapse;margin:1rem 0 1.4rem;font-size:.88rem;}
+  .paket-table th,.paket-table td{border:1px solid var(--line);padding:8px 8px;text-align:left;}
+  .paket-table th{background:var(--accent-wash);font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:.78rem;}
+
+  .fill{
+    display:inline-block;
+    min-width:9ch;
+    border:none;border-bottom:1px dotted var(--fill-empty);
+    padding:0 3px;
+    color:var(--accent);
+    font-weight:600;
+    outline:none;
+  }
+  .fill:empty::before{content:attr(data-ph);color:var(--fill-empty);font-weight:400;font-style:italic;}
+  .fill:focus{border-bottom-style:solid;border-bottom-color:var(--accent);}
+  .fill.wide{min-width:100%;display:block;margin:2px 0 10px;}
+
+  .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:2.5rem;text-align:center;}
+  @media (max-width:560px){.sig-grid{grid-template-columns:1fr;}}
+  .sig-grid .role{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:.9rem;margin-bottom:70px;}
+  .sig-grid .materai{font-size:.72rem;color:var(--fill-empty);font-style:italic;margin-bottom:6px;}
+  .sig-line{border-bottom:1px solid var(--ink);margin:0 auto 6px;width:80%;}
+  .sig-name{font-weight:700;}
+  .sig-cap{font-family:'IBM Plex Sans',sans-serif;font-size:.72rem;color:var(--ink-soft);font-style:italic;}
+
+  .closing{font-style:italic;color:var(--ink-soft);}
+  .footnote{font-size:.8rem;color:var(--ink-soft);margin-top:1.5rem;}
+
+  @media print{
+    body{background:#fff;}
+    .topbar{display:none;}
+    .app{max-width:none;padding:0;margin:0;}
+    .paper{box-shadow:none;border:none;border-radius:0;padding:0;}
+    .fill:empty::before{color:#888;}
+    @page{size:A4;margin:18mm 15mm;}
+  }
+</style>
+
+<div class="app">
+  <div class="topbar no-print">
+    <div class="brand">CodaSuaka<small>Dokumen Legal</small></div>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-target="doc-eula">EULA</button>
+      <button class="tab-btn" data-target="doc-surat">Surat Perjanjian</button>
+    </div>
+    <button class="print-btn" id="printBtn">🖨️ Cetak / Simpan PDF</button>
+    <div class="hint">Isi bagian bergaris titik langsung di halaman ini (tersimpan otomatis di perangkat Anda), lalu tekan <b>Cetak / Simpan PDF</b> — browser akan membuka dialog cetak; pilih "Simpan sebagai PDF" atau kirim ke printer.</div>
+  </div>
+
+  <main class="stage">
+
+    <!-- ================= EULA ================= -->
+    <section class="paper doc-panel active" id="doc-eula">
+      <div class="doc-kicker">End User License Agreement</div>
+      <h1 class="doc-title">Perjanjian Lisensi Pengguna Akhir</h1>
+      <p class="doc-sub">Aplikasi CodaSuaka — Sistem Manajemen Bisnis All-in-One</p>
+
+      <p>Perjanjian Lisensi Pengguna Akhir ("EULA" atau "Perjanjian") ini merupakan perjanjian yang sah secara hukum antara Anda, baik sebagai perorangan maupun sebagai badan usaha/instansi (selanjutnya disebut "Pengguna"), dengan pengembang dan penyedia aplikasi CodaSuaka (selanjutnya disebut "Penyedia"), yang mengatur hak dan kewajiban terkait pemasangan, akses, dan penggunaan aplikasi CodaSuaka beserta seluruh layanan yang menyertainya (selanjutnya disebut "Aplikasi").</p>
+      <p>DENGAN MENGUNDUH, MEMASANG, MENDAFTARKAN AKUN, MENGAKSES, ATAU MENGGUNAKAN APLIKASI DALAM BENTUK APA PUN, PENGGUNA DIANGGAP TELAH MEMBACA, MEMAHAMI, DAN MENYETUJUI UNTUK TERIKAT PADA SELURUH KETENTUAN DALAM PERJANJIAN INI. Jika Pengguna tidak menyetujui ketentuan ini, Pengguna harus segera menghentikan pengunduhan, pemasangan, atau penggunaan Aplikasi.</p>
+
+      <div class="pasal"><span class="num">Pasal 1</span><h2>Definisi</h2>
+        <p>Kecuali dinyatakan lain, istilah-istilah berikut memiliki arti sebagaimana disebutkan di bawah ini:</p>
+        <ul>
+          <li>"Aplikasi" berarti perangkat lunak CodaSuaka, termasuk namun tidak terbatas pada aplikasi mobile Android (Kotlin/Jetpack Compose), layanan backend berbasis Laravel, Application Programming Interface (API), basis data, dokumentasi, serta seluruh pembaruan, versi, dan fitur yang menyertainya.</li>
+          <li>"Penyedia" berarti pengembang dan/atau pemilik hak atas Aplikasi CodaSuaka.</li>
+          <li>"Pengguna" berarti setiap pihak yang mengakses atau menggunakan Aplikasi, termasuk peran Super Admin, Owner (Pemilik Instansi), Manajemen, Keuangan, dan Staff.</li>
+          <li>"Instansi" berarti entitas usaha/perusahaan yang didaftarkan di dalam Aplikasi dan menjadi wadah pengelolaan data secara multi-tenant.</li>
+          <li>"Data Instansi" berarti seluruh data yang dimasukkan, diunggah, atau dihasilkan oleh Pengguna dalam Aplikasi, termasuk data karyawan, presensi, pengajuan cuti/izin/sakit, keuangan (buku kas), dan komunikasi internal (chat).</li>
+          <li>"Paket Berlangganan" berarti paket layanan berbayar yang dipilih oleh Instansi sebagaimana diatur lebih lanjut dalam Surat Perjanjian Penggunaan dan Berlangganan yang terpisah.</li>
+          <li>"Akun" berarti kredensial akses (email dan kata sandi) yang digunakan Pengguna untuk masuk ke dalam Aplikasi.</li>
+        </ul>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 2</span><h2>Pemberian Lisensi</h2>
+        <p>Dengan tunduk pada ketentuan dalam Perjanjian ini dan pembayaran biaya berlangganan yang berlaku (jika ada), Penyedia memberikan kepada Pengguna lisensi yang:</p>
+        <ol>
+          <li>Terbatas (limited);</li>
+          <li>Non-eksklusif (non-exclusive);</li>
+          <li>Tidak dapat dipindahtangankan atau disublisensikan (non-transferable, non-sublicensable);</li>
+          <li>Dapat dibatalkan (revocable);</li>
+        </ol>
+        <p>untuk mengunduh, memasang, mengakses, dan menggunakan Aplikasi semata-mata untuk keperluan pengelolaan operasional internal Instansi Pengguna, sesuai dengan peran dan hak akses (role &amp; permission) yang diberikan, dan sesuai dengan Paket Berlangganan yang berlaku.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 3</span><h2>Hak Kekayaan Intelektual</h2>
+        <p>Aplikasi, termasuk seluruh kode sumber, struktur basis data, desain antarmuka, logo, nama "CodaSuaka", dokumentasi, dan seluruh komponen di dalamnya, adalah milik Penyedia dan/atau pemberi lisensinya, serta dilindungi oleh hukum hak cipta, merek dagang, dan/atau kekayaan intelektual lain yang berlaku di Republik Indonesia dan secara internasional.</p>
+        <p>Perjanjian ini tidak mengalihkan hak milik apa pun atas Aplikasi kepada Pengguna. Seluruh hak yang tidak secara tegas diberikan kepada Pengguna dalam Perjanjian ini tetap menjadi hak Penyedia.</p>
+        <p>Data Instansi yang dimasukkan oleh Pengguna ke dalam Aplikasi tetap menjadi milik Instansi/Pengguna yang bersangkutan. Penyedia hanya menyimpan dan mengolah Data Instansi tersebut sebatas untuk menjalankan fungsi Aplikasi dan sesuai dengan Perjanjian ini.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 4</span><h2>Batasan Penggunaan</h2>
+        <p>Pengguna dilarang untuk:</p>
+        <ul>
+          <li>Melakukan rekayasa balik (reverse engineering), dekompilasi, disassembly, atau upaya lain untuk mengungkap kode sumber Aplikasi, kecuali sejauh dilarang secara tegas oleh hukum yang berlaku;</li>
+          <li>Menyalin, memodifikasi, mendistribusikan, menjual, menyewakan, atau mengalihkan Aplikasi atau bagian mana pun darinya kepada pihak ketiga tanpa izin tertulis dari Penyedia;</li>
+          <li>Menggunakan Aplikasi untuk tujuan yang melanggar hukum, termasuk namun tidak terbatas pada penipuan, pencucian uang, atau pelanggaran privasi pihak lain;</li>
+          <li>Melakukan upaya tidak sah untuk mengakses sistem, server, akun, atau data milik Instansi lain (melanggar isolasi multi-tenant);</li>
+          <li>Menyalahgunakan token otentikasi (Bearer Token), termasuk membagikan kredensial akun kepada pihak yang tidak berwenang;</li>
+          <li>Melakukan scraping, flooding, atau tindakan lain yang dapat mengganggu kestabilan, keamanan, atau kinerja Aplikasi dan/atau server Penyedia;</li>
+          <li>Menghapus, menyamarkan, atau mengubah setiap pemberitahuan hak cipta, merek dagang, atau kepemilikan lain dalam Aplikasi.</li>
+        </ul>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 5</span><h2>Akun dan Keamanan</h2>
+        <p>Pengguna bertanggung jawab penuh untuk menjaga kerahasiaan kredensial Akun (email dan kata sandi) serta seluruh aktivitas yang terjadi melalui Akun tersebut. Pengguna wajib segera memberitahukan Penyedia apabila mengetahui atau mencurigai adanya penggunaan Akun tanpa izin.</p>
+        <p>Owner (pemilik Instansi) bertanggung jawab atas pengelolaan peran dan hak akses (role &amp; permission) bagi seluruh Pengguna di bawah Instansinya, termasuk Manajemen, Keuangan, dan Staff.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 6</span><h2>Layanan Berlangganan</h2>
+        <p>Sebagian atau seluruh fitur Aplikasi dapat disediakan berdasarkan Paket Berlangganan berbayar dengan jangka waktu, batasan (jumlah outlet, jumlah karyawan per outlet), dan biaya tertentu. Ketentuan rinci mengenai Paket Berlangganan, biaya, jangka waktu, tata cara pembayaran, dan perpanjangan diatur secara terpisah dalam "Surat Perjanjian Penggunaan dan Berlangganan Aplikasi CodaSuaka" yang wajib ditandatangani oleh Instansi sebelum atau pada saat aktivasi Paket Berlangganan.</p>
+        <p>Apabila Paket Berlangganan berakhir (kedaluwarsa) dan tidak diperpanjang, Penyedia berhak untuk membatasi atau menghentikan akses Instansi terhadap fitur-fitur yang memerlukan status berlangganan aktif, tanpa mengurangi hak Penyedia atas biaya yang telah jatuh tempo.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 7</span><h2>Privasi dan Kerahasiaan Data</h2>
+        <p>Penyedia berkomitmen untuk menjaga kerahasiaan dan keamanan Data Instansi, termasuk data pribadi karyawan (presensi, cuti/izin/sakit, data kepegawaian) dan data keuangan (buku kas, laporan keuangan), sesuai dengan peraturan perlindungan data pribadi yang berlaku di Indonesia, termasuk Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi.</p>
+        <p>Data setiap Instansi terisolasi secara otomatis dari Instansi lain melalui mekanisme multi-tenant (Tenant Scope) pada sistem. Penyedia tidak akan mengungkapkan Data Instansi kepada pihak ketiga tanpa persetujuan, kecuali diwajibkan oleh peraturan perundang-undangan atau perintah pengadilan/lembaga berwenang.</p>
+        <p>Pengguna menyatakan bahwa Pengguna memiliki hak dan dasar hukum yang sah untuk memasukkan data pribadi karyawan/pihak lain ke dalam Aplikasi, dan bertanggung jawab untuk memperoleh persetujuan yang diperlukan dari pihak-pihak tersebut.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 8</span><h2>Penafian dan Batasan Tanggung Jawab</h2>
+        <p>APLIKASI DISEDIAKAN "SEBAGAIMANA ADANYA" (AS IS) DAN "SEBAGAIMANA TERSEDIA" (AS AVAILABLE) TANPA JAMINAN DALAM BENTUK APA PUN, BAIK TERSURAT MAUPUN TERSIRAT, TERMASUK NAMUN TIDAK TERBATAS PADA JAMINAN KELAYAKAN UNTUK DIPERDAGANGKAN, KESESUAIAN UNTUK TUJUAN TERTENTU, DAN TIDAK ADANYA PELANGGARAN.</p>
+        <p>Penyedia tidak menjamin bahwa Aplikasi akan bebas dari kesalahan (bug), beroperasi tanpa gangguan (interupsi), atau bahwa seluruh kesalahan akan diperbaiki. Sejauh diizinkan oleh hukum yang berlaku, Penyedia tidak bertanggung jawab atas kerugian tidak langsung, insidental, khusus, konsekuensial, atau kehilangan keuntungan/data yang timbul dari penggunaan atau ketidakmampuan menggunakan Aplikasi.</p>
+        <p>Tanggung jawab Penyedia atas segala klaim yang timbul dari Perjanjian ini, jika ada, tidak akan melebihi jumlah biaya berlangganan yang telah dibayarkan oleh Instansi kepada Penyedia dalam periode dua belas (12) bulan terakhir sebelum timbulnya klaim tersebut.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 9</span><h2>Jangka Waktu dan Pengakhiran</h2>
+        <p>Perjanjian ini berlaku sejak Pengguna pertama kali mengakses atau menggunakan Aplikasi dan tetap berlaku selama Pengguna menggunakan Aplikasi.</p>
+        <p>Penyedia berhak menangguhkan atau menghentikan akses Pengguna atas Aplikasi sewaktu-waktu, dengan atau tanpa pemberitahuan terlebih dahulu, apabila Pengguna terbukti melanggar ketentuan dalam Perjanjian ini, termasuk namun tidak terbatas pada pelanggaran Pasal 4 (Batasan Penggunaan) atau keterlambatan pembayaran biaya berlangganan.</p>
+        <p>Pengguna dapat menghentikan penggunaan Aplikasi kapan pun dengan menghapus Akun dan/atau berhenti menggunakan Aplikasi, tanpa mengurangi kewajiban pembayaran yang telah jatuh tempo atau timbul sebelum penghentian tersebut.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 10</span><h2>Perubahan Perjanjian</h2>
+        <p>Penyedia berhak mengubah atau memperbarui ketentuan dalam Perjanjian ini dari waktu ke waktu. Perubahan akan diberitahukan melalui Aplikasi dan/atau saluran komunikasi resmi lainnya. Penggunaan Aplikasi secara berkelanjutan setelah pemberitahuan perubahan dianggap sebagai persetujuan Pengguna atas perubahan tersebut.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 11</span><h2>Hukum yang Berlaku dan Penyelesaian Perselisihan</h2>
+        <p>Perjanjian ini diatur dan ditafsirkan sesuai dengan hukum Negara Republik Indonesia.</p>
+        <p>Setiap perselisihan yang timbul dari atau berkaitan dengan Perjanjian ini akan diselesaikan terlebih dahulu secara musyawarah untuk mencapai kesepakatan. Apabila musyawarah tidak mencapai kesepakatan dalam waktu tiga puluh (30) hari kalender, perselisihan akan diselesaikan melalui pengadilan negeri yang berwenang sesuai dengan domisili Penyedia, atau melalui mekanisme penyelesaian perselisihan lain yang disepakati bersama secara tertulis.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 12</span><h2>Ketentuan Lain-lain</h2>
+        <p>Apabila salah satu ketentuan dalam Perjanjian ini dinyatakan tidak sah atau tidak dapat diberlakukan oleh pengadilan yang berwenang, ketentuan tersebut akan dipisahkan dan tidak memengaruhi keberlakuan ketentuan lain dalam Perjanjian ini.</p>
+        <p>Perjanjian ini, bersama dengan Surat Perjanjian Penggunaan dan Berlangganan (apabila ada), merupakan keseluruhan kesepakatan antara Pengguna dan Penyedia terkait penggunaan Aplikasi, dan menggantikan seluruh kesepakatan atau pemahaman sebelumnya, baik lisan maupun tertulis, mengenai hal yang sama.</p>
+        <p>Pertanyaan mengenai Perjanjian ini dapat disampaikan melalui kanal dukungan resmi CodaSuaka sebagaimana tercantum dalam Aplikasi.</p>
+      </div>
+
+      <p class="closing">Dengan menggunakan Aplikasi CodaSuaka, Pengguna menyatakan telah membaca, memahami, dan menyetujui seluruh isi Perjanjian Lisensi Pengguna Akhir ini secara sukarela dan tanpa paksaan dari pihak mana pun.</p>
+      <p class="footnote">Dokumen ini berlaku efektif sejak tanggal diterbitkan dan dapat diperbarui dari waktu ke waktu sesuai Pasal 10.</p>
+    </section>
+
+    <!-- ================= SURAT PERJANJIAN ================= -->
+    <section class="paper doc-panel" id="doc-surat">
+      <div class="doc-kicker">Kontrak Berlangganan</div>
+      <h1 class="doc-title">Surat Perjanjian</h1>
+      <p class="doc-sub">Penggunaan dan Berlangganan Aplikasi CodaSuaka</p>
+      <p class="doc-num">No.: <span class="fill" contenteditable data-key="no-surat" data-ph="……………………"></span></p>
+
+      <p>Pada hari ini, <span class="fill" contenteditable data-key="hari" data-ph="……………"></span>, tanggal <span class="fill" contenteditable data-key="tanggal" data-ph="……"></span>, bulan <span class="fill" contenteditable data-key="bulan" data-ph="……………"></span>, tahun <span class="fill" contenteditable data-key="tahun" data-ph="………"></span>, bertempat di <span class="fill" contenteditable data-key="tempat" data-ph="……………………"></span>, kami yang bertanda tangan di bawah ini:</p>
+
+      <h2 class="plain">Pihak Pertama</h2>
+      <table class="party-table">
+        <tr><td class="label">Nama</td><td><span class="fill wide" contenteditable data-key="p1-nama" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Jabatan</td><td><span class="fill wide" contenteditable data-key="p1-jabatan" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Bertindak untuk dan atas nama</td><td>Penyedia Aplikasi CodaSuaka</td></tr>
+        <tr><td class="label">Alamat</td><td><span class="fill wide" contenteditable data-key="p1-alamat" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Telepon / Email</td><td><span class="fill wide" contenteditable data-key="p1-kontak" data-ph="…………………………………………"></span></td></tr>
+      </table>
+      <p><i>Selanjutnya disebut sebagai "PIHAK PERTAMA" atau "Penyedia".</i></p>
+
+      <h2 class="plain">Pihak Kedua</h2>
+      <table class="party-table">
+        <tr><td class="label">Nama</td><td><span class="fill wide" contenteditable data-key="p2-nama" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Jabatan</td><td><span class="fill wide" contenteditable data-key="p2-jabatan" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Nama Instansi/Perusahaan</td><td><span class="fill wide" contenteditable data-key="p2-instansi" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Alamat Instansi</td><td><span class="fill wide" contenteditable data-key="p2-alamat" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">NPWP (jika ada)</td><td><span class="fill wide" contenteditable data-key="p2-npwp" data-ph="…………………………………………"></span></td></tr>
+        <tr><td class="label">Telepon / Email</td><td><span class="fill wide" contenteditable data-key="p2-kontak" data-ph="…………………………………………"></span></td></tr>
+      </table>
+      <p><i>Selanjutnya disebut sebagai "PIHAK KEDUA" atau "Pelanggan".</i></p>
+
+      <p>PIHAK PERTAMA dan PIHAK KEDUA (selanjutnya secara bersama-sama disebut "Para Pihak" dan masing-masing disebut "Pihak") dengan ini sepakat untuk mengadakan dan menandatangani Perjanjian Penggunaan dan Berlangganan Aplikasi CodaSuaka ("Perjanjian") dengan syarat dan ketentuan sebagaimana diatur di bawah ini.</p>
+
+      <div class="pasal"><span class="num">Pasal 1</span><h2>Definisi</h2>
+        <ol>
+          <li>"Aplikasi" adalah aplikasi manajemen bisnis CodaSuaka, mencakup aplikasi mobile Android dan layanan backend beserta seluruh fitur di dalamnya.</li>
+          <li>"Paket Berlangganan" adalah paket layanan yang dipilih PIHAK KEDUA sebagaimana diatur dalam Pasal 3, dengan batasan fitur, jumlah outlet, dan jumlah karyawan per outlet tertentu.</li>
+          <li>"Masa Berlangganan" adalah jangka waktu keberlakuan Paket Berlangganan sebagaimana diatur dalam Pasal 4.</li>
+          <li>"Data Instansi" adalah seluruh data yang diinput dan/atau dihasilkan oleh PIHAK KEDUA dalam Aplikasi, termasuk data karyawan, presensi, pengajuan cuti/izin/sakit, dan data keuangan.</li>
+        </ol>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 2</span><h2>Objek Perjanjian</h2>
+        <p>PIHAK PERTAMA memberikan hak kepada PIHAK KEDUA untuk menggunakan Aplikasi CodaSuaka sesuai dengan Paket Berlangganan yang dipilih, guna mendukung kegiatan operasional PIHAK KEDUA yang meliputi antara lain manajemen karyawan, presensi, pengajuan cuti/izin/sakit, penjadwalan, penugasan, pengelolaan keuangan (buku kas dan laporan), serta komunikasi internal, sebagaimana tersedia dalam Aplikasi.</p>
+        <p>Penggunaan Aplikasi oleh PIHAK KEDUA tetap tunduk pada ketentuan Perjanjian Lisensi Pengguna Akhir (EULA) CodaSuaka yang merupakan bagian yang tidak terpisahkan dari Perjanjian ini.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 3</span><h2>Paket Berlangganan dan Biaya</h2>
+        <p>PIHAK KEDUA memilih Paket Berlangganan dengan rincian sebagai berikut:</p>
+        <div style="overflow-x:auto;">
+        <table class="paket-table">
+          <tr><th>Nama Paket</th><th>Fitur Utama</th><th>Harga</th><th>Durasi (hari)</th><th>Maks. Outlet</th><th>Maks. Karyawan/Outlet</th></tr>
+          <tr>
+            <td><span class="fill" contenteditable data-key="pk-nama" data-ph="………………"></span></td>
+            <td><span class="fill" contenteditable data-key="pk-fitur" data-ph="………………………"></span></td>
+            <td>Rp <span class="fill" contenteditable data-key="pk-harga" data-ph="…………"></span></td>
+            <td><span class="fill" contenteditable data-key="pk-durasi" data-ph="……"></span></td>
+            <td><span class="fill" contenteditable data-key="pk-outlet" data-ph="……"></span></td>
+            <td><span class="fill" contenteditable data-key="pk-karyawan" data-ph="……"></span></td>
+          </tr>
+        </table>
+        </div>
+        <ol>
+          <li>Biaya Paket Berlangganan sebagaimana tercantum di atas belum termasuk pajak yang berlaku, kecuali dinyatakan lain secara tertulis.</li>
+          <li>PIHAK KEDUA wajib melakukan pembayaran penuh sebelum atau paling lambat pada tanggal aktivasi/perpanjangan Paket Berlangganan, melalui metode pembayaran yang disepakati dan/atau tersedia dalam Aplikasi.</li>
+          <li>Bukti pembayaran yang sah wajib diunggah/diserahkan oleh PIHAK KEDUA sebagai syarat aktivasi status "aktif" pada Paket Berlangganan.</li>
+        </ol>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 4</span><h2>Jangka Waktu</h2>
+        <p>Masa Berlangganan berlaku sejak tanggal <span class="fill" contenteditable data-key="mulai" data-ph="……………"></span> sampai dengan tanggal <span class="fill" contenteditable data-key="berakhir" data-ph="……………"></span>, sesuai dengan durasi Paket Berlangganan yang dipilih sebagaimana diatur dalam Pasal 3.</p>
+        <p>Perjanjian ini dapat diperpanjang untuk periode berikutnya berdasarkan persetujuan tertulis (termasuk melalui Aplikasi) dan pembayaran biaya perpanjangan oleh PIHAK KEDUA. Apabila PIHAK KEDUA tidak melakukan perpanjangan sampai dengan berakhirnya Masa Berlangganan, status Paket Berlangganan akan berubah menjadi "kedaluwarsa" dan akses terhadap fitur berbayar dapat dibatasi oleh PIHAK PERTAMA.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 5</span><h2>Hak dan Kewajiban Pihak Pertama</h2>
+        <p>Hak PIHAK PERTAMA:</p>
+        <ol>
+          <li>Menerima pembayaran biaya Paket Berlangganan sesuai Pasal 3 dan Pasal 7;</li>
+          <li>Menangguhkan atau menghentikan akses PIHAK KEDUA apabila terjadi keterlambatan pembayaran atau pelanggaran terhadap Perjanjian ini dan/atau EULA;</li>
+          <li>Melakukan pemeliharaan, pembaruan, dan penyempurnaan Aplikasi dari waktu ke waktu.</li>
+        </ol>
+        <p>Kewajiban PIHAK PERTAMA:</p>
+        <ol>
+          <li>Menyediakan akses Aplikasi yang berfungsi sesuai dengan Paket Berlangganan yang dipilih PIHAK KEDUA;</li>
+          <li>Menjaga kerahasiaan dan keamanan Data Instansi PIHAK KEDUA sesuai dengan Pasal 8;</li>
+          <li>Memberikan pemberitahuan yang wajar kepada PIHAK KEDUA sebelum Masa Berlangganan berakhir, sepanjang dimungkinkan secara teknis.</li>
+        </ol>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 6</span><h2>Hak dan Kewajiban Pihak Kedua</h2>
+        <p>Hak PIHAK KEDUA:</p>
+        <ol>
+          <li>Menggunakan seluruh fitur Aplikasi sesuai dengan batasan Paket Berlangganan yang dipilih (jumlah outlet dan jumlah karyawan per outlet);</li>
+          <li>Memperoleh dukungan teknis dari PIHAK PERTAMA sesuai dengan kanal dukungan yang tersedia.</li>
+        </ol>
+        <p>Kewajiban PIHAK KEDUA:</p>
+        <ol>
+          <li>Melakukan pembayaran biaya Paket Berlangganan secara tepat waktu sesuai Pasal 3 dan Pasal 7;</li>
+          <li>Menggunakan Aplikasi sesuai dengan ketentuan Perjanjian ini dan EULA, serta tidak melakukan tindakan yang dilarang sebagaimana diatur dalam EULA;</li>
+          <li>Bertanggung jawab atas keakuratan dan keabsahan Data Instansi yang dimasukkan ke dalam Aplikasi, termasuk telah memperoleh persetujuan yang sah dari karyawan/pihak terkait atas pengolahan data pribadinya;</li>
+          <li>Menjaga kerahasiaan kredensial akses (Akun) dan segera melaporkan kepada PIHAK PERTAMA apabila terjadi penyalahgunaan.</li>
+        </ol>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 7</span><h2>Tata Cara Pembayaran</h2>
+        <p>Pembayaran dilakukan melalui: <span class="fill" contenteditable data-key="metode-bayar" data-ph="transfer bank / virtual account / e-wallet / dll."></span>, ke rekening/akun yang ditentukan oleh PIHAK PERTAMA.</p>
+        <p>Keterlambatan pembayaran dapat menyebabkan status Paket Berlangganan berubah menjadi "kedaluwarsa" dan/atau dikenakan denda keterlambatan sebesar yang disepakati oleh Para Pihak, jika ada.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 8</span><h2>Kerahasiaan Data</h2>
+        <p>PIHAK PERTAMA wajib menjaga kerahasiaan Data Instansi PIHAK KEDUA dan tidak akan mengungkapkannya kepada pihak ketiga tanpa persetujuan tertulis dari PIHAK KEDUA, kecuali diwajibkan oleh peraturan perundang-undangan atau perintah instansi yang berwenang.</p>
+        <p>Data Instansi PIHAK KEDUA terisolasi secara otomatis dari data instansi lain melalui mekanisme multi-tenant pada sistem Aplikasi.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 9</span><h2>Pembatasan Tanggung Jawab</h2>
+        <p>PIHAK PERTAMA tidak bertanggung jawab atas kerugian yang timbul akibat: (a) kesalahan input data oleh PIHAK KEDUA; (b) gangguan koneksi internet atau perangkat PIHAK KEDUA; (c) keadaan kahar (force majeure) sebagaimana diatur dalam Pasal 11; atau (d) penyalahgunaan Akun oleh pihak yang tidak berwenang akibat kelalaian PIHAK KEDUA.</p>
+        <p>Tanggung jawab PIHAK PERTAMA atas kerugian yang timbul dari Perjanjian ini dibatasi maksimal sebesar total biaya Paket Berlangganan yang telah dibayarkan oleh PIHAK KEDUA dalam Masa Berlangganan yang sedang berjalan.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 10</span><h2>Pengakhiran Perjanjian</h2>
+        <p>Perjanjian ini dapat diakhiri sebelum berakhirnya Masa Berlangganan apabila:</p>
+        <ol>
+          <li>Disepakati secara tertulis oleh Para Pihak;</li>
+          <li>PIHAK KEDUA melakukan pelanggaran material terhadap Perjanjian ini dan/atau EULA dan tidak memperbaikinya dalam waktu empat belas (14) hari kalender sejak diberikan pemberitahuan tertulis oleh PIHAK PERTAMA;</li>
+          <li>PIHAK KEDUA tidak melakukan pembayaran biaya Paket Berlangganan sesuai Pasal 3 dan Pasal 7;</li>
+          <li>Salah satu Pihak dinyatakan pailit, dibubarkan, atau tidak lagi menjalankan usahanya secara sah.</li>
+        </ol>
+        <p>Pengakhiran Perjanjian tidak menghapus kewajiban pembayaran yang telah timbul dan belum dilunasi oleh PIHAK KEDUA sampai dengan tanggal pengakhiran.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 11</span><h2>Keadaan Kahar (Force Majeure)</h2>
+        <p>Para Pihak dibebaskan dari tanggung jawab atas keterlambatan atau kegagalan pelaksanaan Perjanjian ini yang diakibatkan oleh keadaan kahar, termasuk namun tidak terbatas pada bencana alam, kebakaran, huru-hara, perang, pemogokan massal, gangguan infrastruktur telekomunikasi/internet nasional, kebijakan pemerintah, atau peristiwa lain di luar kendali wajar Para Pihak.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 12</span><h2>Penyelesaian Perselisihan</h2>
+        <p>Setiap perselisihan yang timbul dari Perjanjian ini akan diselesaikan terlebih dahulu secara musyawarah untuk mufakat. Apabila tidak tercapai kesepakatan dalam waktu tiga puluh (30) hari kalender, Para Pihak sepakat untuk menyelesaikannya melalui Pengadilan Negeri yang berwenang di domisili PIHAK PERTAMA.</p>
+      </div>
+
+      <div class="pasal"><span class="num">Pasal 13</span><h2>Penutup</h2>
+        <p>Perjanjian ini dibuat dalam rangkap 2 (dua) asli, masing-masing bermeterai cukup dan mempunyai kekuatan hukum yang sama, untuk dipegang oleh masing-masing Pihak.</p>
+        <p>Segala hal yang belum atau belum cukup diatur dalam Perjanjian ini akan diatur lebih lanjut dalam addendum yang merupakan bagian yang tidak terpisahkan dari Perjanjian ini, berdasarkan kesepakatan tertulis Para Pihak.</p>
+      </div>
+
+      <p class="closing">Demikian Perjanjian ini dibuat dan ditandatangani oleh Para Pihak dalam keadaan sehat jasmani dan rohani, tanpa paksaan dari pihak mana pun, untuk dilaksanakan dengan sebaik-baiknya.</p>
+
+      <div class="sig-grid">
+        <div>
+          <div class="role">PIHAK PERTAMA</div>
+          <div class="materai">(meterai)</div>
+          <div class="sig-line"></div>
+          <div class="sig-name" contenteditable data-key="sig1-name" data-ph="( Nama Penandatangan )">( Nama Penandatangan )</div>
+          <div class="sig-cap" contenteditable data-key="sig1-jab" data-ph="Jabatan">Jabatan</div>
+        </div>
+        <div>
+          <div class="role">PIHAK KEDUA</div>
+          <div class="materai">(meterai)</div>
+          <div class="sig-line"></div>
+          <div class="sig-name" contenteditable data-key="sig2-name" data-ph="( Nama Penandatangan )">( Nama Penandatangan )</div>
+          <div class="sig-cap" contenteditable data-key="sig2-jab" data-ph="Jabatan">Jabatan</div>
+        </div>
+      </div>
+
+      <p class="footnote"><b>Saksi-saksi (opsional):</b><br>
+        1. <span class="fill" contenteditable data-key="saksi1" data-ph="……………………"></span> — Tanda tangan: ……………………<br>
+        2. <span class="fill" contenteditable data-key="saksi2" data-ph="……………………"></span> — Tanda tangan: ……………………
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  try{
+    var tabs = document.querySelectorAll('.tab-btn');
+    var panels = document.querySelectorAll('.doc-panel');
+    tabs.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        tabs.forEach(function(b){ b.classList.remove('active'); });
+        panels.forEach(function(p){ p.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.target).classList.add('active');
+      });
+    });
+
+    document.getElementById('printBtn').addEventListener('click', function(){
+      window.print();
+    });
+
+    var PREFIX = 'codasuaka-legal:';
+    var fields = document.querySelectorAll('[data-key]');
+    fields.forEach(function(el){
+      var key = PREFIX + el.dataset.key;
+      try{
+        var saved = localStorage.getItem(key);
+        if(saved !== null){ el.textContent = saved; }
+      }catch(e){}
+      el.addEventListener('input', function(){
+        try{ localStorage.setItem(key, el.textContent); }catch(e){}
+      });
+    });
+  }catch(e){}
+})();
+</script>
