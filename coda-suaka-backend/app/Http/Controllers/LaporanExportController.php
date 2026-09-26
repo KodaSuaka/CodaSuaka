@@ -30,14 +30,36 @@ class LaporanExportController extends Controller
         $transaksis = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id))
+            ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id))
             ->orderBy('tanggal')
             ->get()
             ->toArray();
 
         $instansiNama = $user->instansi->nama_instansi ?? '';
 
-        return $this->exportService->generateBukuKasPdf($transaksis, $startDate, $endDate, $instansiNama);
+        // SUG-5: ringkasan total masuk/keluar/saldo supaya laporan lebih jelas
+        $totalMasuk = collect($transaksis)->where('tipe', 'masuk')->sum('nominal');
+        $totalKeluar = collect($transaksis)->where('tipe', 'keluar')->sum('nominal');
+
+        // SUG-7: pisahkan kolom masuk/keluar + saldo berjalan per baris,
+        // supaya arah transaksi jelas tanpa harus baca kolom "Tipe" terpisah.
+        $saldoBerjalan = 0.0;
+        foreach ($transaksis as &$t) {
+            $nominal = (float) ($t['nominal'] ?? 0);
+            $saldoBerjalan += $t['tipe'] === 'masuk' ? $nominal : -$nominal;
+            $t['saldo_berjalan'] = $saldoBerjalan;
+        }
+        unset($t);
+
+        return $this->exportService->generateBukuKasPdf(
+            $transaksis,
+            $startDate,
+            $endDate,
+            $instansiNama,
+            (float) $totalMasuk,
+            (float) $totalKeluar,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -46,7 +68,7 @@ class LaporanExportController extends Controller
     public function exportBukuKasExcel(Request $request)
     {
         $user = $request->user();
-        $this->authorize('export', TransaksiKas::class);
+        $this->authorize('exportExcel', TransaksiKas::class);
 
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
         $endDate = $request->end_date ?? Carbon::now()->toDateString();
@@ -54,7 +76,7 @@ class LaporanExportController extends Controller
         $transaksis = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id))
+            ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id))
             ->orderBy('tanggal')
             ->get()
             ->map(function ($t) {
@@ -78,7 +100,13 @@ class LaporanExportController extends Controller
             $grouped[$grpTipe][$key][] = $t;
         }
 
-        return $this->exportService->generateBukuKasExcel($transaksis, $grouped, $startDate, $endDate);
+        return $this->exportService->generateBukuKasExcel(
+            $transaksis,
+            $grouped,
+            $startDate,
+            $endDate,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -96,7 +124,13 @@ class LaporanExportController extends Controller
         $data = $this->getLabaRugiData($user, $startDate, $endDate, $request->outlet_id);
         $instansiNama = $user->instansi->nama_instansi ?? '';
 
-        return $this->exportService->generateLabaRugiPdf($data, $startDate, $endDate, $instansiNama);
+        return $this->exportService->generateLabaRugiPdf(
+            $data,
+            $startDate,
+            $endDate,
+            $instansiNama,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -113,7 +147,13 @@ class LaporanExportController extends Controller
         $data = $this->getArusKasData($user, $startDate, $endDate, $request->outlet_id);
         $instansiNama = $user->instansi->nama_instansi ?? '';
 
-        return $this->exportService->generateArusKasPdf($data, $startDate, $endDate, $instansiNama);
+        return $this->exportService->generateArusKasPdf(
+            $data,
+            $startDate,
+            $endDate,
+            $instansiNama,
+            $this->penanggungJawab($user)
+        );
     }
 
     /**
@@ -122,14 +162,38 @@ class LaporanExportController extends Controller
     public function exportArusKasExcel(Request $request)
     {
         $user = $request->user();
-        $this->authorize('export', TransaksiKas::class);
+        $this->authorize('exportExcel', TransaksiKas::class);
 
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
         $endDate = $request->end_date ?? Carbon::now()->toDateString();
 
         $data = $this->getArusKasData($user, $startDate, $endDate, $request->outlet_id);
 
-        return $this->exportService->generateArusKasExcel($data, $startDate, $endDate);
+        return $this->exportService->generateArusKasExcel(
+            $data,
+            $startDate,
+            $endDate,
+            $this->penanggungJawab($user)
+        );
+    }
+
+    /**
+     * Helper: ambil data laba rugi dengan breakdown per kategori.
+     */
+    /**
+     * Helper: identitas penanggung jawab export (nama + role).
+     * Karyawan role Keuangan → namanya tercatat sebagai penanggung jawab.
+     */
+    private function penanggungJawab($user): string
+    {
+        if (! $user) {
+            return '-';
+        }
+
+        $nama = $user->nama_lengkap ?? $user->name ?? '';
+        $role = $user->role?->nama_role ?? '';
+
+        return trim($nama.($role ? " ($role)" : ''));
     }
 
     /**
@@ -140,7 +204,7 @@ class LaporanExportController extends Controller
         $query = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId));
+            ->when($outletId, fn ($q) => $q->where('outlet_id', $outletId));
 
         $transaksis = (clone $query)->get();
 
@@ -156,7 +220,7 @@ class LaporanExportController extends Controller
         // Breakdown HPP per kategori (keluar, termasuk_hpp = true)
         $hppPerKategori = [];
         $totalHpp = 0;
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $hppPerKategori[$kategori] = ($hppPerKategori[$kategori] ?? 0) + (float) $t->nominal;
             $totalHpp += (float) $t->nominal;
@@ -165,7 +229,7 @@ class LaporanExportController extends Controller
         // Breakdown beban per kategori (keluar, operasional, bukan HPP)
         $bebanPerKategori = [];
         $totalBeban = 0;
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => !$t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => ! $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $bebanPerKategori[$kategori] = ($bebanPerKategori[$kategori] ?? 0) + (float) $t->nominal;
             $totalBeban += (float) $t->nominal;
@@ -192,7 +256,7 @@ class LaporanExportController extends Controller
         $transaksis = TransaksiKas::with('kategoriTransaksi')
             ->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+            ->when($outletId, fn ($q) => $q->where('outlet_id', $outletId))
             ->get();
 
         $arusKasOperasi = ['masuk' => 0, 'keluar' => 0];
@@ -227,7 +291,7 @@ class LaporanExportController extends Controller
         // Hitung saldo awal
         $saldoAwal = TransaksiKas::where('instansi_id', $user->instansi_id)
             ->where('tanggal', '<', $startDate)
-            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+            ->when($outletId, fn ($q) => $q->where('outlet_id', $outletId))
             ->selectRaw("COALESCE(SUM(CASE WHEN tipe = 'masuk' THEN nominal ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN tipe = 'keluar' THEN nominal ELSE 0 END), 0) as saldo")
             ->value('saldo') ?? 0;
 

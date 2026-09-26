@@ -4,9 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.local.TokenManager
 import com.example.codasuaka.domain.repository.DashboardRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -21,13 +26,15 @@ data class DashboardUiState(
     val presensiHariIni: Int = 0,
     val pengajuanPending: Int = 0,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val isDrawerOpen: Boolean = false,
     val errorMessage: String? = null,
     val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Tugas Tim, 2 = Pesan, 3 = Divisi,
     val userNamaLengkap: String = "Nama Pengguna",
     val userEmail: String = "",
     val userRole: String = "",
-    val userPermissions: List<String> = emptyList()
+    val userPermissions: List<String> = emptyList(),
+    val hasUnreadMessages: Boolean = false
 )
 
 
@@ -37,15 +44,20 @@ data class DashboardUiState(
  */
 class DashboardViewModel(
     private val dashboardRepository: DashboardRepository,
+    private val chatRepository: com.example.codasuaka.domain.repository.ChatRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState
 
+    private var unreadCheckJob: Job? = null
+
     init {
         loadUserData()
         loadDashboardData()
+        loadOmsetForCurrentMonth()
+        startUnreadMessagesPolling()
     }
 
     /**
@@ -94,6 +106,17 @@ class DashboardViewModel(
     }
 
     /**
+     * Memuat data omset untuk bulan berjalan secara otomatis saat dashboard dibuka.
+     * Jika ada data keuangan, tampilkan; jika tidak, biarkan kosong (0.0).
+     */
+    private fun loadOmsetForCurrentMonth() {
+        val now = java.time.LocalDate.now()
+        val startDate = now.withDayOfMonth(1).toString()
+        val endDate = now.toString()
+        loadOmset(startDate, endDate)
+    }
+
+    /**
      * Memuat ulang data omset berdasarkan filter tanggal.
      * @param startDate Tanggal mulai (format: yyyy-MM-dd)
      * @param endDate   Tanggal akhir (format: yyyy-MM-dd)
@@ -118,6 +141,46 @@ class DashboardViewModel(
         }
     }
 
+    fun refreshDashboard() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+            try {
+                coroutineScope {
+                    val dashboardDef = async { dashboardRepository.getDashboard() }
+                    val omsetDef = async {
+                        val now = java.time.LocalDate.now()
+                        dashboardRepository.getOmset(now.withDayOfMonth(1).toString(), now.toString())
+                    }
+                    
+                    val dashboardRes = dashboardDef.await()
+                    val omsetRes = omsetDef.await()
+                    
+                    _uiState.update { currentState ->
+                        var newState = currentState
+                        
+                        dashboardRes.onSuccess { data ->
+                            newState = newState.copy(
+                                totalKaryawan = data.totalKaryawan,
+                                totalOutlet = data.totalOutlet,
+                                totalDivisi = data.totalDivisi,
+                                presensiHariIni = data.presensiHariIni,
+                                pengajuanPending = data.pengajuanPending
+                            )
+                        }
+                        
+                        omsetRes.onSuccess { data ->
+                            newState = newState.copy(omsetTotal = data.totalOmset)
+                        }
+                        
+                        newState
+                    }
+                }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
+            }
+        }
+    }
+
     // ─── Drawer ──────────────────────────────────────────────
 
     fun openDrawer() {
@@ -138,6 +201,19 @@ class DashboardViewModel(
 
     fun onBottomNavSelected(index: Int) {
         _uiState.value = _uiState.value.copy(selectedBottomNav = index)
+    }
+
+    private fun startUnreadMessagesPolling() {
+        unreadCheckJob?.cancel()
+        unreadCheckJob = viewModelScope.launch {
+            while (true) {
+                chatRepository.getContacts().onSuccess { groups ->
+                    val totalUnread = groups.sumOf { it.contacts.sumOf { c -> c.unreadCount } }
+                    _uiState.value = _uiState.value.copy(hasUnreadMessages = totalUnread > 0)
+                }
+                delay(15_000L) // Polling untuk navbar setiap 15 detik
+            }
+        }
     }
 
     fun clearError() {

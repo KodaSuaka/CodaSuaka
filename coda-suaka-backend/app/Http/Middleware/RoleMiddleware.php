@@ -20,10 +20,10 @@ class RoleMiddleware
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated.'
+                'message' => 'Unauthenticated.',
             ], 401);
         }
 
@@ -37,7 +37,7 @@ class RoleMiddleware
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Unauthorized. Role Anda tidak memiliki akses ke endpoint ini.'
+            'message' => 'Unauthorized. Role Anda tidak memiliki akses ke endpoint ini.',
         ], 403);
     }
 }

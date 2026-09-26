@@ -29,12 +29,15 @@ class UpdatekaryawanRequest extends FormRequest
             'nama_lengkap' => 'sometimes|required|string|max:255',
             'kontak' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tanggal_lahir' => 'nullable|date|before:today',
             'outlet_id' => [
                 'nullable',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
             ],
             'sisa_cuti' => 'nullable|integer|min:0',
             'foto_profil' => 'nullable|string',
+            'tanggal_mulai_kerja' => 'nullable|date',
         ];
     }
 

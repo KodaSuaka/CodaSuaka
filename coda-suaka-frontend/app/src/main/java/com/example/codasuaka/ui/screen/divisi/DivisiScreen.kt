@@ -24,6 +24,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.ui.screen.kelola_karyawan.Karyawan
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,29 +105,17 @@ fun DivisiScreen(
                 }
             }
 
-            // ── Error Message ──
+            // ── Error Message (User-Friendly Notification) ──
             if (uiState.errorMessage != null &&
                 uiState.dialogMode !is DivisiDialogMode.Tambah &&
                 uiState.dialogMode !is DivisiDialogMode.Edit
             ) {
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Error, null, tint = Error, modifier = Modifier.size(20.dp))
-                            Text(
-                                uiState.errorMessage ?: "",
-                                color = Error,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        mapFromServer = true,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
                 }
             }
 

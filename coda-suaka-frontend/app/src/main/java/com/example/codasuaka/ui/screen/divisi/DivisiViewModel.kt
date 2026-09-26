@@ -2,6 +2,7 @@ package com.example.codasuaka.ui.screen.divisi
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.remote.dto.CreateAnggotaDivisiRequest
 import com.example.codasuaka.data.remote.dto.CreateDivisiRequest
 import com.example.codasuaka.data.remote.dto.DivisiDto
 import com.example.codasuaka.data.remote.dto.OutletDto
@@ -42,6 +43,8 @@ data class DivisiUiState(
     val divisiList: List<Divisi> = emptyList(),
     val outlets: List<Outlet> = emptyList(),
     val karyawanList: List<Karyawan> = emptyList(),
+    /** Semua karyawan tanpa filter outlet — untuk mapping anggota divisi */
+    val allKaryawans: List<Karyawan> = emptyList(),
     val selectedOutletId: Int? = null,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
@@ -96,7 +99,7 @@ class DivisiViewModel(
                 errorMsg = it.message
             }
 
-            // Load karyawan
+            // Load karyawan — semua (untuk mapping anggota divisi)
             karyawanRepository.getKaryawans().onSuccess { dtos ->
                 loadedKaryawan = dtos.map { it.toKaryawanNoRole() }
             }.onFailure {
@@ -113,6 +116,7 @@ class DivisiViewModel(
             _uiState.value = _uiState.value.copy(
                 outlets = loadedOutlets,
                 karyawanList = loadedKaryawan,
+                allKaryawans = loadedKaryawan,
                 divisiList = loadedDivisi,
                 isLoading = false,
                 errorMessage = errorMsg
@@ -263,7 +267,23 @@ class DivisiViewModel(
                     ?: (state.outlets.firstOrNull()?.id ?: 0)
             )
             divisiRepository.createDivisi(request).onSuccess { dto ->
-                val newDivisi = dto.toDivisi(state.karyawanList, state.outlets)
+                val newDivisiId = dto.id
+                // Sinkronisasi anggota divisi ke backend — hanya anggota yang
+                // berhasil disimpan yang dianggap benar-benar bergabung.
+                val successfulAnggota = mutableListOf<Karyawan>()
+                var anggotaError: String? = null
+                for (anggota in state.formAnggota) {
+                    divisiRepository.createAnggotaDivisi(
+                        CreateAnggotaDivisiRequest(divisiId = newDivisiId, karyawanId = anggota.id)
+                    ).onSuccess {
+                        successfulAnggota.add(anggota)
+                    }.onFailure {
+                        anggotaError = anggotaError ?: it.message
+                    }
+                }
+                val newDivisi = dto.toDivisi(state.karyawanList, state.outlets).copy(
+                    anggota = successfulAnggota
+                )
                 _uiState.value = _uiState.value.copy(
                     divisiList = _uiState.value.divisiList + newDivisi,
                     isSaving = false,
@@ -274,7 +294,8 @@ class DivisiViewModel(
                     formOutletId = 0,
                     formAnggota = emptyList(),
                     formAvailableKaryawan = emptyList(),
-                    successMessage = "Divisi \"${newDivisi.namaDivisi}\" berhasil ditambahkan."
+                    successMessage = "Divisi \"${newDivisi.namaDivisi}\" berhasil ditambahkan.",
+                    errorMessage = anggotaError?.let { "Sebagian anggota gagal ditambahkan: $it" }
                 )
             }.onFailure {
                 _uiState.value = _uiState.value.copy(
@@ -307,20 +328,51 @@ class DivisiViewModel(
                 outletId = state.formOutletId.takeIf { it > 0 }
             )
             divisiRepository.updateDivisi(id, request).onSuccess {
+                var syncError: String? = null
+
+                // Sinkronisasi anggota divisi: ambil data saat ini dari backend
+                divisiRepository.getAnggotaDivisis().onSuccess { allAnggota ->
+                    // Filter anggota yang sesuai dengan divisi ini
+                    val existingAnggota = allAnggota.filter { it.divisiId == id }
+                    val existingKaryawanIds = existingAnggota.map { it.karyawanId }.toSet()
+                    val desiredKaryawanIds = state.formAnggota.map { it.id }.toSet()
+
+                    // Tambah anggota baru (ada di formAnggota tapi belum di backend)
+                    val toAdd = state.formAnggota.filter { it.id !in existingKaryawanIds }
+                    for (anggota in toAdd) {
+                        divisiRepository.createAnggotaDivisi(
+                            CreateAnggotaDivisiRequest(divisiId = id, karyawanId = anggota.id)
+                        ).onFailure { syncError = syncError ?: it.message }
+                    }
+
+                    // Hapus anggota yang tidak ada di formAnggota
+                    val toRemove = existingAnggota.filter { it.karyawanId !in desiredKaryawanIds }
+                    for (anggota in toRemove) {
+                        divisiRepository.deleteAnggotaDivisi(anggota.id)
+                            .onFailure { syncError = syncError ?: it.message }
+                    }
+                }.onFailure { syncError = syncError ?: it.message }
+
                 // Reload divisi list
                 divisiRepository.getDivisis().onSuccess { dtos ->
                     _uiState.value = _uiState.value.copy(
                         divisiList = dtos.map { it.toDivisi(state.karyawanList, state.outlets) },
                         isSaving = false,
                         dialogMode = DivisiDialogMode.Closed,
-                        successMessage = "Divisi berhasil diperbarui."
+                        formAnggota = emptyList(),
+                        formAvailableKaryawan = emptyList(),
+                        successMessage = "Divisi berhasil diperbarui.",
+                        errorMessage = syncError?.let { "Sinkronisasi anggota gagal sebagian: $it" }
                     )
                 }.onFailure {
                     // Even if reload fails, consider update successful
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         dialogMode = DivisiDialogMode.Closed,
-                        successMessage = "Divisi berhasil diperbarui."
+                        formAnggota = emptyList(),
+                        formAvailableKaryawan = emptyList(),
+                        successMessage = "Divisi berhasil diperbarui.",
+                        errorMessage = syncError?.let { "Sinkronisasi anggota gagal sebagian: $it" }
                     )
                 }
             }.onFailure {

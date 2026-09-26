@@ -33,9 +33,9 @@ class UpdatepenugasanRequest extends FormRequest
                 'sometimes',
                 'required',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!karyawan::whereHas('user', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
+                    if (! karyawan::whereHas('user', function ($q) use ($user) {
+                        $q->where('instansi_id', $user->instansi_id);
+                    })->where('id', $value)->exists()) {
                         $fail('Karyawan tidak ditemukan di instansi Anda');
                     }
                 },
@@ -43,15 +43,15 @@ class UpdatepenugasanRequest extends FormRequest
             'divisi_id' => [
                 'nullable',
                 function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !Divisi::whereHas('outlet', function ($q) use ($user) {
-                            $q->where('instansi_id', $user->instansi_id);
-                        })->where('id', $value)->exists()) {
+                    if ($value && ! Divisi::whereHas('outlet', function ($q) use ($user) {
+                        $q->where('instansi_id', $user->instansi_id);
+                    })->where('id', $value)->exists()) {
                         $fail('Divisi tidak ditemukan di instansi Anda');
                     }
                 },
             ],
             'tenggat' => 'nullable|date',
-            'status' => 'sometimes|in:belum,proses,selesai,batal',
+            'status' => 'sometimes|in:belum,proses,menunggu_validasi,selesai,batal',
         ];
     }
 

@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\KategoriTransaksi;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class KategoriTransaksiPolicy
@@ -80,11 +80,19 @@ class KategoriTransaksiPolicy
     }
 
     /**
-     * User bisa mengekspor data kategori transaksi (PDF/Excel).
+     * User bisa mengekspor data kategori transaksi ke PDF.
      */
     public function export(User $user): bool
     {
         return app(PermissionService::class)->userHasPermission($user, 'export:keuangan');
+    }
+
+    /**
+     * User bisa mengekspor data kategori transaksi ke Excel.
+     */
+    public function exportExcel(User $user): bool
+    {
+        return app(PermissionService::class)->userHasPermission($user, 'export:keuangan-excel');
     }
 
     public function restore(User $user, KategoriTransaksi $kategoriTransaksi): bool

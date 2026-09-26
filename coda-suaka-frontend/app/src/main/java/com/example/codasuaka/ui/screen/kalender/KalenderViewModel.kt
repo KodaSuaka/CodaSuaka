@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.codasuaka.data.remote.dto.CreateJadwalRequest
 import com.example.codasuaka.data.remote.dto.JadwalDto
 import com.example.codasuaka.domain.repository.JadwalRepository
+import com.example.codasuaka.util.DateTimeUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -46,7 +47,9 @@ sealed class KalenderDialogMode {
  * State halaman Kalender.
  */
 data class KalenderUiState(
-    val currentMonth: YearMonth = YearMonth.now(),
+    val currentMonth: YearMonth = YearMonth.now(DateTimeUtil.zoneId),
+    /** Tanggal yang sedang difilter di kalender (null = tampilkan semua event bulan ini). */
+    val selectedDate: LocalDate? = null,
     val events: List<KalenderEvent> = emptyList(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
@@ -77,26 +80,52 @@ class KalenderViewModel(
 
     fun nextMonth() {
         _uiState.value = _uiState.value.copy(
-            currentMonth = _uiState.value.currentMonth.plusMonths(1)
+            currentMonth = _uiState.value.currentMonth.plusMonths(1),
+            selectedDate = null
         )
         loadEvents()
     }
 
     fun prevMonth() {
         _uiState.value = _uiState.value.copy(
-            currentMonth = _uiState.value.currentMonth.minusMonths(1)
+            currentMonth = _uiState.value.currentMonth.minusMonths(1),
+            selectedDate = null
         )
         loadEvents()
     }
 
     /**
      * Mengubah tahun secara langsung.
+     * Validasi: tahun harus antara 2020-2099 untuk mencegah input tidak valid.
      */
     fun selectYear(year: Int) {
+        val clampedYear = year.coerceIn(2020, 2099)
+        val currentMonth = _uiState.value.currentMonth
+        // Hanya reload jika tahun benar-benar berubah
+        if (clampedYear == currentMonth.year) return
         _uiState.value = _uiState.value.copy(
-            currentMonth = _uiState.value.currentMonth.withYear(year)
+            currentMonth = currentMonth.withYear(clampedYear),
+            selectedDate = null
         )
         loadEvents()
+    }
+
+    /**
+     * Pilih tanggal di kalender untuk memfilter daftar event.
+     * Klik lagi tanggal yang sama untuk menghapus filter.
+     */
+    fun selectDate(date: LocalDate) {
+        val current = _uiState.value.selectedDate
+        _uiState.value = _uiState.value.copy(
+            selectedDate = if (current == date) null else date
+        )
+    }
+
+    /**
+     * Hapus filter tanggal (tampilkan semua event di bulan aktif).
+     */
+    fun clearSelectedDate() {
+        _uiState.value = _uiState.value.copy(selectedDate = null)
     }
 
     /**
@@ -258,11 +287,7 @@ class KalenderViewModel(
                 "tugas" -> EventCategory.TUGAS
                 else -> EventCategory.EVENT
             }
-            val date = try {
-                LocalDate.parse(this.tanggal?.take(10))
-            } catch (e: Exception) {
-                LocalDate.now()
-            }
+            val date = DateTimeUtil.toLocalLocalDate(this.tanggal)
             return KalenderEvent(
                 id = this.id,
                 namaEvent = this.namaEvent,

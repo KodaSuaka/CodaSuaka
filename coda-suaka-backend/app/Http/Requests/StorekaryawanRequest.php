@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\role;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,12 +33,27 @@ class StorekaryawanRequest extends FormRequest
             'password' => 'required|string|min:6',
             'kontak' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
-            'role_id' => 'required|exists:roles,id',
+            // Biodata opsional
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tanggal_lahir' => 'nullable|date|before:today',
+            // Owner & Super Admin adalah role platform-level, bukan karyawan —
+            // cegah privilege escalation (mis. Manager membuat akun ber-role Owner)
+            'role_id' => [
+                'required',
+                'exists:roles,id',
+                function ($attribute, $value, $fail) {
+                    if (role::whereIn('nama_role', ['Super Admin', 'Owner'])->where('id', $value)->exists()) {
+                        $fail('Role tidak valid untuk akun karyawan.');
+                    }
+                },
+            ],
+            // Bug #15: outlet_id nullable — pemilik bisa tambah karyawan sebelum buat outlet
             'outlet_id' => [
                 'nullable',
                 Rule::exists('outlets', 'id')->where('instansi_id', $user->instansi_id),
             ],
             'sisa_cuti' => 'nullable|integer|min:0',
+            'tanggal_mulai_kerja' => 'nullable|date',
         ];
     }
 

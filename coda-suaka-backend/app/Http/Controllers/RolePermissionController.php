@@ -14,9 +14,7 @@ class RolePermissionController extends Controller
 {
     use ApiResponse;
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function index(Request $request)
     {
@@ -27,6 +25,7 @@ class RolePermissionController extends Controller
             $query->where('role_id', $request->role_id);
         }
         $permissions = $query->orderBy('role_id')->get();
+
         return $this->success($permissions);
     }
 
@@ -54,6 +53,7 @@ class RolePermissionController extends Controller
     {
         Gate::authorize('manage-roles');
         $role_permission->delete();
+
         return $this->success(null, 'Permission berhasil dihapus');
     }
 
@@ -84,7 +84,7 @@ class RolePermissionController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            return $this->error('Gagal menyinkronisasi permissions: ' . $e->getMessage(), 500);
+            return $this->error('Gagal menyinkronisasi permissions: '.$e->getMessage(), 500);
         }
     }
 }

@@ -27,7 +27,16 @@ class KaryawanController extends Controller
     {
         $user = $request->user();
 
-        $query = karyawan::with(['user.role', 'outlet']);
+        // Exclude pemilik (Owner) dan Super Admin dari daftar karyawan
+        // karena pemilik dianggap entitas terpisah, bukan karyawan
+        $excludedRoleNames = ['Super Admin', 'Owner'];
+
+        $query = karyawan::with(['user.role', 'outlet'])
+            ->whereHas('user', function ($q) use ($excludedRoleNames) {
+                $q->whereHas('role', function ($rq) use ($excludedRoleNames) {
+                    $rq->whereNotIn('nama_role', $excludedRoleNames);
+                });
+            });
 
         if ($request->has('outlet_id')) {
             $query->where('outlet_id', $request->outlet_id);
@@ -48,7 +57,7 @@ class KaryawanController extends Controller
             ->with(['user.role', 'outlet'])
             ->first();
 
-        if (!$karyawan) {
+        if (! $karyawan) {
             return $this->error('Profil karyawan tidak ditemukan', 404);
         }
 
@@ -63,6 +72,28 @@ class KaryawanController extends Controller
     {
         $user = $request->user();
         $instansiId = $user->instansi_id;
+
+        // Bug #11: Cek batas karyawan — exclude Owner & Super Admin dari count
+        // karena pemilik bukan karyawan, tidak boleh menghabiskan kuota
+        $instansi = $user->instansi;
+        if ($instansi && $instansi->paket) {
+            $maxKaryawan = (int) $instansi->paket->max_karyawan_per_outlet;
+            $excludedRoleNames = ['Super Admin', 'Owner'];
+            $currentCount = karyawan::whereHas('user', function ($q) use ($instansiId, $excludedRoleNames) {
+                $q->where('instansi_id', $instansiId)
+                    ->whereHas('role', function ($rq) use ($excludedRoleNames) {
+                        $rq->whereNotIn('nama_role', $excludedRoleNames);
+                    });
+            })->count();
+
+            if ($currentCount >= $maxKaryawan) {
+                return $this->error(
+                    "Batas maksimal karyawan untuk paket {$instansi->paket->nama_paket} adalah {$maxKaryawan} karyawan. "
+                    ."Saat ini sudah ada {$currentCount} karyawan.",
+                    422
+                );
+            }
+        }
 
         $result = DB::transaction(function () use ($request, $instansiId) {
             // Buat user account
@@ -81,9 +112,12 @@ class KaryawanController extends Controller
                 'nama_lengkap' => $request->nama_lengkap,
                 'kontak' => $request->kontak,
                 'alamat' => $request->alamat,
+                'tempat_lahir' => $request->tempat_lahir,
+                'tanggal_lahir' => $request->tanggal_lahir,
                 'foto_profil' => null,
                 'outlet_id' => $request->outlet_id,
                 'sisa_cuti' => $request->sisa_cuti ?? 0,
+                'tanggal_mulai_kerja' => $request->tanggal_mulai_kerja,
             ]);
 
             $karyawan->load(['user.role', 'outlet']);
@@ -100,6 +134,7 @@ class KaryawanController extends Controller
     public function show(karyawan $karyawan)
     {
         $karyawan->load(['user.role', 'outlet', 'divisi', 'anggotaDivisis']);
+
         return $this->success($karyawan);
     }
 
@@ -108,9 +143,17 @@ class KaryawanController extends Controller
      */
     public function update(UpdatekaryawanRequest $request, karyawan $karyawan)
     {
-        $karyawan->update($request->only([
-            'nama_lengkap', 'kontak', 'alamat', 'outlet_id', 'sisa_cuti', 'foto_profil'
-        ]));
+        // Bug #14: Validasi sisa_cuti tidak boleh negatif
+        $data = $request->only([
+            'nama_lengkap', 'kontak', 'alamat', 'tempat_lahir', 'tanggal_lahir',
+            'outlet_id', 'sisa_cuti', 'foto_profil', 'tanggal_mulai_kerja',
+        ]);
+
+        if (isset($data['sisa_cuti']) && $data['sisa_cuti'] < 0) {
+            return $this->error('Sisa cuti tidak boleh bernilai negatif', 422);
+        }
+
+        $karyawan->update($data);
 
         $karyawan->load(['user.role', 'outlet']);
 

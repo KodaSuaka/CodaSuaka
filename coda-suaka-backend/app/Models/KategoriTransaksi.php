@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class KategoriTransaksi extends Model
 {
@@ -63,7 +63,7 @@ class KategoriTransaksi extends Model
 
     public function instansi()
     {
-        return $this->belongsTo(instansi::class);
+        return $this->belongsTo(Instansi::class);
     }
 
     public function transaksiKas()

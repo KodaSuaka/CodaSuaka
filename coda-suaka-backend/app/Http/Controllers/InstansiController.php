@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateInstansiRequest;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +13,9 @@ class InstansiController extends Controller
 
     public function __construct()
     {
-        $this->authorizeResource(instansi::class, 'instansi');
+        // authorizeResource tidak digunakan karena route /api/instansi
+        // tidak memiliki parameter {instansi} untuk model resolution.
+        // Authorization dilakukan manual di setiap method.
     }
 
     /**
@@ -22,13 +24,15 @@ class InstansiController extends Controller
      */
     public function show(Request $request)
     {
-        $instansi = instansi::with(['paket'])
+        $instansi = Instansi::with(['paket'])
             ->where('id', $request->user()->instansi_id)
             ->first();
 
-        if (!$instansi) {
+        if (! $instansi) {
             return $this->error('Instansi tidak ditemukan', 404);
         }
+
+        $this->authorize('view', $instansi);
 
         return $this->success($instansi);
     }
@@ -39,9 +43,13 @@ class InstansiController extends Controller
      */
     public function update(UpdateInstansiRequest $request)
     {
-        $instansi = instansi::findOrFail($request->user()->instansi_id);
+        $instansi = Instansi::findOrFail($request->user()->instansi_id);
 
-        $instansi->update($request->only(['nama_instansi']));
+        $this->authorize('update', $instansi);
+
+        $data = $request->only(['nama_instansi', 'jam_operasional']);
+        $instansi->update($data);
+
         return $this->success($instansi, 'Instansi berhasil diperbarui');
     }
 }

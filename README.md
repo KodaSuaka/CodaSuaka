@@ -43,6 +43,7 @@ CodaSuaka adalah aplikasi **manajemen bisnis terpadu** yang dirancang untuk memb
   - [22. Super Admin — Paket](#22-super-admin--paket)
 - [Contoh Alur Penggunaan API](#-contoh-alur-penggunaan-api)
 - [Environment Variables](#-environment-variables)
+- [CI/CD — GitHub Actions](#-cicd--github-actions)
 
 ---
 
@@ -62,9 +63,10 @@ CodaSuaka adalah aplikasi **manajemen bisnis terpadu** yang dirancang untuk memb
 | **Penugasan**     | Tugas dengan penanggung jawab, status (belum/proses/selesai), tenggat |
 | **Paket & Transaksi Paket** | Kelola paket layanan dan transaksinya |
 | **Keuangan**      | Buku Kas (pemasukan/pengeluaran), Kategori Transaksi, multi-outlet, multi-metode pembayaran |
+| **Kasir (POS)**   | Nota penjualan & pembelian dengan item (barang/jasa), katalog Barang/Jasa + stok, impor pembelian via Excel, cetak nota PDF. **Terhubung otomatis ke Keuangan**: tiap nota membuat entri Buku Kas (penjualan → masuk, pembelian → keluar lewat alur approval) |
 | **Laporan**       | Ringkasan keuangan grafik bulanan, Arus Kas (Operasi/Investasi/Pendanaan) |
-| **Export**        | PDF (Buku Kas, Laba Rugi, Arus Kas) & Excel (Buku Kas, Arus Kas) |
-| **Approval Workflow** | Transaksi kas keluar nominal ≥ threshold otomatis perlu approval atasan |
+| **Export**        | PDF (Buku Kas, Laba Rugi, Arus Kas, Nota) & Excel (Buku Kas, Arus Kas) |
+| **Approval Workflow** | Transaksi kas keluar nominal ≥ threshold otomatis perlu approval atasan (termasuk pembelian dari Kasir) |
 | **Chat**          | Chat internal antar pengguna dalam satu instansi |
 | **Super Admin**   | Panel khusus untuk mengelola seluruh instansi, owner, dan paket secara terpusat |
 
@@ -120,7 +122,7 @@ cd coda-suaka-backend
 cp .env.example .env
 
 # Atur koneksi database di file .env
-# DB_DATABASE=codasuaka
+# DB_DATABASE=codasuaka   # nama DB lokal (dev)
 # DB_USERNAME=root
 # DB_PASSWORD=
 
@@ -133,7 +135,7 @@ php artisan key:generate
 # Jalankan migrasi & seeder
 php artisan migrate --seed
 
-# (Opsional) Symlink storage
+# Symlink storage (WAJIB — lampiran impor Kasir disimpan di disk publik)
 php artisan storage:link
 
 # Jalankan server
@@ -141,6 +143,32 @@ php artisan serve
 
 # (Opsional) Jalankan queue worker
 php artisan queue:listen
+```
+
+> **⚠️ Nama database berbeda per environment (disengaja, bukan salah ketik):**
+> **dev = `codasuaka`** (huruf **c**), **produksi = `kodasuaka`** (huruf **k**).
+> Perintah deploy/backup di server produksi harus menargetkan `kodasuaka`.
+
+### Deploy ke Produksi (ringkas)
+
+```bash
+# 1. Backup dulu (produksi memakai TCP, bukan socket)
+mysqldump --protocol=TCP -h 127.0.0.1 -P 3306 -u <DB_USERNAME> -p kodasuaka > backup_$(date +%F_%H%M).sql
+
+# 2. Tarik kode & dependency produksi
+git pull origin main && composer install --no-dev --optimize-autoloader
+
+# 3. Migrasi (aditif — JANGAN pernah migrate:fresh di produksi)
+php artisan migrate --force
+
+# 3b. Pastikan kategori global terisi (WAJIB untuk Kasir — migrate tidak
+#     menjalankan seeder; tanpa ini setiap nota gagal 500). Idempoten.
+php artisan db:seed --class=KategoriTransaksiSeeder --force
+
+# 4. Symlink storage + rebuild cache + restart worker
+php artisan storage:link
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+php artisan queue:restart
 ```
 
 ### Development Mode (All-in-One)
@@ -402,8 +430,8 @@ Accept: application/json
 
 | Query Param   | Tipe    | Required | Default           | Deskripsi |
 |--------------|---------|----------|-------------------|-----------|
-| `start_date` | date    | ❌       | Awal bulan berjalan | Tanggal mulai |
-| `end_date`   | date    | ❌       | Hari ini          | Tanggal akhir |
+| `start_date` | date    | ⬜       | Awal bulan berjalan | Tanggal mulai |
+| `end_date`   | date    | ⬜       | Hari ini          | Tanggal akhir |
 
 **Response:**
 ```json
@@ -431,8 +459,8 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_outlet` | string | ✅ | Nama outlet/cabang |
-| `alamat` | string | ❌ | Alamat |
-| `kontak` | string | ❌ | Nomor kontak |
+| `alamat` | string | ⬜ | Alamat |
+| `kontak` | string | ⬜ | Nomor kontak |
 
 ---
 
@@ -443,7 +471,7 @@ Accept: application/json
 
 | Query Param  | Tipe  | Required | Deskripsi |
 |-------------|-------|----------|-----------|
-| `outlet_id`  | int   | ❌       | Filter berdasarkan outlet |
+| `outlet_id`  | int   | ⬜       | Filter berdasarkan outlet |
 
 **Response:**
 ```json
@@ -484,10 +512,10 @@ Accept: application/json
 | `email` | string | ✅ | Email (untuk login) |
 | `password` | string | ✅ | Password minimal 6 karakter |
 | `role_id` | int | ✅ | ID role |
-| `outlet_id` | int | ❌ | Penempatan outlet |
-| `kontak` | string | ❌ | Nomor telepon |
-| `alamat` | string | ❌ | Alamat |
-| `sisa_cuti` | int | ❌ | Jatah cuti (default: 0) |
+| `outlet_id` | int | ⬜ | Penempatan outlet |
+| `kontak` | string | ⬜ | Nomor telepon |
+| `alamat` | string | ⬜ | Alamat |
+| `sisa_cuti` | int | ⬜ | Jatah cuti (default: 0) |
 
 ---
 
@@ -542,7 +570,7 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_divisi` | string | ✅ | Nama divisi |
-| `outlet_id` | int | ❌ | Outlet terkait (jika spesifik) |
+| `outlet_id` | int | ⬜ | Outlet terkait (jika spesifik) |
 
 ---
 
@@ -566,10 +594,10 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `user_id`    | int  | ❌       | Filter user (Owner/Manajemen) |
-| `tanggal`    | date | ❌       | Filter tanggal spesifik |
-| `bulan`      | int  | ❌       | Filter bulan (1-12) — perlu `tahun` |
-| `tahun`      | int  | ❌       | Filter tahun |
+| `user_id`    | int  | ⬜       | Filter user (Owner/Manajemen) |
+| `tanggal`    | date | ⬜       | Filter tanggal spesifik |
+| `bulan`      | int  | ⬜       | Filter bulan (1-12) — perlu `tahun` |
+| `tahun`      | int  | ⬜       | Filter tahun |
 
 ---
 
@@ -580,7 +608,7 @@ Accept: application/json
 
 | Field   | Tipe   | Required | Deskripsi |
 |---------|--------|----------|-----------|
-| `lokasi` | string | ❌       | Lokasi checkin (maks 255 karakter) |
+| `lokasi` | string | ⬜       | Lokasi checkin (maks 255 karakter) |
 
 ---
 
@@ -618,8 +646,8 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `bulan` | int | ❌ | Bulan (default: bulan berjalan) |
-| `tahun` | int | ❌ | Tahun (default: tahun berjalan) |
+| `bulan` | int | ⬜ | Bulan (default: bulan berjalan) |
+| `tahun` | int | ⬜ | Tahun (default: tahun berjalan) |
 
 ---
 
@@ -630,7 +658,7 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `status` | string | ❌ | Filter: `pending`, `disetujui`, `ditolak` |
+| `status` | string | ⬜ | Filter: `pending`, `disetujui`, `ditolak` |
 
 ---
 
@@ -644,7 +672,7 @@ Accept: application/json
 | `jenis` | string | ✅ | `cuti_tahunan`, `izin_sakit`, atau `mendadak` |
 | `tanggal_mulai` | date | ✅ | Tanggal mulai |
 | `tanggal_selesai` | date | ✅ | Tanggal selesai (≥ tanggal_mulai) |
-| `keterangan` | string | ❌ | Keterangan / alasan |
+| `keterangan` | string | ⬜ | Keterangan / alasan |
 
 > ⚠️ Untuk `cuti_tahunan`, otomatis dicek sisa cuti. Jika habis (≤ 0), pengajuan ditolak.
 
@@ -707,7 +735,7 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_kategori` | string | ✅ | Nama kategori (contoh: `Penjualan`, `Gaji`) |
-| `tipe` | string | ❌ | `masuk` / `keluar` (membatasi tipe transaksi) |
+| `tipe` | string | ⬜ | `masuk` / `keluar` (membatasi tipe transaksi) |
 
 ---
 
@@ -718,13 +746,13 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `outlet_id` | int | ❌ | Filter outlet |
-| `tipe` | string | ❌ | `masuk` / `keluar` |
-| `kategori_transaksi_id` | int | ❌ | Filter kategori |
-| `start_date` | date | ❌ | Tanggal mulai |
-| `end_date` | date | ❌ | Tanggal akhir |
-| `status_approval` | string | ❌ | `pending` / `disetujui` / `ditolak` / `tidak_perlu` |
-| `per_page` | int | ❌ | Jumlah per halaman (default: 50) |
+| `outlet_id` | int | ⬜ | Filter outlet |
+| `tipe` | string | ⬜ | `masuk` / `keluar` |
+| `kategori_transaksi_id` | int | ⬜ | Filter kategori |
+| `start_date` | date | ⬜ | Tanggal mulai |
+| `end_date` | date | ⬜ | Tanggal akhir |
+| `status_approval` | string | ⬜ | `pending` / `disetujui` / `ditolak` / `tidak_perlu` |
+| `per_page` | int | ⬜ | Jumlah per halaman (default: 50) |
 
 ---
 
@@ -738,11 +766,11 @@ Accept: application/json
 | `tanggal` | date | ✅ | Tanggal transaksi (≤ hari ini) |
 | `tipe` | string | ✅ | `masuk` atau `keluar` |
 | `nominal` | numeric | ✅ | Jumlah nominal |
-| `kategori_transaksi_id` | int | ❌ | ID kategori transaksi |
-| `outlet_id` | int | ❌ | Outlet terkait |
-| `metode_pembayaran` | string | ❌ | `tunai`, `transfer_bank`, `kartu_kredit`, `kartu_debit`, `e_wallet`, `cek_giro`, atau `lainnya` |
-| `keterangan` | string | ❌ | Deskripsi transaksi (maks 1000 karakter) |
-| `lampiran_url` | string | ❌ | URL bukti/Lampiran (maks 255 karakter) |
+| `kategori_transaksi_id` | int | ⬜ | ID kategori transaksi |
+| `outlet_id` | int | ⬜ | Outlet terkait |
+| `metode_pembayaran` | string | ⬜ | `tunai`, `transfer_bank`, `kartu_kredit`, `kartu_debit`, `e_wallet`, `cek_giro`, atau `lainnya` |
+| `keterangan` | string | ⬜ | Deskripsi transaksi (maks 1000 karakter) |
+| `lampiran_url` | string | ⬜ | URL bukti/Lampiran (maks 255 karakter) |
 
 ---
 
@@ -768,9 +796,9 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Default | Deskripsi |
 |------------|------|----------|---------|-----------|
-| `start_date` | date | ❌ | Awal bulan | Tanggal mulai |
-| `end_date` | date | ❌ | Hari ini | Tanggal akhir |
-| `outlet_id` | int | ❌ | Semua | Filter outlet |
+| `start_date` | date | ⬜ | Awal bulan | Tanggal mulai |
+| `end_date` | date | ⬜ | Hari ini | Tanggal akhir |
+| `outlet_id` | int | ⬜ | Semua | Filter outlet |
 
 ---
 
@@ -787,9 +815,9 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Default | Deskripsi |
 |------------|------|----------|---------|-----------|
-| `start_date` | date | ❌ | Awal bulan | Tanggal mulai |
-| `end_date` | date | ❌ | Hari ini | Tanggal akhir |
-| `outlet_id` | int | ❌ | Semua | Filter outlet |
+| `start_date` | date | ⬜ | Awal bulan | Tanggal mulai |
+| `end_date` | date | ⬜ | Hari ini | Tanggal akhir |
+| `outlet_id` | int | ⬜ | Semua | Filter outlet |
 
 ---
 
@@ -798,7 +826,7 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Default | Deskripsi |
 |------------|------|----------|---------|-----------|
-| `tahun` | int | ❌ | Tahun berjalan | Tahun laporan |
+| `tahun` | int | ⬜ | Tahun berjalan | Tahun laporan |
 
 **Response:**
 ```json
@@ -850,10 +878,10 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `outlet_id` | int | ❌ | Filter outlet |
-| `start_date` | date | ❌ | Filter tanggal mulai |
-| `end_date` | date | ❌ | Filter tanggal akhir |
-| `per_page` | int | ❌ | Pagination |
+| `outlet_id` | int | ⬜ | Filter outlet |
+| `start_date` | date | ⬜ | Filter tanggal mulai |
+| `end_date` | date | ⬜ | Filter tanggal akhir |
+| `per_page` | int | ⬜ | Pagination |
 
 ---
 
@@ -862,11 +890,11 @@ Accept: application/json
 
 | Query Param | Tipe | Required | Deskripsi |
 |------------|------|----------|-----------|
-| `status` | string | ❌ | Filter status approval |
-| `outlet_id` | int | ❌ | Filter outlet |
-| `start_date` | date | ❌ | Filter tanggal mulai |
-| `end_date` | date | ❌ | Filter tanggal akhir |
-| `per_page` | int | ❌ | Pagination |
+| `status` | string | ⬜ | Filter status approval |
+| `outlet_id` | int | ⬜ | Filter outlet |
+| `start_date` | date | ⬜ | Filter tanggal mulai |
+| `end_date` | date | ⬜ | Filter tanggal akhir |
+| `per_page` | int | ⬜ | Pagination |
 
 ---
 
@@ -884,7 +912,7 @@ Accept: application/json
 
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
-| `catatan` | string | ❌ | Catatan persetujuan |
+| `catatan` | string | ⬜ | Catatan persetujuan |
 
 ---
 
@@ -950,7 +978,7 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_instansi` | string | ✅ | Nama perusahaan |
-| `paket_id` | int | ❌ | ID paket |
+| `paket_id` | int | ⬜ | ID paket |
 | `owner_name` | string | ✅* | Nama owner (hanya POST) |
 | `owner_email` | string | ✅* | Email owner (hanya POST) |
 | `owner_password` | string | ✅* | Password owner (hanya POST) |
@@ -989,10 +1017,69 @@ Accept: application/json
 | Field | Tipe | Required | Deskripsi |
 |-------|------|----------|-----------|
 | `nama_paket` | string | ✅ | Nama paket |
-| `deskripsi` | string | ❌ | Deskripsi paket |
+| `deskripsi` | string | ⬜ | Deskripsi paket |
 | `harga` | numeric | ✅ | Harga paket |
 | `durasi_hari` | int | ✅ | Masa berlaku paket (hari) |
-| `fitur` | json | ❌ | Daftar fitur yang termasuk |
+| `fitur` | json | ⬜ | Daftar fitur yang termasuk |
+
+---
+
+### 23. Kasir — Barang / Jasa (Katalog)
+
+> Katalog item yang dijual/dibeli, lengkap dengan stok. Membutuhkan permission Kasir (`view/manage:kasir`).
+
+#### `GET /api/barang-jasas` — Daftar barang/jasa (paginated, filter `jenis`, `is_active`, `q`)
+#### `POST /api/barang-jasas` — Tambah barang/jasa
+#### `GET /api/barang-jasas/{barang_jasa}` — Detail
+#### `PUT /api/barang-jasas/{barang_jasa}` — Update
+#### `DELETE /api/barang-jasas/{barang_jasa}` — Hapus (ditolak jika item sudah dipakai di nota)
+
+**Request Body (POST):**
+
+| Field | Tipe | Required | Deskripsi |
+|-------|------|----------|-----------|
+| `nama` | string | ✅ | Nama barang/jasa |
+| `jenis` | string | ✅ | `barang` \| `jasa` |
+| `satuan` | string | ✅ | Satuan (pcs, kg, jam, …) |
+| `harga_jual` | numeric | ✅ | Harga jual |
+| `harga_beli` | numeric | ⬜ | Harga beli |
+| `stok` | int | ⬜ | Stok awal (hanya relevan untuk `barang`) |
+| `is_active` | boolean | ⬜ | Aktif/nonaktif (default true) |
+| `keterangan` | string | ⬜ | Catatan |
+
+---
+
+### 24. Kasir — Nota (Penjualan & Pembelian)
+
+> Nota transaksi dengan banyak item. **Setiap nota otomatis membuat entri Buku Kas** yang tertaut dua arah (`nota.transaksi_kas_id`): penjualan → kas **masuk** (tanpa approval), pembelian → kas **keluar** (mengikuti alur approval bila ≥ threshold). Menghapus nota mengembalikan stok dan menghapus entri kas terkait.
+
+#### `GET /api/notas` — Daftar nota (paginated, filter `tipe`, `outlet_id`, rentang `tanggal`)
+#### `POST /api/notas` — Buat nota penjualan/pembelian
+#### `POST /api/notas/import` — Impor nota pembelian massal via Excel (+ lampiran)
+#### `GET /api/notas/{nota}` — Detail nota beserta item
+#### `GET /api/notas/{nota}/pdf` — Cetak nota sebagai PDF
+#### `DELETE /api/notas/{nota}` — Hapus nota (ditolak jika pembelian sudah disetujui approval)
+
+**Request Body (POST):**
+
+| Field | Tipe | Required | Deskripsi |
+|-------|------|----------|-----------|
+| `tipe` | string | ✅ | `penjualan` \| `pembelian` |
+| `tanggal` | date | ✅ | Tanggal nota (≤ hari ini) |
+| `outlet_id` | int | ⬜ | Outlet terkait |
+| `kategori_transaksi_id` | int | ⬜ | Kategori kas; jika kosong, dipilih/dibuat default sesuai tipe |
+| `pihak_terkait` | string | ⬜ | Nama pelanggan/pemasok |
+| `metode_pembayaran` | string | ⬜ | Tunai, Transfer, dll. |
+| `catatan` | string | ⬜ | Catatan nota |
+| `items` | array | ✅ | Minimal 1 item |
+| `items.*.barang_jasa_id` | int | ⬜* | ID katalog; jika kosong, wajib isi `nama_item` + `jenis` |
+| `items.*.nama_item` | string | ⬜* | Nama item (jika bukan dari katalog) |
+| `items.*.jenis` | string | ⬜* | `barang` \| `jasa` (jika bukan dari katalog) |
+| `items.*.kuantitas` | numeric | ✅ | Jumlah (> 0) |
+| `items.*.satuan` | string | ⬜ | Satuan |
+| `items.*.harga_satuan` | numeric | ✅ | Harga per unit |
+
+> Total nota dihitung server dari `Σ(kuantitas × harga_satuan)`. Untuk item `barang` dari katalog, stok berkurang (penjualan) / bertambah (pembelian) secara atomik; penjualan gagal bila stok tidak cukup.
 
 ---
 
@@ -1154,6 +1241,68 @@ Struktur utama:
 - **Data Layer:** `data/local/TokenManager.kt` — Manajemen token lokal
 - **UI Layer:** `ui/screen/` — Screen seperti Divisi, Kelola Karyawan, dll.
 - **ViewModel:** Setiap screen memiliki ViewModel sendiri (contoh: `DivisiViewModel.kt`)
+
+---
+
+## 🔄 CI/CD — GitHub Actions
+
+Project ini menggunakan **GitHub Actions** untuk Continuous Integration (CI) yang otomatis menjalankan quality check dan testing setiap kali ada push atau pull request.
+
+### Workflow yang Tersedia
+
+| Workflow | File | Trigger | Deskripsi |
+|----------|------|---------|-----------|
+| **Backend CI** | [`backend-ci.yml`](.github/workflows/backend-ci.yml) | Push/PR ke `main`/`develop` (backend berubah) | Code quality (Pint) + PHPUnit tests |
+| **Frontend CI** | [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | Push/PR ke `main`/`develop` (frontend berubah) | Lint + Unit Tests + Build APK |
+
+### Alur Pipeline Backend
+
+```
+Push/PR → Code Quality (Pint Lint) → Tests (PHPUnit + SQLite :memory:)
+```
+
+1. **Code Quality** — Menjalankan [`vendor/bin/pint --test`](coda-suaka-backend/composer.json:53) untuk memastikan kode sesuai coding standard Laravel
+2. **Tests** — Menjalankan PHPUnit dengan database SQLite in-memory (sesuai konfigurasi di [`phpunit.xml`](coda-suaka-backend/phpunit.xml:26))
+
+### Alur Pipeline Frontend
+
+```
+Push/PR → Lint Check → Unit Tests → Build Debug APK → Build Release APK (main only)
+```
+
+1. **Lint Check** — Menjalankan `./gradlew lint` untuk memeriksa kode Android
+2. **Unit Tests** — Menjalankan `./gradlew testDebugUnitTest` (menggunakan MockK & JUnit)
+3. **Build Debug APK** — Build APK debug untuk artifact
+4. **Build Release APK** — Hanya dijalankan saat push ke branch `main`
+
+### Cara Menggunakan
+
+Workflow akan otomatis berjalan saat:
+- **Push** ke branch `main` atau `develop` yang mengubah file di `coda-suaka-backend/` atau `coda-suaka-frontend/`
+- **Pull Request** ke branch `main` atau `develop`
+
+### Artifact yang Dihasilkan
+
+| Artifact | Deskripsi | Retensi |
+|----------|-----------|---------|
+| `lint-report` | Laporan lint Android | 7 hari |
+| `unit-test-results` | Hasil unit test Android | 7 hari |
+| `debug-apk` | APK debug build | 14 hari |
+| `release-apk` | APK release build (main only) | 30 hari |
+| `backend-coverage` | Coverage report PHP | 7 hari |
+
+### Setup Awal
+
+Tidak ada konfigurasi tambahan yang diperlukan. Workflow akan otomatis:
+1. Menginstall PHP 8.4 / JDK 17
+2. Menginstall dependencies (Composer / Gradle)
+3. Menjalankan quality check dan testing
+
+> **Catatan:** Untuk release signing APK, Anda perlu menambahkan **GitHub Secrets** berikut:
+> - `KEYSTORE_BASE64` — File keystore yang di-encode base64
+> - `KEYSTORE_PASSWORD` — Password keystore
+> - `KEY_ALIAS` — Alias key
+> - `KEY_PASSWORD` — Password key
 
 ---
 

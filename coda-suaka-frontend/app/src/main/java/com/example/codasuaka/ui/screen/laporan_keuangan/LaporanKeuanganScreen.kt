@@ -1,11 +1,14 @@
 package com.example.codasuaka.ui.screen.laporan_keuangan
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,10 +38,13 @@ import com.example.codasuaka.data.remote.dto.ArusKasData
 import com.example.codasuaka.data.remote.dto.ArusKasDetail
 import com.example.codasuaka.data.remote.dto.KategoriTransaksiDto
 import com.example.codasuaka.data.remote.dto.TransaksiKasDto
+import com.example.codasuaka.ui.components.CodaSuakaSnackbarHost
 import com.example.codasuaka.ui.components.CustomCalendarNavigation
 import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
+import com.example.codasuaka.util.ErrorMessageMapper
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -83,13 +89,14 @@ fun LaporanKeuanganScreen(
     }
     LaunchedEffect(uiState.exportError) {
         uiState.exportError?.let {
-            snackbarHostState.showSnackbar("Gagal: $it")
+            val friendlyMsg = ErrorMessageMapper.map(it, "ekspor data").message
+            snackbarHostState.showSnackbar(friendlyMsg)
         }
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { CodaSuakaSnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -97,7 +104,7 @@ fun LaporanKeuanganScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Secondary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Primary)
                     }
                 },
                 actions = {
@@ -106,7 +113,7 @@ fun LaporanKeuanganScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Dropdown Menu Laporan (Menggantikan 3 icon terpisah)
+                        // Dropdown Menu Laporan
                         Box {
                             IconButton(onClick = { showReportsMenu = true }) {
                                 Icon(Icons.Default.Analytics, "Laporan", tint = Primary)
@@ -204,6 +211,39 @@ fun LaporanKeuanganScreen(
                                         },
                                         leadingIcon = { Icon(Icons.Default.TableChart, null, tint = MasukColor) }
                                     )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text("Laba Rugi Barang (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("laba_rugi", "barang")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Laba Rugi Jasa (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("laba_rugi", "jasa")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Arus Kas Barang (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("arus_kas", "barang")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Arus Kas Jasa (Template)", fontWeight = FontWeight.Medium, color = Secondary) },
+                                        onClick = {
+                                            showExportMenu = false
+                                            viewModel.exportTemplateLaporan("arus_kas", "jasa")
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.TableChart, null, tint = Primary) }
+                                    )
                                 }
                             }
                         }
@@ -216,10 +256,10 @@ fun LaporanKeuanganScreen(
             FloatingActionButton(
                 onClick = { viewModel.showAddForm("masuk") },
                 containerColor = Primary,
-                contentColor = OnPrimary,
+                contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, "Tambah Transaksi", modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.Add, contentDescription = "Tambah", modifier = Modifier.size(28.dp))
             }
         }
     ) { innerPadding ->
@@ -240,7 +280,7 @@ fun LaporanKeuanganScreen(
                 
                 MaterialTheme(colorScheme = lightColorScheme(
                     surface = Color.White,
-                    onSurface = Color.Black,
+                    onSurface = Secondary,
                     primary = Primary,
                     onPrimary = Color.White,
                     secondary = Secondary
@@ -251,13 +291,13 @@ fun LaporanKeuanganScreen(
                             TextButton(onClick = {
                                 datePickerState.selectedDateMillis?.let {
                                     val ld = Instant.ofEpochMilli(it)
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ZoneId.of("UTC"))
                                         .toLocalDate()
                                     // Update filter range: set start and end to the selected day
                                     viewModel.setFilterDateRange(ld.toString(), ld.toString())
                                 }
                                 showRangePicker = false
-                            }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
+                            }) { Text("Pilih", color = Secondary, fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
                             TextButton(onClick = { showRangePicker = false }) {
@@ -268,17 +308,17 @@ fun LaporanKeuanganScreen(
                     ) {
                         if (showYearPicker) {
                             val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                                 
                             YearPickerDialog(
                                 selectedYear = displayMonth.year,
                                 onYearSelected = { year ->
-                                    val cal = java.util.Calendar.getInstance().apply {
-                                        timeInMillis = datePickerState.displayedMonthMillis
-                                    }
-                                    cal.set(java.util.Calendar.YEAR, year)
-                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                        .atZone(ZoneId.of("UTC"))
+                                        .toLocalDate()
+                                    val targetMonth = currentMonth.withYear(year)
+                                    datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                     showYearPicker = false
                                 },
                                 onDismiss = { showYearPicker = false }
@@ -288,7 +328,7 @@ fun LaporanKeuanganScreen(
                         Column(modifier = Modifier.padding(top = 16.dp)) {
                             // Header Kustom < Bulan Tahun >
                             val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                .atZone(ZoneId.systemDefault())
+                                .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
                             
                             val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -296,18 +336,20 @@ fun LaporanKeuanganScreen(
                             CustomCalendarNavigation(
                                 title = monthTitle.replaceFirstChar { it.uppercase() },
                                 onPrevClick = {
-                                    val cal = java.util.Calendar.getInstance().apply {
-                                        timeInMillis = datePickerState.displayedMonthMillis
-                                    }
-                                    cal.add(java.util.Calendar.MONTH, -1)
-                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                        .atZone(ZoneId.of("UTC"))
+                                        .toLocalDate()
+                                        .withDayOfMonth(1)
+                                    val prevMonth = currentMonth.minusMonths(1)
+                                    datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                 },
                                 onNextClick = {
-                                    val cal = java.util.Calendar.getInstance().apply {
-                                        timeInMillis = datePickerState.displayedMonthMillis
-                                    }
-                                    cal.add(java.util.Calendar.MONTH, 1)
-                                    datePickerState.displayedMonthMillis = cal.timeInMillis
+                                    val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                        .atZone(ZoneId.of("UTC"))
+                                        .toLocalDate()
+                                        .withDayOfMonth(1)
+                                    val nextMonth = currentMonth.plusMonths(1)
+                                    datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                 },
                                 onTitleClick = { showYearPicker = true },
                                 modifier = Modifier.padding(horizontal = 12.dp)
@@ -330,16 +372,16 @@ fun LaporanKeuanganScreen(
                                         containerColor = Color.White,
                                         titleContentColor = Secondary,
                                         headlineContentColor = Secondary,
-                                        weekdayContentColor = Color.Gray,
-                                        subheadContentColor = Color.Gray,
-                                        yearContentColor = Color.DarkGray,
+                                        weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                        subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                        yearContentColor = Secondary.copy(alpha = 0.7f),
                                         currentYearContentColor = Primary,
                                         selectedYearContentColor = Color.White,
                                         selectedYearContainerColor = Primary,
-                                        dayContentColor = Color.Black,
+                                        dayContentColor = OnSurface,
                                         selectedDayContentColor = Color.White,
                                         selectedDayContainerColor = Primary,
-                                        todayContentColor = Primary,
+                                        todayContentColor = Secondary,
                                         todayDateBorderColor = Primary
                                     ),
                                     modifier = Modifier.offset(y = (-48).dp)
@@ -369,71 +411,75 @@ fun LaporanKeuanganScreen(
                 )
             }
 
-            // ── Daftar Transaksi ──
-            if (uiState.isLoadingTransaksi && uiState.transaksiList.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-            } else if (uiState.transaksiList.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.AccountBalance,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Neutral
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            "Belum ada transaksi",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Neutral
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "Tekan + untuk menambah transaksi",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Neutral
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(uiState.transaksiList, key = { it.id }) { transaksi ->
-                        TransaksiCard(
-                            transaksi = transaksi,
-                            onEdit = { viewModel.showEditForm(transaksi) },
-                            onDelete = { viewModel.deleteTransaksi(transaksi.id) },
-                            onAjukanApproval = { viewModel.ajukanApproval(transaksi.id) }
-                        )
-                    }
-
-                    // Loading more indicator
-                    if (uiState.isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = Primary
+                // ── Animated Content Body ──
+                AnimatedContent(
+                    targetState = uiState.isLoadingTransaksi,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
+                    },
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    label = "bukuKasBody"
+                ) { isLoading ->
+                    if (isLoading && uiState.transaksiList.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Primary)
+                        }
+                    } else if (uiState.transaksiList.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.AccountBalance,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = Primary.copy(alpha = 0.3f)
                                 )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "Belum ada transaksi",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Neutral
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Tekan + untuk menambah transaksi",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Neutral
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(uiState.transaksiList, key = { it.id }) { transaksi ->
+                                TransaksiCard(
+                                    transaksi = transaksi,
+                                    onEdit = { viewModel.showEditForm(transaksi) },
+                                    onDelete = { viewModel.deleteTransaksi(transaksi.id) },
+                                    onClick = { viewModel.showDetail(transaksi) },
+                                    onAjukanApproval = { viewModel.ajukanApproval(transaksi.id) }
+                                )
+                            }
+
+                            // Loading more indicator
+                            if (uiState.isLoadingMore) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Primary
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
         }
     }
 
@@ -485,6 +531,14 @@ fun LaporanKeuanganScreen(
             isLoading = uiState.isLoadingArusKas,
             error = uiState.arusKasError,
             onDismiss = { viewModel.toggleArusKasSheet() }
+        )
+    }
+
+    // ── Transaksi Detail Popup ──
+    if (uiState.showDetailDialog && uiState.selectedTransaksiDetail != null) {
+        TransaksiDetailDialog(
+            transaksi = uiState.selectedTransaksiDetail!!,
+            onDismiss = { viewModel.hideDetail() }
         )
     }
 
@@ -728,7 +782,7 @@ private fun SaldoRingkasanCard(
                             LaporanKeuanganViewModel.formatRupiah(totalMasuk),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = OnSurface
+                            color = Secondary
                         )
                     }
                 }
@@ -745,7 +799,7 @@ private fun SaldoRingkasanCard(
                             LaporanKeuanganViewModel.formatRupiah(totalKeluar),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = OnSurface
+                            color = Secondary
                         )
                     }
                 }
@@ -763,6 +817,7 @@ private fun TransaksiCard(
     transaksi: TransaksiKasDto,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onClick: () -> Unit,
     onAjukanApproval: () -> Unit = {}
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -773,7 +828,9 @@ private fun TransaksiCard(
 
     Column {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -821,7 +878,7 @@ private fun TransaksiCard(
                         Icon(Icons.Default.Event, null, tint = OnSurfaceVariant, modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = transaksi.tanggal,
+                            text = DateTimeUtil.formatIsoToLocal(transaksi.tanggal),
                             fontSize = 11.sp,
                             color = OnSurfaceVariant
                         )
@@ -892,11 +949,14 @@ private fun TransaksiCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Row {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         IconButton(
                             onClick = onEdit,
                             enabled = !isPending,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 Icons.Default.Edit,
@@ -905,16 +965,30 @@ private fun TransaksiCard(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
-                        IconButton(
+                        
+                        VerticalDivider(
+                            modifier = Modifier.height(16.dp).padding(horizontal = 2.dp),
+                            color = NeutralBorder.copy(alpha = 0.5f)
+                        )
+
+                        TextButton(
                             onClick = { showDeleteConfirm = true },
                             enabled = !isPending,
-                            modifier = Modifier.size(32.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            modifier = Modifier.height(36.dp)
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                "Hapus",
-                                tint = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor.copy(alpha = 0.6f),
-                                modifier = Modifier.size(18.dp)
+                                contentDescription = "Hapus",
+                                tint = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Hapus",
+                                fontSize = 12.sp,
+                                color = if (isPending) Neutral.copy(alpha = 0.3f) else KeluarColor,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -949,27 +1023,252 @@ private fun TransaksiCard(
 
     // ── Konfirmasi Hapus ──
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Hapus Transaksi") },
-            text = { Text("Yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = KeluarColor)
+        MaterialTheme(colorScheme = lightColorScheme(
+            surface = Color.White,
+            onSurface = OnSurface,
+            onSurfaceVariant = OnSurfaceVariant,
+            primary = Primary,
+            secondary = Secondary
+        )) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                containerColor = Color.White,
+                titleContentColor = Secondary,
+                textContentColor = OnSurface,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = KeluarColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Hapus Transaksi", fontWeight = FontWeight.ExtraBold)
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Yakin ingin menghapus transaksi ini?", style = MaterialTheme.typography.bodyMedium)
+                        
+                        // Detail transaksi yang akan dihapus
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            color = Neutral.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, NeutralBorder.copy(alpha = 0.3f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Kategori:", fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Secondary
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Tanggal:", fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = DateTimeUtil.formatIsoToLocal(transaksi.tanggal),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Secondary
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Nominal:", fontSize = 12.sp, color = OnSurfaceVariant, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = (if (transaksi.tipe == "masuk") "+" else "-") +
+                                               LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (transaksi.tipe == "masuk") MasukColor else KeluarColor
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = "⚠️ Tindakan ini permanen.",
+                            fontSize = 12.sp,
+                            color = KeluarColor,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDeleteConfirm = false
+                            onDelete()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = KeluarColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDeleteConfirm = false },
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Text("Batal", color = OnSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DETAIL POPUP
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun TransaksiDetailDialog(
+    transaksi: TransaksiKasDto,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Hapus")
+                    Text(
+                        "Rincian Transaksi",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Secondary
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.background(Neutral, CircleShape).size(32.dp)) {
+                        Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp), tint = Secondary)
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Batal")
+
+                HorizontalDivider(color = Neutral)
+
+                // Info Section
+                DetailInfoItem(
+                    label = "Tipe Transaksi",
+                    value = if (transaksi.tipe == "masuk") "Pemasukan" else "Pengeluaran",
+                    valueColor = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
+                    icon = if (transaksi.tipe == "masuk") Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
+                )
+
+                DetailInfoItem(
+                    label = "Kategori",
+                    value = transaksi.kategoriTransaksi?.namaKategori ?: "Umum",
+                    icon = Icons.Default.Category
+                )
+
+                DetailInfoItem(
+                    label = "Nominal",
+                    value = LaporanKeuanganViewModel.formatRupiah(transaksi.nominal),
+                    valueColor = if (transaksi.tipe == "masuk") MasukColor else KeluarColor,
+                    icon = Icons.Default.Payments
+                )
+
+                DetailInfoItem(
+                    label = "Tanggal",
+                    value = DateTimeUtil.formatIsoToLocal(transaksi.tanggal, "dd MMMM yyyy"),
+                    icon = Icons.Default.Event
+                )
+
+                // Audit: Menampilkan pembuat transaksi
+                transaksi.createdByUser?.let { user ->
+                    DetailInfoItem(
+                        label = "Dibuat Oleh",
+                        value = user.namaLengkap ?: "System",
+                        icon = Icons.Default.Person
+                    )
                 }
+
+                if (!transaksi.metodePembayaran.isNullOrBlank()) {
+                    DetailInfoItem(
+                        label = "Metode Pembayaran",
+                        value = transaksi.metodePembayaran,
+                        icon = Icons.Default.CreditCard
+                    )
+                }
+
+                if (!transaksi.keterangan.isNullOrBlank()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Catatan", style = MaterialTheme.typography.labelMedium, color = OnSurfaceVariant)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Neutral.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = transaksi.keterangan,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Secondary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
-        )
+        }
+    }
+}
+
+@Composable
+private fun DetailInfoItem(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    valueColor: Color = Secondary
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier.size(36.dp).clip(CircleShape).background(Neutral),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = OnSurfaceVariant, modifier = Modifier.size(18.dp))
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = valueColor)
+        }
     }
 }
 
@@ -1001,8 +1300,6 @@ private fun FormTransaksiDialog(
     onSubmit: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // Suppress unused warning if needed, or use it. Currently just removing warning
-    val _unused = formMetodePembayaran 
     val filteredKategori = kategoriList.filter { it.tipe == formTipe || it.tipe.isEmpty() }
 
     Dialog(onDismissRequest = { if (!isSubmitting) onDismiss() }) {
@@ -1106,8 +1403,14 @@ private fun FormTransaksiDialog(
                 var showDatePicker by remember { mutableStateOf(false) }
                 var showYearPicker by remember { mutableStateOf(false) }
                 
+                // Format tanggal untuk tampilan: "30 Juni 2026, 17:00 WIB"
+                val displayTanggal = remember(formTanggal) {
+                    com.example.codasuaka.util.DateTimeUtil.formatIsoToLocal(
+                        formTanggal, "dd MMMM yyyy, HH:mm"
+                    )
+                }
                 CustomTextField(
-                    value = formTanggal,
+                    value = displayTanggal,
                     onValueChange = {},
                     readOnly = true,
                     enabled = false,
@@ -1133,11 +1436,19 @@ private fun FormTransaksiDialog(
                             onDismissRequest = { showDatePicker = false },
                             confirmButton = {
                                 TextButton(onClick = {
-                                    datePickerState.selectedDateMillis?.let {
-                                        val ld = Instant.ofEpochMilli(it)
-                                            .atZone(ZoneId.systemDefault())
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        val newDate = Instant.ofEpochMilli(millis)
+                                            .atZone(ZoneId.of("UTC"))
                                             .toLocalDate()
-                                        onFieldChanged(null, null, null, ld.toString(), null, null)
+                                        // Pertahankan waktu dari formTanggal yang sudah ada
+                                        val newTanggal = try {
+                                            val existingInstant = java.time.Instant.parse(formTanggal)
+                                            val existingTime = existingInstant.atZone(ZoneId.of("UTC")).toLocalTime()
+                                            newDate.atTime(existingTime).toString()
+                                        } catch (_: Exception) {
+                                            newDate.toString()
+                                        }
+                                        onFieldChanged(null, null, null, newTanggal, null, null)
                                     }
                                     showDatePicker = false
                                 }) { Text("Pilih", color = Primary, fontWeight = FontWeight.Bold) }
@@ -1153,17 +1464,17 @@ private fun FormTransaksiDialog(
                         ) {
                             if (showYearPicker) {
                                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                    .atZone(ZoneId.systemDefault())
+                                    .atZone(ZoneId.of("UTC"))
                                     .toLocalDate()
                                     
                                 YearPickerDialog(
                                     selectedYear = displayMonth.year,
                                     onYearSelected = { year ->
-                                        val cal = java.util.Calendar.getInstance().apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                        }
-                                        cal.set(java.util.Calendar.YEAR, year)
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                        val targetMonth = currentMonth.withYear(year)
+                                        datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                         showYearPicker = false
                                     },
                                     onDismiss = { showYearPicker = false }
@@ -1172,7 +1483,7 @@ private fun FormTransaksiDialog(
 
                             Column(modifier = Modifier.padding(top = 16.dp)) {
                                 val displayMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                                    .atZone(ZoneId.systemDefault())
+                                    .atZone(ZoneId.of("UTC"))
                                     .toLocalDate()
                                 
                                 val monthTitle = displayMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("id", "ID")))
@@ -1180,18 +1491,20 @@ private fun FormTransaksiDialog(
                                 CustomCalendarNavigation(
                                     title = monthTitle.replaceFirstChar { it.uppercase() },
                                     onPrevClick = {
-                                        val cal = java.util.Calendar.getInstance().apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                        }
-                                        cal.add(java.util.Calendar.MONTH, -1)
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                            .withDayOfMonth(1)
+                                        val prevMonth = currentMonth.minusMonths(1)
+                                        datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                     },
                                     onNextClick = {
-                                        val cal = java.util.Calendar.getInstance().apply {
-                                            timeInMillis = datePickerState.displayedMonthMillis
-                                        }
-                                        cal.add(java.util.Calendar.MONTH, 1)
-                                        datePickerState.displayedMonthMillis = cal.timeInMillis
+                                        val currentMonth = Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                            .atZone(ZoneId.of("UTC"))
+                                            .toLocalDate()
+                                            .withDayOfMonth(1)
+                                        val nextMonth = currentMonth.plusMonths(1)
+                                        datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                                     },
                                     onTitleClick = { showYearPicker = true },
                                     modifier = Modifier.padding(horizontal = 12.dp)
@@ -1214,16 +1527,16 @@ private fun FormTransaksiDialog(
                                             containerColor = Color.White,
                                             titleContentColor = Secondary,
                                             headlineContentColor = Secondary,
-                                            weekdayContentColor = Color.Gray,
-                                            subheadContentColor = Color.Gray,
-                                            yearContentColor = Color.DarkGray,
+                                            weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                            subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                            yearContentColor = Secondary.copy(alpha = 0.7f),
                                             currentYearContentColor = Primary,
                                             selectedYearContentColor = Color.White,
                                             selectedYearContainerColor = Primary,
-                                            dayContentColor = Color.Black,
+                                            dayContentColor = OnSurface,
                                             selectedDayContentColor = Color.White,
                                             selectedDayContainerColor = Primary,
-                                            todayContentColor = Primary,
+                                            todayContentColor = Secondary,
                                             todayDateBorderColor = Primary
                                         ),
                                         modifier = Modifier.offset(y = (-48).dp)
@@ -1256,10 +1569,13 @@ private fun FormTransaksiDialog(
                         enabled = !isSubmitting,
                         modifier = Modifier.weight(1.5f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Secondary)
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
                     ) {
                         if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = OnPrimary)
-                        else Text(if (isEditing) "Simpan" else "Tambah Transaksi")
+                        else Text(
+                            text = if (isEditing) "Simpan" else "Tambah",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -1441,7 +1757,8 @@ private fun LabaRugiBottomSheet(
                 } else if (error != null) {
                     Text(error, color = KeluarColor)
                 } else if (labaRugiData != null) {
-                    // Pendapatan
+                    // ── Pendapatan ──
+                    var showPendapatan by remember { mutableStateOf(false) }
                     SaldoRowItem(
                         icon = Icons.Default.TrendingUp,
                         label = "Pendapatan",
@@ -1449,7 +1766,52 @@ private fun LabaRugiBottomSheet(
                         color = MasukColor,
                         bgColor = MasukBg
                     )
-                    // HPP
+                    if (!labaRugiData.pendapatanPerKategori.isNullOrEmpty()) {
+                        TextButton(
+                            onClick = { showPendapatan = !showPendapatan },
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Icon(
+                                if (showPendapatan) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showPendapatan) "Sembunyikan Rincian" else "Lihat Rincian Kategori",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        AnimatedVisibility(visible = showPendapatan) {
+                            Column(
+                                modifier = Modifier.padding(start = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                labaRugiData.pendapatanPerKategori!!.toSortedMap().forEach { (kategori, nominal) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• $kategori",
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = LaporanKeuanganViewModel.formatRupiah(nominal),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MasukColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── HPP ──
+                    var showHpp by remember { mutableStateOf(false) }
                     SaldoRowItem(
                         icon = Icons.Default.ShoppingCart,
                         label = "HPP (Harga Pokok Penjualan)",
@@ -1457,7 +1819,52 @@ private fun LabaRugiBottomSheet(
                         color = WarningColor,
                         bgColor = WarningBg
                     )
-                    // Beban Operasional
+                    if (!labaRugiData.hppPerKategori.isNullOrEmpty()) {
+                        TextButton(
+                            onClick = { showHpp = !showHpp },
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Icon(
+                                if (showHpp) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showHpp) "Sembunyikan Rincian" else "Lihat Rincian Kategori",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        AnimatedVisibility(visible = showHpp) {
+                            Column(
+                                modifier = Modifier.padding(start = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                labaRugiData.hppPerKategori!!.toSortedMap().forEach { (kategori, nominal) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• $kategori",
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = LaporanKeuanganViewModel.formatRupiah(nominal),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = WarningColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Beban Operasional ──
+                    var showBeban by remember { mutableStateOf(false) }
                     SaldoRowItem(
                         icon = Icons.Default.Receipt,
                         label = "Beban Operasional",
@@ -1465,6 +1872,50 @@ private fun LabaRugiBottomSheet(
                         color = KeluarColor,
                         bgColor = KeluarBg
                     )
+                    if (!labaRugiData.bebanPerKategori.isNullOrEmpty()) {
+                        TextButton(
+                            onClick = { showBeban = !showBeban },
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Icon(
+                                if (showBeban) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (showBeban) "Sembunyikan Rincian" else "Lihat Rincian Kategori",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        AnimatedVisibility(visible = showBeban) {
+                            Column(
+                                modifier = Modifier.padding(start = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                labaRugiData.bebanPerKategori!!.toSortedMap().forEach { (kategori, nominal) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• $kategori",
+                                            fontSize = 12.sp,
+                                            color = OnSurfaceVariant
+                                        )
+                                        Text(
+                                            text = LaporanKeuanganViewModel.formatRupiah(nominal),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = KeluarColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Divider
                     HorizontalDivider(color = NeutralBorder.copy(alpha = 0.5f))
                     // Laba Rugi

@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\TransaksiKas;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,13 +18,18 @@ class StoreTransaksiKasRequest extends FormRequest
         $user = $this->user();
 
         return [
-            'tanggal' => 'required|date|before_or_equal:today',
+            // 'tanggal' hanya kolom DATE (waktu dibuang di DB), tapi frontend
+            // mengirim datetime lengkap (ada jam). before_or_equal:today
+            // pakai Carbon::parse('today') = tengah malam, jadi submit
+            // "hari ini" jam berapa pun selain 00:00 selalu gagal validasi.
+            // Bandingkan ke akhir hari ini, bukan tengah malam.
+            'tanggal' => ['required', 'date', 'before_or_equal:'.now()->endOfDay()->toDateTimeString()],
             'tipe' => 'required|in:masuk,keluar',
             'nominal' => [
                 'required',
                 'numeric',
                 'min:0',
-                'max:' . TransaksiKas::NOMINAL_MAX,
+                'max:'.TransaksiKas::NOMINAL_MAX,
             ],
             'kategori_transaksi_id' => [
                 'nullable',

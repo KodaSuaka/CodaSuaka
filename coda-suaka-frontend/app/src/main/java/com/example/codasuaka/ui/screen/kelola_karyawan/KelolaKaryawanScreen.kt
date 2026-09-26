@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,19 +16,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.codasuaka.ui.components.CustomCalendarNavigation
+import com.example.codasuaka.ui.components.NotificationBannerStatic
+import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
-
-// ─── Warna Bantu ──────────────────────────────────────────────
-private val InfoColor = Color(0xFF3B82F6)
-private val InfoBg = Color(0xFFDBEAFE)
+import com.example.codasuaka.util.DateTimeUtil
+import com.example.codasuaka.util.ErrorMessageMapper
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,42 +115,18 @@ fun KelolaKaryawanScreen(
                 }
             }
 
-            // ── Error Message (Refined for Management) ──
+            // ── Error Message (User-Friendly Notification) ──
             if (uiState.errorMessage != null &&
                 uiState.dialogMode !is KaryawanDialogMode.Tambah &&
                 uiState.dialogMode !is KaryawanDialogMode.Edit
             ) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (uiState.errorMessage!!.contains("Catatan")) InfoBg else Error.copy(alpha = 0.1f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp, 
-                            if (uiState.errorMessage!!.contains("Catatan")) InfoColor else Error
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.errorMessage!!.contains("Catatan")) Icons.Default.Info else Icons.Default.Error,
-                                contentDescription = null,
-                                tint = if (uiState.errorMessage!!.contains("Catatan")) InfoColor else Error,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = uiState.errorMessage ?: "",
-                                color = if (uiState.errorMessage!!.contains("Catatan")) Secondary else Error,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
+                    val isError = !uiState.errorMessage!!.contains("Catatan")
+                    NotificationBannerStatic(
+                        message = uiState.errorMessage ?: "",
+                        type = if (isError) ErrorMessageMapper.NotificationType.ERROR else ErrorMessageMapper.NotificationType.INFO,
+                        onDismiss = { viewModel.clearMessages() }
+                    )
                 }
             }
 
@@ -243,6 +228,9 @@ fun KelolaKaryawanScreen(
                 password = uiState.formPassword,
                 selectedRoleId = uiState.formRoleId,
                 selectedOutletId = uiState.formOutletId,
+                tanggalMulaiKerja = uiState.formTanggalMulaiKerja,
+                tempatLahir = uiState.formTempatLahir,
+                tanggalLahir = uiState.formTanggalLahir,
                 roles = uiState.roles,
                 outlets = uiState.outlets,
                 isSaving = uiState.isSaving,
@@ -253,6 +241,9 @@ fun KelolaKaryawanScreen(
                 onPasswordChange = viewModel::onFormPasswordChange,
                 onRoleChange = viewModel::onFormRoleChange,
                 onOutletChange = viewModel::onFormOutletChange,
+                onTanggalMulaiKerjaChange = viewModel::onFormTanggalMulaiKerjaChange,
+                onTempatLahirChange = viewModel::onFormTempatLahirChange,
+                onTanggalLahirChange = viewModel::onFormTanggalLahirChange,
                 onSimpan = viewModel::simpanKaryawan,
                 onDismiss = viewModel::closeDialog
             )
@@ -262,6 +253,10 @@ fun KelolaKaryawanScreen(
                 nama = uiState.formNama,
                 alamat = uiState.formAlamat,
                 selectedOutletId = uiState.formOutletId,
+                sisaCuti = uiState.formSisaCuti,
+                tanggalMulaiKerja = uiState.formTanggalMulaiKerja,
+                tempatLahir = uiState.formTempatLahir,
+                tanggalLahir = uiState.formTanggalLahir,
                 outlets = uiState.outlets,
                 roleName = dialog.karyawan.role?.namaRole ?: "-",
                 isSaving = uiState.isSaving,
@@ -269,6 +264,10 @@ fun KelolaKaryawanScreen(
                 onNamaChange = viewModel::onFormNamaChange,
                 onAlamatChange = viewModel::onFormAlamatChange,
                 onOutletChange = viewModel::onFormOutletChange,
+                onSisaCutiChange = viewModel::onFormSisaCutiChange,
+                onTanggalMulaiKerjaChange = viewModel::onFormTanggalMulaiKerjaChange,
+                onTempatLahirChange = viewModel::onFormTempatLahirChange,
+                onTanggalLahirChange = viewModel::onFormTanggalLahirChange,
                 onSimpan = viewModel::updateKaryawan,
                 onHapus = { viewModel.hapusKaryawan(dialog.karyawan.id) },
                 onDismiss = viewModel::closeDialog
@@ -420,6 +419,14 @@ private fun KaryawanListItem(
                         }
                     }
                 }
+                if (karyawan.masaKerja != null) {
+                    Text(
+                        "Masa kerja: ${karyawan.masaKerja}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
             }
 
             Icon(
@@ -436,6 +443,164 @@ private fun KaryawanListItem(
 // DIALOG — Tambah Karyawan
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * Field tanggal sederhana — tap untuk buka DatePicker Material3 bawaan,
+ * value/onValueChange dalam format yyyy-MM-dd.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SimpleDatePickerField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    var showYearPicker by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        singleLine = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showPicker = true },
+        trailingIcon = {
+            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Primary)
+        },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Primary,
+            unfocusedBorderColor = Neutral,
+            focusedContainerColor = Surface,
+            unfocusedContainerColor = Surface,
+            focusedLabelColor = Primary,
+            unfocusedLabelColor = OnSurfaceVariant,
+            disabledBorderColor = Neutral,
+            disabledLabelColor = OnSurfaceVariant,
+            disabledTextColor = OnSurface
+        ),
+        enabled = false
+    )
+
+    if (showPicker) {
+        val datePickerState = rememberDatePickerState()
+        val locale = remember { Locale("id", "ID") }
+        val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+
+        MaterialTheme(colorScheme = lightColorScheme(
+            surface = Color.White,
+            onSurface = Secondary,
+            primary = Primary,
+            onPrimary = Color.White,
+            secondary = Secondary
+        )) {
+            DatePickerDialog(
+                onDismissRequest = { showPicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            onValueChange(date.toString())
+                        }
+                        showPicker = false
+                    }) { Text("Pilih", color = Secondary, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPicker = false }) {
+                        Text("Batal", color = OnSurfaceVariant)
+                    }
+                },
+                colors = DatePickerDefaults.colors(containerColor = Color.White)
+            ) {
+                if (showYearPicker) {
+                    val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(java.time.ZoneId.of("UTC"))
+                        .toLocalDate()
+
+                    YearPickerDialog(
+                        selectedYear = displayMonth.year,
+                        onYearSelected = { year ->
+                            val tz = java.util.TimeZone.getTimeZone("UTC")
+                            val cal = java.util.Calendar.getInstance(tz).apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                set(java.util.Calendar.YEAR, year)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            showYearPicker = false
+                        },
+                        onDismiss = { showYearPicker = false }
+                    )
+                }
+
+                Column(modifier = Modifier.padding(top = 16.dp)) {
+                    val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                        .atZone(java.time.ZoneId.of("UTC"))
+                        .toLocalDate()
+
+                    val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
+
+                    CustomCalendarNavigation(
+                        title = monthTitle.replaceFirstChar { it.uppercase() },
+                        onPrevClick = {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, -1)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onNextClick = {
+                            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = datePickerState.displayedMonthMillis
+                                add(java.util.Calendar.MONTH, 1)
+                            }
+                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                        },
+                        onTitleClick = { showYearPicker = true },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp)
+                            .clipToBounds()
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            title = null,
+                            headline = null,
+                            showModeToggle = false,
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.White,
+                                titleContentColor = Secondary,
+                                headlineContentColor = Secondary,
+                                weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                                subheadContentColor = Secondary.copy(alpha = 0.6f),
+                                yearContentColor = Secondary.copy(alpha = 0.7f),
+                                currentYearContentColor = Primary,
+                                selectedYearContentColor = Color.White,
+                                selectedYearContainerColor = Primary,
+                                dayContentColor = OnSurface,
+                                selectedDayContentColor = Color.White,
+                                selectedDayContainerColor = Primary,
+                                todayContentColor = Secondary,
+                                todayDateBorderColor = Primary
+                            ),
+                            modifier = Modifier.offset(y = (-48).dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DialogTambahKaryawan(
@@ -445,6 +610,9 @@ private fun DialogTambahKaryawan(
     password: String,
     selectedRoleId: Int,
     selectedOutletId: Int,
+    tanggalMulaiKerja: String,
+    tempatLahir: String,
+    tanggalLahir: String,
     roles: List<Role>,
     outlets: List<Outlet>,
     isSaving: Boolean,
@@ -455,6 +623,9 @@ private fun DialogTambahKaryawan(
     onPasswordChange: (String) -> Unit,
     onRoleChange: (Int) -> Unit,
     onOutletChange: (Int) -> Unit,
+    onTanggalMulaiKerjaChange: (String) -> Unit,
+    onTempatLahirChange: (String) -> Unit,
+    onTanggalLahirChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -465,12 +636,15 @@ private fun DialogTambahKaryawan(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(24.dp)
+                .heightIn(max = 640.dp), // Beri batas tinggi agar tetap bisa di-scroll di layar kecil
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()), // Aktifkan scroll
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Header
@@ -548,6 +722,40 @@ private fun DialogTambahKaryawan(
                         focusedLabelColor = Primary,
                         unfocusedLabelColor = OnSurfaceVariant
                     )
+                )
+
+                // Tanggal Mulai Kerja
+                SimpleDatePickerField(
+                    label = "Tanggal Mulai Kerja",
+                    value = tanggalMulaiKerja,
+                    onValueChange = onTanggalMulaiKerjaChange
+                )
+
+                // Tempat Lahir (biodata opsional)
+                OutlinedTextField(
+                    value = tempatLahir,
+                    onValueChange = onTempatLahirChange,
+                    label = { Text("Tempat Lahir (opsional)") },
+                    placeholder = { Text("mis. Bandung") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
+                )
+
+                // Tanggal Lahir (biodata opsional)
+                SimpleDatePickerField(
+                    label = "Tanggal Lahir (opsional)",
+                    value = tanggalLahir,
+                    onValueChange = onTanggalLahirChange
                 )
 
                 // Email (untuk login)
@@ -645,6 +853,10 @@ private fun DialogEditKaryawan(
     nama: String,
     alamat: String,
     selectedOutletId: Int,
+    sisaCuti: String,
+    tanggalMulaiKerja: String,
+    tempatLahir: String,
+    tanggalLahir: String,
     outlets: List<Outlet>,
     roleName: String,
     isSaving: Boolean,
@@ -652,6 +864,10 @@ private fun DialogEditKaryawan(
     onNamaChange: (String) -> Unit,
     onAlamatChange: (String) -> Unit,
     onOutletChange: (Int) -> Unit,
+    onSisaCutiChange: (String) -> Unit,
+    onTanggalMulaiKerjaChange: (String) -> Unit,
+    onTempatLahirChange: (String) -> Unit,
+    onTanggalLahirChange: (String) -> Unit,
     onSimpan: () -> Unit,
     onHapus: () -> Unit,
     onDismiss: () -> Unit
@@ -663,12 +879,15 @@ private fun DialogEditKaryawan(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(24.dp)
+                .heightIn(max = 640.dp), // Beri batas tinggi agar tetap bisa di-scroll di layar kecil
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()), // Aktifkan scroll
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Header
@@ -748,6 +967,40 @@ private fun DialogEditKaryawan(
                     )
                 )
 
+                // Tanggal Mulai Kerja
+                SimpleDatePickerField(
+                    label = "Tanggal Mulai Kerja",
+                    value = tanggalMulaiKerja,
+                    onValueChange = onTanggalMulaiKerjaChange
+                )
+
+                // Tempat Lahir (biodata opsional)
+                OutlinedTextField(
+                    value = tempatLahir,
+                    onValueChange = onTempatLahirChange,
+                    label = { Text("Tempat Lahir (opsional)") },
+                    placeholder = { Text("mis. Bandung") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
+                )
+
+                // Tanggal Lahir (biodata opsional)
+                SimpleDatePickerField(
+                    label = "Tanggal Lahir (opsional)",
+                    value = tanggalLahir,
+                    onValueChange = onTanggalLahirChange
+                )
+
                 // Role (read-only)
                 OutlinedTextField(
                     value = roleName,
@@ -775,6 +1028,33 @@ private fun DialogEditKaryawan(
                     outlets = outlets,
                     selectedOutletId = selectedOutletId,
                     onOutletSelected = onOutletChange
+                )
+
+                // Sisa Cuti
+                OutlinedTextField(
+                    value = sisaCuti,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            onSisaCutiChange(newValue)
+                        }
+                    },
+                    label = { Text("Sisa Cuti (hari)") },
+                    placeholder = { Text("Masukkan jumlah sisa cuti") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Neutral,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        unfocusedLabelColor = OnSurfaceVariant
+                    )
                 )
 
                 // Baris Tombol: Hapus | Simpan

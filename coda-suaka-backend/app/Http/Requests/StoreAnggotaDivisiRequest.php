@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Divisi;
+use App\Models\karyawan;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -22,9 +24,29 @@ class StoreAnggotaDivisiRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+
         return [
-            'divisi_id' => 'required|exists:divisis,id',
-            'karyawan_id' => 'required|exists:karyawans,id',
+            'divisi_id' => [
+                'required',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (! Divisi::whereHas('outlet', function ($q) use ($user) {
+                        $q->where('instansi_id', $user->instansi_id);
+                    })->where('id', $value)->exists()) {
+                        $fail('Divisi tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
+            'karyawan_id' => [
+                'required',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (! karyawan::whereHas('user', function ($q) use ($user) {
+                        $q->where('instansi_id', $user->instansi_id);
+                    })->where('id', $value)->exists()) {
+                        $fail('Karyawan tidak ditemukan di instansi Anda');
+                    }
+                },
+            ],
         ];
     }
 

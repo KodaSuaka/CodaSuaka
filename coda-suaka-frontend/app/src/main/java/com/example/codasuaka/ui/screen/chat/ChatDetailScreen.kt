@@ -10,9 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.codasuaka.data.remote.dto.MessageDto
+import com.example.codasuaka.ui.components.NotificationBannerStatic
 import com.example.codasuaka.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
@@ -94,7 +95,7 @@ fun ChatDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Kembali",
                             tint = OnPrimary
                         )
@@ -112,20 +113,14 @@ fun ChatDetailScreen(
                 .padding(innerPadding)
                 .background(Tertiary)
         ) {
-            // Error message
+            // Error message (User-Friendly Notification)
             if (uiState.errorMessage != null) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Error.copy(alpha = 0.1f)
-                ) {
-                    Text(
-                        text = uiState.errorMessage ?: "",
-                        color = Error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
+                NotificationBannerStatic(
+                    message = uiState.errorMessage ?: "",
+                    mapFromServer = true,
+                    onDismiss = { viewModel.clearError() },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
             }
 
             // Daftar pesan
@@ -231,7 +226,7 @@ fun ChatDetailScreen(
                             )
                         } else {
                             Icon(
-                                Icons.Default.Send,
+                                Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Kirim",
                                 tint = OnPrimary
                             )

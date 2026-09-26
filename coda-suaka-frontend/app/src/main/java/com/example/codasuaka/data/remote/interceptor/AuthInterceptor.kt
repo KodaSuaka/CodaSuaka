@@ -14,16 +14,25 @@ class AuthInterceptor(
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = tokenManager.getCachedToken()
+        val hasToken = !token.isNullOrBlank()
 
         val request = chain.request().newBuilder()
             .addHeader("Accept", "application/json")
             .apply {
-                if (!token.isNullOrBlank()) {
+                if (hasToken) {
                     addHeader("Authorization", "Bearer $token")
                 }
             }
             .build()
 
-        return chain.proceed(request)
+        val response = chain.proceed(request)
+
+        // Hanya anggap sesi habis jika request ini memang membawa token
+        // (bukan 401 dari login/register yang gagal karena kredensial salah).
+        if (hasToken && response.code == 401) {
+            tokenManager.clearTokenAndNotifyExpired()
+        }
+
+        return response
     }
 }

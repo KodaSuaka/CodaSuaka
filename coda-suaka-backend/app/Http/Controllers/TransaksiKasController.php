@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTransaksiKasRequest;
 use App\Http\Requests\UpdateTransaksiKasRequest;
 use App\Models\TransaksiKas;
-use App\Traits\ApiResponse;
+use App\Models\User;
 use App\Services\ApprovalService;
 use App\Services\AuditService;
+use App\Services\NotificationService;
+use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -16,13 +18,40 @@ class TransaksiKasController extends Controller
     use ApiResponse;
 
     protected ApprovalService $approvalService;
+
     protected AuditService $auditService;
 
-    public function __construct(ApprovalService $approvalService, AuditService $auditService)
+    protected NotificationService $notificationService;
+
+    public function __construct(ApprovalService $approvalService, AuditService $auditService, NotificationService $notificationService)
     {
         $this->approvalService = $approvalService;
         $this->auditService = $auditService;
+        $this->notificationService = $notificationService;
         $this->authorizeResource(TransaksiKas::class, 'transaksi_kas');
+    }
+
+    /**
+     * Terapkan filter rentang tanggal ke query transaksi kas.
+     *
+     * Kolom `tanggal` bertipe DATE, jadi whereDate() hanya membungkusnya
+     * dengan DATE() tanpa guna — dan membuat query non-sargable sehingga
+     * index (instansi_id, tanggal) tidak terpakai. Perbandingan langsung
+     * memakai index yang sama sebagai range scan.
+     */
+    private function applyDateRange($query, Request $request): void
+    {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
+        if ($request->filled('start_date')) {
+            $query->where('tanggal', '>=', Carbon::parse($request->start_date)->toDateString());
+        }
+        if ($request->filled('end_date')) {
+            $query->where('tanggal', '<=', Carbon::parse($request->end_date)->toDateString());
+        }
     }
 
     /**
@@ -33,8 +62,17 @@ class TransaksiKasController extends Controller
     {
         $user = $request->user();
 
-        $query = TransaksiKas::with(['kategoriTransaksi', 'outlet', 'createdByUser'])
-            ->where('instansi_id', $user->instansi_id);
+        // Select kolom yang dibutuhkan + eager loading relasi
+        $query = TransaksiKas::with([
+            'kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori', 'tipe']),
+            'outlet' => fn ($q) => $q->select(['id', 'nama_outlet']),
+            'createdByUser' => fn ($q) => $q->select(['id', 'name']),
+        ])->select([
+            'id', 'instansi_id', 'tanggal', 'tipe', 'nominal',
+            'kategori_transaksi_id', 'outlet_id', 'metode_pembayaran',
+            'keterangan', 'status_approval', 'created_by',
+            'created_at', 'updated_at',
+        ])->where('instansi_id', $user->instansi_id);
 
         // Filter by outlet
         if ($request->has('outlet_id')) {
@@ -52,12 +90,7 @@ class TransaksiKasController extends Controller
         }
 
         // Filter by date range
-        if ($request->has('start_date')) {
-            $query->whereDate('tanggal', '>=', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('tanggal', '<=', $request->end_date);
-        }
+        $this->applyDateRange($query, $request);
 
         // Filter by status_approval
         if ($request->has('status_approval')) {
@@ -117,6 +150,18 @@ class TransaksiKasController extends Controller
         // Auto-submit approval jika perlu
         if ($this->approvalService->perluApproval($transaksi)) {
             $this->approvalService->ajukanApproval($transaksi, $user);
+
+            $pemeriksaIds = User::where('instansi_id', $user->instansi_id)
+                ->whereHas('role.permissions', fn ($q) => $q->where('permission', 'approve:keuangan'))
+                ->pluck('id');
+
+            foreach ($pemeriksaIds as $pemeriksaId) {
+                $this->notificationService->onTransaksiPendingApproval(
+                    $transaksi->id,
+                    $pemeriksaId,
+                    $transaksi->keterangan
+                );
+            }
         }
 
         $transaksi->load(['kategoriTransaksi', 'outlet', 'createdByUser']);
@@ -141,6 +186,7 @@ class TransaksiKasController extends Controller
             'approvalLogs.pengaju',
             'approvalLogs.pemeriksa',
         ]);
+
         return $this->success($transaksi_kas);
     }
 
@@ -169,15 +215,10 @@ class TransaksiKasController extends Controller
         // Audit log: updated
         $this->auditService->updated($transaksi_kas, $original, $user);
 
-        // Reset status_approval ke default setelah diupdate
-        // jika sebelumnya ditolak, dan transaksi perlu approval, ajukan lagi
-        if ($transaksi_kas->status_approval === 'ditolak') {
-            $transaksi_kas->update(['status_approval' => 'disetujui']);
-
-            if ($this->approvalService->perluApproval($transaksi_kas)) {
-                $this->approvalService->ajukanApproval($transaksi_kas, $user);
-            }
-        }
+        // CATATAN: Status approval TIDAK di-reset otomatis setelah update.
+        // Jika sebelumnya ditolak, status tetap 'ditolak'.
+        // User harus menggunakan endpoint /ajukan secara eksplisit untuk submit ulang.
+        // Ini mencegah bug auto-resubmit yang menyebabkan loop tak berujuk.
 
         $transaksi_kas->load(['kategoriTransaksi', 'outlet', 'createdByUser']);
 
@@ -202,6 +243,7 @@ class TransaksiKasController extends Controller
 
         // Jika transaksi sudah disetujui dan tidak dari dokumen, tetap bisa dihapus dengan permission delete:keuangan
         $transaksi_kas->delete();
+
         return $this->success(null, 'Entri kas berhasil dihapus');
     }
 
@@ -223,12 +265,7 @@ class TransaksiKasController extends Controller
         }
 
         // Filter by date range
-        if ($request->has('start_date')) {
-            $query->whereDate('tanggal', '>=', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('tanggal', '<=', $request->end_date);
-        }
+        $this->applyDateRange($query, $request);
 
         $totalMasuk = (float) $query->clone()->where('tipe', 'masuk')->sum('nominal');
         $totalKeluar = (float) $query->clone()->where('tipe', 'keluar')->sum('nominal');
@@ -252,7 +289,10 @@ class TransaksiKasController extends Controller
 
         $user = $request->user();
 
-        $query = TransaksiKas::with('kategoriTransaksi')
+        $query = TransaksiKas::with([
+            'kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori', 'termasuk_hpp']),
+        ])
+            ->select(['id', 'tipe', 'nominal', 'kategori_transaksi_id', 'tanggal'])
             ->where('instansi_id', $user->instansi_id);
 
         // Filter by outlet
@@ -261,12 +301,7 @@ class TransaksiKasController extends Controller
         }
 
         // Filter by date range
-        if ($request->has('start_date')) {
-            $query->whereDate('tanggal', '>=', $request->start_date);
-        }
-        if ($request->has('end_date')) {
-            $query->whereDate('tanggal', '<=', $request->end_date);
-        }
+        $this->applyDateRange($query, $request);
 
         // ─── Aggregate ───
         $totalPendapatan = (float) (clone $query)
@@ -275,12 +310,12 @@ class TransaksiKasController extends Controller
 
         $totalHpp = (float) (clone $query)
             ->where('tipe', 'keluar')
-            ->whereHas('kategoriTransaksi', fn($q) => $q->where('termasuk_hpp', true))
+            ->whereHas('kategoriTransaksi', fn ($q) => $q->where('termasuk_hpp', true))
             ->sum('nominal');
 
         $totalBeban = (float) (clone $query)
             ->where('tipe', 'keluar')
-            ->whereHas('kategoriTransaksi', fn($q) => $q->where('termasuk_hpp', false))
+            ->whereHas('kategoriTransaksi', fn ($q) => $q->where('termasuk_hpp', false))
             ->sum('nominal');
 
         $labaRugi = $totalPendapatan - $totalHpp - $totalBeban;
@@ -295,13 +330,13 @@ class TransaksiKasController extends Controller
         }
 
         $hppPerKategori = [];
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $hppPerKategori[$kategori] = ($hppPerKategori[$kategori] ?? 0) + (float) $t->nominal;
         }
 
         $bebanPerKategori = [];
-        foreach ($transaksis->where('tipe', 'keluar')->filter(fn($t) => !$t->kategoriTransaksi?->termasuk_hpp) as $t) {
+        foreach ($transaksis->where('tipe', 'keluar')->filter(fn ($t) => ! $t->kategoriTransaksi?->termasuk_hpp) as $t) {
             $kategori = $t->kategoriTransaksi?->nama_kategori ?? 'Tanpa Kategori';
             $bebanPerKategori[$kategori] = ($bebanPerKategori[$kategori] ?? 0) + (float) $t->nominal;
         }

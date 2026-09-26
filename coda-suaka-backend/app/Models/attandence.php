@@ -16,12 +16,13 @@ class attandence extends Model
         'status',
         'keterangan',
         'lokasi_checkin',
+        'status_keterangan',
     ];
 
     protected function casts(): array
     {
         return [
-            'tanggal' => 'date',
+            'tanggal' => 'date:Y-m-d',
             'jam_checkin' => 'datetime:H:i:s',
             'jam_checkout' => 'datetime:H:i:s',
         ];

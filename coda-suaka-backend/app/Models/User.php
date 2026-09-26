@@ -39,7 +39,7 @@ class User extends Authenticatable
 
     public function instansi()
     {
-        return $this->belongsTo(instansi::class, 'instansi_id');
+        return $this->belongsTo(Instansi::class, 'instansi_id');
     }
 
     public function outlet()

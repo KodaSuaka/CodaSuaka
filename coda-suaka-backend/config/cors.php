@@ -35,7 +35,7 @@ return [
     */
     'allowed_origins' => array_filter(array_map('trim', explode(',', env(
         'FRONTEND_URLS',
-        env('APP_URL', 'http://localhost') . ',https://codasuaka.my.id'
+        env('APP_URL', 'http://localhost').',https://codasuaka.my.id'
     )))),
 
     'allowed_origins_patterns' => [],

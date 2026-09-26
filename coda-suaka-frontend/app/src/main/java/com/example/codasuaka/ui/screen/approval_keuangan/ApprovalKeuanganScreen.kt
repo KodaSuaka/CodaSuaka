@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -19,18 +19,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.codasuaka.data.remote.dto.ApprovalLogDto
-import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
+import org.koin.androidx.compose.koinViewModel
 import com.example.codasuaka.ui.theme.*
-import java.text.NumberFormat
-import java.util.Locale
+import com.example.codasuaka.ui.util.formatRupiahNumber
+import com.example.codasuaka.util.ErrorMessageMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApprovalKeuanganScreen(
     onBack: () -> Unit,
-    viewModel: ApprovalKeuanganViewModel = viewModel()
+    viewModel: ApprovalKeuanganViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -38,7 +37,8 @@ fun ApprovalKeuanganScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
+            val friendlyMsg = ErrorMessageMapper.map(it, "approval transaksi").message
+            snackbarHostState.showSnackbar(friendlyMsg)
             viewModel.clearError()
         }
     }
@@ -64,7 +64,7 @@ fun ApprovalKeuanganScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack, 
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Kembali",
                             tint = Secondary
                         )
@@ -271,7 +271,7 @@ fun ApprovalCard(
                 }
 
                 Text(
-                    text = formatRupiah(transaksi?.nominal ?: 0.0),
+                    text = formatRupiahNumber(transaksi?.nominal ?: 0.0),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = tipeColor
@@ -403,7 +403,7 @@ fun ApprovalDetailBottomSheet(
                         InfoRow("Tanggal", transaksi?.tanggal ?: "-")
                         InfoRow("Tipe", if (transaksi?.tipe == "masuk") "Pemasukan" else "Pengeluaran")
                         InfoRow("Kategori", transaksi?.kategoriTransaksi?.namaKategori ?: "Tanpa Kategori")
-                        InfoRow("Nominal", formatRupiah(transaksi?.nominal ?: 0.0))
+                        InfoRow("Nominal", formatRupiahNumber(transaksi?.nominal ?: 0.0))
                         InfoRow("Metode", transaksi?.metodePembayaran ?: "-")
                         InfoRow("Outlet", transaksi?.outlet?.namaOutlet ?: "-")
                         if (!transaksi?.keterangan.isNullOrBlank()) {
@@ -576,8 +576,3 @@ fun TolakDialog(
     )
 }
 
-private fun formatRupiah(amount: Double): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    format.maximumFractionDigits = 0
-    return format.format(amount)
-}

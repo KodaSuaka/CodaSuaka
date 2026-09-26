@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateroleRequest extends FormRequest
@@ -21,7 +20,7 @@ class UpdateroleRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                'unique:roles,nama_role,' . $roleId,
+                'unique:roles,nama_role,'.$roleId,
             ],
         ];
     }

@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+
+class UpdateInstansiRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'nama_instansi' => 'sometimes|required|string|max:255',
+            'paket_id' => 'nullable|exists:pakets,id',
+            'jam_operasional' => 'nullable|array',
+            'jam_operasional.jam_buka' => 'nullable|string|max:5',
+            'jam_operasional.jam_tutup' => 'nullable|string|max:5',
+            'jam_operasional.hari_operasional' => 'nullable|array',
+            'jam_operasional.hari_operasional.*' => 'integer|min:1|max:7',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nama_instansi.required' => 'Nama instansi wajib diisi.',
+            'paket_id.exists' => 'Paket tidak valid.',
+        ];
+    }
+}

@@ -25,7 +25,8 @@ class OutletController extends Controller
     {
         // TenantScope global sudah otomatis memfilter berdasarkan instansi_id user,
         // sehingga tidak perlu WHERE instansi_id eksplisit di sini.
-        $outlets = outlet::orderBy('nama_outlet')
+        $outlets = outlet::withCount('karyawans')
+            ->orderBy('nama_outlet')
             ->get();
 
         return $this->success($outlets);
@@ -57,6 +58,7 @@ class OutletController extends Controller
         if ($outlet->instansi_id !== $request->user()->instansi_id) {
             return $this->error('Forbidden', 403);
         }
+
         return $this->success($outlet);
     }
 
@@ -83,6 +85,7 @@ class OutletController extends Controller
             return $this->error('Forbidden', 403);
         }
         $outlet->delete();
+
         return $this->success(null, 'Outlet berhasil dihapus');
     }
 }

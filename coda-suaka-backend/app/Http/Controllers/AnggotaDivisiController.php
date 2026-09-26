@@ -28,6 +28,7 @@ class AnggotaDivisiController extends Controller
         }
 
         $anggota = $query->orderBy('created_at')->get();
+
         return $this->success($anggota);
     }
 
@@ -62,6 +63,7 @@ class AnggotaDivisiController extends Controller
     public function destroy(AnggotaDivisi $anggotaDivisi)
     {
         $anggotaDivisi->delete();
+
         return $this->success(null, 'Anggota berhasil dihapus dari divisi');
     }
 }

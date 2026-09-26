@@ -26,7 +26,7 @@ class PermissionService
      */
     public function userHasPermission(User $user, string $permission): bool
     {
-        $cacheKey = 'user_' . $user->id . ':permission_' . $permission;
+        $cacheKey = 'user_'.$user->id.':permission_'.$permission;
 
         if (array_key_exists($cacheKey, $this->permissionCache)) {
             return $this->permissionCache[$cacheKey];
@@ -34,6 +34,7 @@ class PermissionService
 
         if ($user->role === null) {
             $this->permissionCache[$cacheKey] = false;
+
             return false;
         }
 
@@ -47,6 +48,7 @@ class PermissionService
         }
 
         $this->permissionCache[$cacheKey] = $result;
+
         return $result;
     }
 
@@ -60,6 +62,7 @@ class PermissionService
                 return true;
             }
         }
+
         return false;
     }
 
@@ -69,7 +72,7 @@ class PermissionService
      */
     public function getUserPermissions(User $user): Collection
     {
-        $cacheKey = 'user_' . $user->id;
+        $cacheKey = 'user_'.$user->id;
 
         if (array_key_exists($cacheKey, $this->userPermissionsCache)) {
             return $this->userPermissionsCache[$cacheKey];
@@ -77,11 +80,13 @@ class PermissionService
 
         if ($user->role === null) {
             $this->userPermissionsCache[$cacheKey] = collect();
+
             return collect();
         }
 
         $permissions = $user->role->permissions->pluck('permission');
         $this->userPermissionsCache[$cacheKey] = $permissions;
+
         return $permissions;
     }
 
@@ -108,13 +113,14 @@ class PermissionService
                 'route' => 'laporan_keuangan',
                 'permission' => 'view:keuangan',
             ],
-            [
-                'id' => 'approval_keuangan',
-                'label' => 'Approval Keuangan',
-                'icon' => 'HowToReg',
-                'route' => 'approval_keuangan',
-                'permission' => 'approve:keuangan',
-            ],
+            // [DINONAKTIFKAN SEMENTARA] Approval Keuangan — fitur advance, belum diaktifkan
+            // [
+            //     'id' => 'approval_keuangan',
+            //     'label' => 'Approval Keuangan',
+            //     'icon' => 'HowToReg',
+            //     'route' => 'approval_keuangan',
+            //     'permission' => 'manage:keuangan',
+            // ],
             [
                 'id' => 'riwayat_absensi',
                 'label' => 'Riwayat Absensi',
@@ -123,11 +129,11 @@ class PermissionService
                 'permission' => null, // All logged-in users can see this
             ],
             [
-                'id' => 'tugas_tim',
-                'label' => 'Tugas Tim',
+                'id' => 'tugas_karyawan',
+                'label' => 'Tugas Karyawan',
                 'icon' => 'Assignment',
-                'route' => 'tugas_tim',
-                'permission' => 'manage:penugasan',
+                'route' => 'penugasan',
+                'permission' => 'view:penugasan',
             ],
             [
                 'id' => 'pengajuan',
@@ -136,12 +142,49 @@ class PermissionService
                 'route' => 'pengajuan',
                 'permission' => 'manage:pengajuan',
             ],
+            [
+                'id' => 'kasir',
+                'label' => 'Kasir',
+                'icon' => 'PointOfSale',
+                'route' => 'kasir',
+                'permission' => 'view:kasir',
+            ],
+            [
+                'id' => 'kelola_barang_jasa',
+                'label' => 'Kelola Produk',
+                'icon' => 'Inventory2',
+                'route' => 'kelola_barang_jasa',
+                'permission' => 'manage:kasir',
+            ],
+            [
+                'id' => 'nota_pembelian',
+                'label' => 'Nota Pembelian',
+                'icon' => 'Receipt',
+                'route' => 'nota_pembelian',
+                'permission' => 'manage:kasir',
+            ],
+            [
+                'id' => 'riwayat_nota',
+                'label' => 'Riwayat Nota',
+                'icon' => 'ReceiptLong',
+                'route' => 'riwayat_nota',
+                'permission' => 'view:kasir',
+            ],
+            // [DINONAKTIFKAN SEMENTARA] Audit Log — fitur advance, belum diaktifkan
+            // [
+            //     'id' => 'audit_log',
+            //     'label' => 'Audit Log',
+            //     'icon' => 'History',
+            //     'route' => 'audit_log',
+            //     'permission' => 'view:audit',
+            // ],
         ];
 
         $menuItems = array_filter($allMenuItems, function ($item) use ($permissions) {
             if ($item['permission'] === null) {
                 return true;
             }
+
             return in_array($item['permission'], $permissions, true);
         });
 

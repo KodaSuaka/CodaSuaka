@@ -24,6 +24,9 @@ class Chat extends Model
         static::addGlobalScope(new TenantScope(function (Builder $builder, $user) {
             $builder->where(function ($q) use ($user) {
                 // Chat terlihat jika user adalah pengirim atau penerima
+                $q->where('pengirim_id', $user->id)
+                    ->orWhere('penerima_id', $user->id);
+            })->where(function ($q) use ($user) {
                 // dibatasi dalam instansi yang sama
                 $q->whereHas('pengirim', function (Builder $q) use ($user) {
                     $q->where('instansi_id', $user->instansi_id);

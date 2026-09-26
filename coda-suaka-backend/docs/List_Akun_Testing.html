@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Akun Testing — CodaSuaka</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            color: #1a1a2e;
+            background: #fff;
+            line-height: 1.6;
+            padding: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #0f3460;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #0f3460;
+            margin-bottom: 5px;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        .header .date {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #0f3460;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            border-radius: 0 8px 8px 0;
+        }
+        .info-box h3 {
+            font-size: 14px;
+            color: #0f3460;
+            margin-bottom: 8px;
+        }
+        .info-box p {
+            font-size: 13px;
+            color: #333;
+        }
+        .info-box code {
+            background: #e0e7ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            color: #0f3460;
+        }
+        .section {
+            margin-bottom: 35px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .section-header .icon {
+            font-size: 24px;
+        }
+        .section-header h2 {
+            font-size: 20px;
+            color: #0f3460;
+        }
+        .section-header .badge {
+            font-size: 11px;
+            background: #0f3460;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .section-header .badge.basic {
+            background: #16a085;
+        }
+        .section-desc {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            margin-left: 34px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        thead th {
+            background: #0f3460;
+            color: #fff;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        thead th:first-child {
+            border-radius: 6px 0 0 0;
+        }
+        thead th:last-child {
+            border-radius: 0 6px 0 0;
+        }
+        tbody td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        tbody tr:nth-child(even) {
+            background: #f8f9fc;
+        }
+        tbody tr:hover {
+            background: #eef2ff;
+        }
+        tbody tr:last-child td:first-child {
+            border-radius: 0 0 0 6px;
+        }
+        tbody tr:last-child td:last-child {
+            border-radius: 0 0 6px 0;
+        }
+        .email {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            color: #0f3460;
+            background: #f0f4ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .password {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            color: #e74c3c;
+            background: #fdf0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .role-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .role-owner { background: #8e44ad; }
+        .role-manager { background: #2980b9; }
+        .role-keuangan { background: #16a085; }
+        .role-staff { background: #7f8c8d; }
+        .role-superadmin { background: #e74c3c; }
+
+        .super-admin-section {
+            background: #fff5f5;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 35px;
+        }
+        .super-admin-section h2 {
+            color: #e74c3c;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .super-admin-section .curl-block {
+            background: #1a1a2e;
+            color: #a8e6cf;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        .super-admin-section .curl-block .comment {
+            color: #666;
+        }
+        .super-admin-section .curl-block .cmd {
+            color: #f39c12;
+        }
+        .super-admin-section .curl-block .string {
+            color: #a8e6cf;
+        }
+        .super-admin-section .curl-block .key {
+            color: #74b9ff;
+        }
+
+        .data-summary {
+            margin-top: 35px;
+            background: #f0fff4;
+            border: 1px solid #c6f6d5;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .data-summary h3 {
+            color: #276749;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .data-summary ul {
+            list-style: none;
+            padding: 0;
+        }
+        .data-summary ul li {
+            padding: 4px 0;
+            font-size: 13px;
+            color: #2d3748;
+        }
+        .data-summary ul li::before {
+            content: "✅ ";
+        }
+        .data-summary ul li span {
+            font-weight: 600;
+        }
+
+        .limit-note {
+            background: #fffbeb;
+            border: 1px solid #fbbf24;
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #92400e;
+        }
+        .limit-note strong {
+            color: #b45309;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 2px solid #e8ecf1;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+
+        @media print {
+            body { padding: 0; }
+            .header { page-break-after: avoid; }
+            .section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🔐 List Akun Testing</h1>
+        <div class="subtitle">CodaSuaka — Aplikasi Manajemen Bisnis</div>
+        <div class="date">Dibuat: 26 Juli 2026 | Password Default: <span class="password">password</span></div>
+    </div>
+
+    <div class="info-box">
+        <h3>📋 Cara Menggunakan</h3>
+        <p>
+            Jalankan <code>php artisan migrate:fresh --seed</code> untuk membuat semua data.
+            Login menggunakan email di bawah ini dengan password <code>password</code>.
+        </p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- INSTANSI 1: TOKO BERKAH MART (PAKET PRO) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <span class="icon">🏢</span>
+            <h2>Toko Berkah Mart</h2>
+            <span class="badge">Paket Pro</span>
+        </div>
+        <p class="section-desc">
+            Timezone: Asia/Jakarta (WIB) · Domain: berkahmart.com · Max karyawan: 50
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%">No</th>
+                    <th style="width: 30%">Email</th>
+                    <th style="width: 25%">Nama</th>
+                    <th style="width: 15%">Role</th>
+                    <th style="width: 25%">Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><span class="email">owner1@berkahmart.com</span></td>
+                    <td>Budi Hartono</td>
+                    <td><span class="role-tag role-owner">Owner</span></td>
+                    <td>Pemilik bisnis, akses penuh</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><span class="email">manager1@berkahmart.com</span></td>
+                    <td>Rina Susanti</td>
+                    <td><span class="role-tag role-manager">Manager</span></td>
+                    <td>Manajer operasional</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><span class="email">keuangan1@berkahmart.com</span></td>
+                    <td>Dewi Lestari</td>
+                    <td><span class="role-tag role-keuangan">Keuangan</span></td>
+                    <td>Kelola keuangan & transaksi</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><span class="email">staff1@berkahmart.com</span></td>
+                    <td>Andi Pratama</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Staff administrasi</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><span class="email">karyawan1_0@berkahmart.com</span></td>
+                    <td>Ahmad Rizky Pratama</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Karyawan biasa</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><span class="email">karyawan1_1@berkahmart.com</span></td>
+                    <td>Siti Nurhaliza</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Karyawan biasa</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><span class="email">karyawan1_2@berkahmart.com</span></td>
+                    <td>Budi Santoso</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Karyawan biasa</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td><span class="email">karyawan1_3@berkahmart.com</span></td>
+                    <td>Dewi Kartika Sari</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Karyawan biasa</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td><span class="email">karyawan1_4@berkahmart.com</span></td>
+                    <td>Fajar Nugroho</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Karyawan biasa</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="limit-note">
+            <strong>📦 Paket Pro:</strong> Max 50 karyawan/outlet, 10 outlet. Fitur lengkap termasuk approval workflow & export PDF/Excel.
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- INSTANSI 2: KOPI NUSANTARA (PAKET BASIC) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <span class="icon">☕</span>
+            <h2>Kopi Nusantara</h2>
+            <span class="badge basic">Paket Basic</span>
+        </div>
+        <p class="section-desc">
+            Timezone: Asia/Makassar (WITA) · Domain: kopinusantara.com · Max karyawan: 5
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%">No</th>
+                    <th style="width: 30%">Email</th>
+                    <th style="width: 25%">Nama</th>
+                    <th style="width: 15%">Role</th>
+                    <th style="width: 25%">Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><span class="email">owner2@kopinusantara.com</span></td>
+                    <td>Budi Hartono</td>
+                    <td><span class="role-tag role-owner">Owner</span></td>
+                    <td>Pemilik bisnis, akses penuh</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><span class="email">manager2@kopinusantara.com</span></td>
+                    <td>Rina Susanti</td>
+                    <td><span class="role-tag role-manager">Manager</span></td>
+                    <td>Manajer operasional</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><span class="email">keuangan2@kopinusantara.com</span></td>
+                    <td>Dewi Lestari</td>
+                    <td><span class="role-tag role-keuangan">Keuangan</span></td>
+                    <td>Kelola keuangan & transaksi</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><span class="email">staff2@kopinusantara.com</span></td>
+                    <td>Andi Pratama</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Staff administrasi</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><span class="email">karyawan2_0@kopinusantara.com</span></td>
+                    <td>Ahmad Rizky Pratama</td>
+                    <td><span class="role-tag role-staff">Staff</span></td>
+                    <td>Karyawan biasa</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="limit-note">
+            <strong>📦 Paket Basic:</strong> Max 5 karyawan/outlet, 2 outlet. Fitur dasar: Dashboard, Presensi, Penugasan Dasar, Laporan Harian.
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SUPER ADMIN -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="super-admin-section">
+        <h2>🔑 Super Admin (Register Manual)</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
+            Super Admin tidak dibuat otomatis oleh seeder. Daftar melalui endpoint API:
+        </p>
+        <div class="curl-block"><span class="comment">## Register Super Admin pertama kali</span>
+<span class="cmd">curl</span> -X POST http://localhost:8000/api/auth/register-super-admin \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    <span class="key">"email"</span>: <span class="string">"admin@codasuaka.com"</span>,
+    <span class="key">"password"</span>: <span class="string">"password"</span>
+  }'</span>
+
+<span class="comment">## Setelah register, login untuk mendapatkan token</span>
+<span class="cmd">curl</span> -X POST http://localhost:8000/api/auth/login \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    <span class="key">"email"</span>: <span class="string">"admin@codasuaka.com"</span>,
+    <span class="key">"password"</span>: <span class="string">"password"</span>
+  }'</span></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- RINGKASAN BATASAN PAKET -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div style="margin-top: 30px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Paket</th>
+                    <th>Harga</th>
+                    <th>Max Outlet</th>
+                    <th>Max Karyawan/Outlet</th>
+                    <th>Durasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge basic">Basic</span></td>
+                    <td>Rp 199.000</td>
+                    <td>2</td>
+                    <td><strong>5</strong></td>
+                    <td>30 hari</td>
+                </tr>
+                <tr>
+                    <td><span class="badge">Pro</span></td>
+                    <td>Rp 499.000</td>
+                    <td>10</td>
+                    <td><strong>50</strong></td>
+                    <td>30 hari</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- DATA SUMMARY -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="data-summary">
+        <h3>📦 Data yang Di-seed Otomatis</h3>
+        <ul>
+            <li><span>2 Instansi</span> dengan paket langganan aktif</li>
+            <li><span>14 User</span> total (9 di Pro + 5 di Basic)</li>
+            <li><span>8 Outlet</span> (4 per instansi)</li>
+            <li><span>Divisi & Anggota</span> di setiap outlet</li>
+            <li><span>Presensi 7 hari</span> terakhir dengan variasi status</li>
+            <li><span>Transaksi keuangan</span> masuk & keluar</li>
+            <li><span>Penugasan</span> berbagai status & urgency</li>
+            <li><span>Jadwal kerja</span> per outlet</li>
+            <li><span>Kategori transaksi</span> global (12 kategori)</li>
+            <li><span>Template penugasan</span> default (10 template)</li>
+            <li><span>Pengajuan & Approval</span> untuk demo workflow</li>
+            <li><span>Chat</span> antar karyawan</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        CodaSuaka — List Akun Testing · Generated: 26 Juli 2026 · Password Semua Akun: <strong>password</strong>
+    </div>
+
+</body>
+</html>

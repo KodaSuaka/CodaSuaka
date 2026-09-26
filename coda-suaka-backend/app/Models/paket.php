@@ -32,6 +32,6 @@ class paket extends Model
 
     public function instansis()
     {
-        return $this->hasMany(instansi::class, 'paket_id');
+        return $this->hasMany(Instansi::class, 'paket_id');
     }
 }

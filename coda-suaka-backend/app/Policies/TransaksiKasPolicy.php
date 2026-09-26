@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\TransaksiKas;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class TransaksiKasPolicy
@@ -18,6 +18,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'view:keuangan');
     }
 
@@ -31,6 +32,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:keuangan');
     }
 
@@ -39,15 +41,24 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'delete:keuangan');
     }
 
     /**
-     * User bisa mengekspor data transaksi (PDF/Excel).
+     * User bisa mengekspor data transaksi ke PDF.
      */
     public function export(User $user): bool
     {
         return app(PermissionService::class)->userHasPermission($user, 'export:keuangan');
+    }
+
+    /**
+     * User bisa mengekspor data transaksi ke Excel.
+     */
+    public function exportExcel(User $user): bool
+    {
+        return app(PermissionService::class)->userHasPermission($user, 'export:keuangan-excel');
     }
 
     /**
@@ -58,6 +69,7 @@ class TransaksiKasPolicy
         if ($user->instansi_id !== $transaksiKas->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'approve:keuangan');
     }
 

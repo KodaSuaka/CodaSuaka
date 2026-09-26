@@ -1,14 +1,13 @@
-# Task: Perbaikan Daftar Kontak (WhatsApp Style)
+# Task: Perbaikan Notifikasi Pesan (Dot & Navbar)
 
-- [x] `Step 1: Refactor UI List Kontak`
-    - [x] Hapus `Card` dan ganti dengan `Row` sederhana
-    - [x] Tambahkan `HorizontalDivider` antar kontak
-    - [x] Perbaiki tata letak avatar, nama, dan pesan terakhir
-- [x] `Step 2: Refactor Top Bar`
-    - [x] Tambahkan icon pencarian di kanan
-    - [x] Pastikan warna `OnPrimary` kontras
-- [x] `Step 3: Verifikasi`
-    - [x] Build check
-    - [x] Visual check navigasi dan layout
-    - [ ] Build check
-    - [ ] Visual check navigasi dan layout
+- [ ] `Step 1: Refactor Contact List UI`
+    - [ ] Ganti badge angka dengan titik biru kecil di `ChatContactListScreen.kt`
+- [ ] `Step 2: Update ViewModels (Dashboard)`
+    - [ ] Tambahkan logika hitung total pesan belum dibaca di `DashboardViewModel.kt`
+    - [ ] Tambahkan logika serupa di `DashboardKaryawanViewModel.kt`
+- [ ] `Step 3: Refactor Navbar UI`
+    - [ ] Tampilkan titik notifikasi pada icon Pesan di `DashboardScreen.kt`
+    - [ ] Tampilkan titik notifikasi pada icon Pesan di `DashboardKaryawanScreen.kt`
+- [ ] `Step 4: Verifikasi`
+    - [ ] Cek tampilan titik di daftar chat
+    - [ ] Cek kemunculan titik di Navbar saat ada pesan baru

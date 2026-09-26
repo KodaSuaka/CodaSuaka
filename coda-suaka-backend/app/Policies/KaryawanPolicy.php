@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\karyawan;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class KaryawanPolicy
@@ -29,14 +29,21 @@ class KaryawanPolicy
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 
     public function delete(User $user, karyawan $karyawan): bool
     {
+        // MENCEGAH SELF-DELETION — karyawan tidak boleh hapus diri sendiri
+        if ($karyawan->user_id === $user->id) {
+            return false;
+        }
+
         if ($user->instansi_id !== $karyawan->user?->instansi_id) {
             return false;
         }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:karyawan');
     }
 

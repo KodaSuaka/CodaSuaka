@@ -64,8 +64,12 @@ class PengajuanViewModel(
     private val _uiState = MutableStateFlow(PengajuanUiState())
     val uiState: StateFlow<PengajuanUiState> = _uiState
 
-    private val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-    private val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale("id", "ID"))
+    private val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID")).apply {
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
+    }
+    private val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale("id", "ID")).apply {
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
+    }
 
     init {
         loadRiwayat()

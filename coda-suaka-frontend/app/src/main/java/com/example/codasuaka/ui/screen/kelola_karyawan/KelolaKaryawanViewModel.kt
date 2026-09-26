@@ -23,8 +23,30 @@ data class Karyawan(
     val kontak: String = "",
     val fotoProfil: String? = null,
     val role: Role? = null,
-    val outlet: Outlet? = null
-)
+    val outlet: Outlet? = null,
+    val sisaCuti: Int? = null,
+    /** Format yyyy-MM-dd, null jika belum diisi. */
+    val tanggalMulaiKerja: String? = null,
+    // ── Biodata opsional ──
+    val tempatLahir: String? = null,
+    /** Format yyyy-MM-dd, null jika belum diisi. */
+    val tanggalLahir: String? = null
+) {
+    /** Masa kerja dihitung on-the-fly dari [tanggalMulaiKerja], contoh: "2 tahun 3 bulan". */
+    val masaKerja: String?
+        get() {
+            val mulai = tanggalMulaiKerja?.let {
+                runCatching { java.time.LocalDate.parse(it) }.getOrNull()
+            } ?: return null
+            val period = java.time.Period.between(mulai, java.time.LocalDate.now())
+            val bagian = buildList {
+                if (period.years > 0) add("${period.years} tahun")
+                if (period.months > 0) add("${period.months} bulan")
+                if (isEmpty() && period.days >= 0) add("${period.days} hari")
+            }
+            return bagian.joinToString(" ")
+        }
+}
 
 data class Role(
     val id: Int = 0,
@@ -44,6 +66,8 @@ sealed class KaryawanDialogMode {
 data class KelolaKaryawanUiState(
     val karyawanList: List<Karyawan> = emptyList(),
     val outlets: List<Outlet> = emptyList(),
+    /** Bug #15: Flag untuk UI — apakah ada outlet yang tersedia */
+    val hasOutlets: Boolean = false,
     val roles: List<Role> = emptyList(),
     val selectedOutletId: Int? = null,
     val isLoading: Boolean = false,
@@ -58,6 +82,13 @@ data class KelolaKaryawanUiState(
     val formPassword: String = "",
     val formRoleId: Int = 0,
     val formOutletId: Int = 0,
+    val formSisaCuti: String = "",
+    /** Format yyyy-MM-dd. */
+    val formTanggalMulaiKerja: String = "",
+    // ── Biodata opsional ──
+    val formTempatLahir: String = "",
+    /** Format yyyy-MM-dd. */
+    val formTanggalLahir: String = "",
     val editingKaryawanId: String? = null
 )
 
@@ -90,9 +121,13 @@ class KelolaKaryawanViewModel(
             var loadedKaryawan = emptyList<Karyawan>()
             var errorMsg: String? = null
 
-            // Load roles
+            // Load roles — exclude platform-level roles (Super Admin & Owner)
+            // karena pemilik dianggap entitas terpisah, bukan karyawan
+            val excludedRoleNames = setOf("Super Admin", "Owner")
             karyawanRepository.getRoles().onSuccess { dtos ->
-                loadedRoles = dtos.map { it.toRole() }
+                loadedRoles = dtos
+                    .filter { it.namaRole !in excludedRoleNames }
+                    .map { it.toRole() }
             }.onFailure {
                 errorMsg = it.message
             }
@@ -114,6 +149,7 @@ class KelolaKaryawanViewModel(
             _uiState.value = _uiState.value.copy(
                 roles = loadedRoles,
                 outlets = loadedOutlets,
+                hasOutlets = loadedOutlets.isNotEmpty(),
                 karyawanList = loadedKaryawan,
                 isLoading = false,
                 errorMessage = errorMsg
@@ -154,6 +190,9 @@ class KelolaKaryawanViewModel(
             formPassword = "",
             formRoleId = 0,
             formOutletId = 0,
+            formTanggalMulaiKerja = "",
+            formTempatLahir = "",
+            formTanggalLahir = "",
             editingKaryawanId = null,
             errorMessage = null,
             successMessage = null
@@ -169,6 +208,10 @@ class KelolaKaryawanViewModel(
             formPassword = "",
             formRoleId = karyawan.role?.id ?: 0,
             formOutletId = karyawan.outlet?.id ?: 0,
+            formSisaCuti = karyawan.sisaCuti?.toString() ?: "",
+            formTanggalMulaiKerja = karyawan.tanggalMulaiKerja ?: "",
+            formTempatLahir = karyawan.tempatLahir ?: "",
+            formTanggalLahir = karyawan.tanggalLahir ?: "",
             editingKaryawanId = karyawan.id,
             errorMessage = null,
             successMessage = null
@@ -213,6 +256,22 @@ class KelolaKaryawanViewModel(
 
     fun onFormOutletChange(outletId: Int) {
         _uiState.value = _uiState.value.copy(formOutletId = outletId, errorMessage = null)
+    }
+
+    fun onFormSisaCutiChange(value: String) {
+        _uiState.value = _uiState.value.copy(formSisaCuti = value, errorMessage = null)
+    }
+
+    fun onFormTanggalMulaiKerjaChange(value: String) {
+        _uiState.value = _uiState.value.copy(formTanggalMulaiKerja = value, errorMessage = null)
+    }
+
+    fun onFormTempatLahirChange(value: String) {
+        _uiState.value = _uiState.value.copy(formTempatLahir = value, errorMessage = null)
+    }
+
+    fun onFormTanggalLahirChange(value: String) {
+        _uiState.value = _uiState.value.copy(formTanggalLahir = value, errorMessage = null)
     }
 
     // ─── Actions ───
@@ -260,8 +319,11 @@ class KelolaKaryawanViewModel(
                 email = state.formEmail.trim(),
                 password = state.formPassword,
                 alamat = state.formAlamat.trim(),
+                tempatLahir = state.formTempatLahir.trim().ifBlank { null },
+                tanggalLahir = state.formTanggalLahir.ifBlank { null },
                 roleId = state.formRoleId,
-                outletId = outletId
+                outletId = outletId,
+                tanggalMulaiKerja = state.formTanggalMulaiKerja.ifBlank { null }
             )
 
             karyawanRepository.createKaryawan(request).onSuccess { dto ->
@@ -309,7 +371,11 @@ class KelolaKaryawanViewModel(
             val request = UpdateKaryawanRequest(
                 namaLengkap = state.formNama.trim(),
                 alamat = state.formAlamat.trim(),
-                outletId = state.formOutletId.takeIf { it > 0 }
+                tempatLahir = state.formTempatLahir.trim().ifBlank { null },
+                tanggalLahir = state.formTanggalLahir.ifBlank { null },
+                outletId = state.formOutletId.takeIf { it > 0 },
+                sisaCuti = state.formSisaCuti.toIntOrNull(),
+                tanggalMulaiKerja = state.formTanggalMulaiKerja.ifBlank { null }
             )
 
             karyawanRepository.updateKaryawan(id, request).onSuccess {
@@ -391,7 +457,11 @@ class KelolaKaryawanViewModel(
                 kontak = this.kontak ?: "",
                 fotoProfil = this.fotoProfil,
                 role = role,
-                outlet = outlet
+                outlet = outlet,
+                sisaCuti = this.sisaCuti,
+                tanggalMulaiKerja = this.tanggalMulaiKerja,
+                tempatLahir = this.tempatLahir,
+                tanggalLahir = this.tanggalLahir
             )
         }
     }

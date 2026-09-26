@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SetujuiApprovalRequest;
 use App\Http\Requests\TolakApprovalRequest;
-use App\Models\User;
-use App\Models\TransaksiKas;
 use App\Models\ApprovalLog;
-use App\Traits\ApiResponse;
+use App\Models\TransaksiKas;
+use App\Models\User;
 use App\Services\ApprovalService;
 use App\Services\AuditService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,6 +18,7 @@ class ApprovalController extends Controller
     use ApiResponse;
 
     protected ApprovalService $approvalService;
+
     protected AuditService $auditService;
 
     public function __construct(ApprovalService $approvalService, AuditService $auditService)
@@ -35,9 +36,14 @@ class ApprovalController extends Controller
         $user = $request->user();
 
         // Policy: hanya user dengan approve:keuangan yang bisa melihat
-        if (!Gate::allows('approve-keuangan')) {
+        if (! Gate::allows('approve-keuangan')) {
             return $this->error('Anda tidak memiliki izin untuk melihat daftar approval', 403);
         }
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
 
         $filters = $request->only(['outlet_id', 'start_date', 'end_date', 'per_page']);
         $approvals = $this->approvalService->getPendingApprovals($user, $filters);
@@ -53,9 +59,14 @@ class ApprovalController extends Controller
     {
         $user = $request->user();
 
-        if (!Gate::allows('approve-keuangan')) {
+        if (! Gate::allows('approve-keuangan')) {
             return $this->error('Anda tidak memiliki izin untuk melihat riwayat approval', 403);
         }
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
 
         $filters = $request->only(['outlet_id', 'start_date', 'end_date', 'status', 'per_page']);
         $riwayat = $this->approvalService->getRiwayatApproval($user, $filters);
@@ -88,7 +99,7 @@ class ApprovalController extends Controller
         }
 
         // Cek apakah perlu approval
-        if (!$this->approvalService->perluApproval($transaksi_kas)) {
+        if (! $this->approvalService->perluApproval($transaksi_kas)) {
             return $this->error('Transaksi ini tidak memerlukan approval', 422);
         }
 
@@ -107,7 +118,7 @@ class ApprovalController extends Controller
         $user = $request->user();
 
         // Policy: hanya user dengan approve:keuangan
-        if (!Gate::allows('approve-keuangan')) {
+        if (! Gate::allows('approve-keuangan')) {
             return $this->error('Anda tidak memiliki izin untuk menyetujui transaksi', 403);
         }
 
@@ -142,7 +153,7 @@ class ApprovalController extends Controller
         $user = $request->user();
 
         // Policy: hanya user dengan approve:keuangan
-        if (!Gate::allows('approve-keuangan')) {
+        if (! Gate::allows('approve-keuangan')) {
             return $this->error('Anda tidak memiliki izin untuk menolak transaksi', 403);
         }
 

@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\paket;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class PaketPolicy

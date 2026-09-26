@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\penugasan;
+use App\Models\User;
 use App\Services\PermissionService;
 
 class PenugasanPolicy
@@ -14,6 +14,11 @@ class PenugasanPolicy
      */
     private function isSameTenant(User $user, penugasan $penugasan): bool
     {
+        // Template: global (instansi_id=null) bisa diakses semua, instansi-specific hanya instansi yang sama
+        if ($penugasan->is_template) {
+            return is_null($penugasan->instansi_id) || $user->instansi_id === $penugasan->instansi_id;
+        }
+
         if ($penugasan->divisi_id !== null) {
             return $user->instansi_id === $penugasan->divisi?->outlet?->instansi_id;
         }
@@ -44,6 +49,9 @@ class PenugasanPolicy
         if (! $this->isSameTenant($user, $penugasan)) {
             return false;
         }
+
+        // Hanya Owner/Manager yang boleh edit field tugas (judul, deskripsi, dll).
+        // Karyawan yang ditugasi HANYA boleh pakai endpoint accept/complete.
         return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 
@@ -52,6 +60,54 @@ class PenugasanPolicy
         if (! $this->isSameTenant($user, $penugasan)) {
             return false;
         }
+
+        return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
+    }
+
+    /**
+     * Allow karyawan yang ditugasi untuk accept/complete tugas.
+     */
+    public function accept(User $user, penugasan $penugasan): bool
+    {
+        if (! $this->isSameTenant($user, $penugasan)) {
+            return false;
+        }
+
+        // User dengan manage:penugasan (Owner/Manager) bisa accept semua tugas di instansinya
+        if (app(PermissionService::class)->userHasPermission($user, 'manage:penugasan')) {
+            return true;
+        }
+
+        $karyawan = $user->profilKaryawan;
+
+        if (! $karyawan) {
+            return false;
+        }
+
+        // Template (penanggung_jawab_id = null): bisa diterima semua karyawan
+        if ($penugasan->is_template) {
+            return true;
+        }
+
+        // Tugas biasa: hanya bisa diterima oleh yang ditugaskan
+        return $penugasan->penanggung_jawab_id === $karyawan->id;
+    }
+
+    public function complete(User $user, penugasan $penugasan): bool
+    {
+        return $this->accept($user, $penugasan);
+    }
+
+    /**
+     * Hanya Owner/Manager (manage:penugasan) yang boleh memvalidasi tugas
+     * yang menunggu_validasi — karyawan tidak boleh memvalidasi tugasnya sendiri.
+     */
+    public function validasi(User $user, penugasan $penugasan): bool
+    {
+        if (! $this->isSameTenant($user, $penugasan)) {
+            return false;
+        }
+
         return app(PermissionService::class)->userHasPermission($user, 'manage:penugasan');
     }
 

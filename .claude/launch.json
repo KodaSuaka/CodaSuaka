@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["D:/Open Source/Project/CodaSuaka/coda-suaka-backend/artisan", "serve", "--port=8010"],
+      "port": 8010
+    }
+  ]
+}

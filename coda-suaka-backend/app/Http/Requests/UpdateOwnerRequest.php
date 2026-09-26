@@ -26,7 +26,7 @@ class UpdateOwnerRequest extends FormRequest
 
         return [
             'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $userId,
+            'email' => 'sometimes|required|email|unique:users,email,'.$userId,
             'password' => 'sometimes|required|string|min:6',
             'instansi_id' => 'sometimes|required|exists:instansis,id',
         ];

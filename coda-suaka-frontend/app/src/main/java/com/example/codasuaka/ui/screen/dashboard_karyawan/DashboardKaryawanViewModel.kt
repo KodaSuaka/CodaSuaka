@@ -2,15 +2,22 @@ package com.example.codasuaka.ui.screen.dashboard_karyawan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.remote.dto.JadwalDto
 import com.example.codasuaka.data.remote.dto.PenugasanDto
 import com.example.codasuaka.domain.repository.DashboardRepository
+import com.example.codasuaka.domain.repository.JadwalRepository
 import com.example.codasuaka.domain.repository.KaryawanRepository
-import com.example.codasuaka.domain.repository.PengajuanRepository
 import com.example.codasuaka.domain.repository.PenugasanRepository
 import com.example.codasuaka.domain.repository.PresensiRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Status absensi (checkin / checkout).
@@ -39,7 +46,10 @@ data class TugasItem(
     val id: Int,
     val judul: String,
     val tenggat: String,
-    val isSelesai: Boolean = false
+    val isSelesai: Boolean = false,
+    val urgency: String? = null,
+    val poin: Int? = null,
+    val isTugasKhusus: Boolean = false
 )
 
 /**
@@ -53,6 +63,9 @@ data class DashboardKaryawanUiState(
     // ── Section Tengah: Menu Personal ──
     val absensiStatus: AbsensiStatus = AbsensiStatus.CHECKED_OUT,
     val absensiTime: String? = null,
+    val statusKeterangan: String? = null,
+    val jamCheckinStandar: String? = null,
+    val jamCheckoutStandar: String? = null,
     val specialEvent: String? = null,
     val showSpecialEvent: Boolean = false,
 
@@ -69,8 +82,18 @@ data class DashboardKaryawanUiState(
     val sisaCuti: Int = 12,
     val additionalContent: List<AdditionalMenuItem> = emptyList(),
 
+    // ── Jadwal / Event Popup ──
+    val jadwalList: List<JadwalDto> = emptyList(),
+    val showJadwalDialog: Boolean = false,
+
+    // ── Tugas Popup ──
+    val showTugasDialog: Boolean = false,
+
+    val isRefreshing: Boolean = false,
+
     // ── Bottom Nav ──
-    val selectedBottomNav: Int = 0 // 0 = Dashboard, 1 = Pengajuan, 2 = Pesan
+    val selectedBottomNav: Int = 0, // 0 = Dashboard, 1 = Pengajuan, 2 = Pesan
+    val hasUnreadMessages: Boolean = false
 )
 
 /**
@@ -95,177 +118,190 @@ data class AdditionalMenuItem(
 
 /**
  * ViewModel untuk Dashboard Karyawan.
- * Mengelola state data diri, absensi, tugas, cuti, dan navigasi.
- * Terintegrasi dengan API backend.
  */
 class DashboardKaryawanViewModel(
     private val presensiRepository: PresensiRepository,
     private val penugasanRepository: PenugasanRepository,
     private val karyawanRepository: KaryawanRepository,
-    private val pengajuanRepository: PengajuanRepository,
-    private val dashboardRepository: DashboardRepository
+    private val dashboardRepository: DashboardRepository,
+    private val jadwalRepository: JadwalRepository,
+    private val chatRepository: com.example.codasuaka.domain.repository.ChatRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardKaryawanUiState())
     val uiState: StateFlow<DashboardKaryawanUiState> = _uiState
 
+    private var unreadCheckJob: Job? = null
+    private val isProcessingAbsensi = AtomicBoolean(false)
+
     init {
-        loadDashboardData()
+        startUnreadMessagesPolling()
     }
 
-    /**
-     * Memuat data awal dashboard dari API.
-     */
-    private fun loadDashboardData() {
+    fun loadDashboardData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            loadAllData()
+        }
+    }
 
+    fun refreshDashboard() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
             try {
-                // Muat data dari berbagai endpoint secara paralel
-                val karyawanResult = karyawanRepository.getKaryawanMe()
-                val presensiResult = presensiRepository.getPresensiToday()
-                val tugasResult = penugasanRepository.getPenugasans(status = "belum,proses")
-                val pengajuanResult = pengajuanRepository.getPengajuans()
-                val dashboardResult = dashboardRepository.getKaryawanDashboard()
-
-                karyawanResult.onSuccess { karyawan ->
-                    _uiState.value = _uiState.value.copy(
-                        employeeInfo = EmployeeInfo(
-                            id = karyawan.id,
-                            nama = karyawan.namaLengkap,
-                            jabatan = karyawan.user?.role?.namaRole ?: "Staff",
-                            poinPerforma = 0,
-                            fotoUrl = karyawan.fotoProfil
-                        ),
-                        sisaCuti = karyawan.sisaCuti ?: 12
-                    )
-                }
-
-                presensiResult.onSuccess { today ->
-                    val status = when {
-                        today.sudahCheckin && today.sudahCheckout -> AbsensiStatus.COMPLETED
-                        today.sudahCheckin -> AbsensiStatus.CHECKED_IN
-                        else -> AbsensiStatus.CHECKED_OUT
-                    }
-                    val time = when (status) {
-                        AbsensiStatus.COMPLETED -> {
-                            val checkin = today.presensi?.jamCheckin ?: "-"
-                            val checkout = today.presensi?.jamCheckout ?: "-"
-                            "$checkin - $checkout"
-                        }
-                        AbsensiStatus.CHECKED_IN -> today.presensi?.jamCheckin
-                        else -> null
-                    }
-                    _uiState.value = _uiState.value.copy(
-                        absensiStatus = status,
-                        absensiTime = time
-                    )
-                }
-
-                tugasResult.onSuccess { tugasList ->
-                    val tugasItems = tugasList.map { tugas ->
-                        TugasItem(
-                            id = tugas.id,
-                            judul = tugas.judul,
-                            tenggat = tugas.tenggat ?: "-",
-                            isSelesai = tugas.status == "selesai"
-                        )
-                    }
-                    _uiState.value = _uiState.value.copy(
-                        totalTugas = tugasList.size,
-                        tugasSelesai = tugasList.count { it.status == "selesai" },
-                        daftarTugas = tugasItems
-                    )
-                }
-
-                pengajuanResult.onSuccess { pengajuanList ->
-                    val pendingCount = pengajuanList.count { it.status == "pending" }
-                }
-
-                dashboardResult.onSuccess { dashboardData ->
-                    val roleMenus = dashboardData.roleMenuItems?.map {
-                        RoleMenuItem(it.id, it.label, it.icon, it.route)
-                    } ?: emptyList()
-
-                    val additionalItems = dashboardData.additionalContent?.map {
-                        AdditionalMenuItem(it.id, it.label, it.icon, it.route)
-                    } ?: emptyList()
-
-                    _uiState.value = _uiState.value.copy(
-                        roleMenuItems = roleMenus,
-                        additionalContent = additionalItems
-                    )
-                }
-
-                _uiState.value = _uiState.value.copy(isLoading = false)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message
-                )
+                loadAllData()
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
             }
         }
     }
 
-    // ─── Absensi (Checkin / Checkout) ──────────────────────────
+    private suspend fun loadAllData() {
+        try {
+            coroutineScope {
+                val karyawanDef = async { karyawanRepository.getKaryawanMe() }
+                val presensiDef = async { presensiRepository.getPresensiToday() }
+                val tugasDef = async { penugasanRepository.getPenugasans(status = null) }
+                val dashboardDef = async { dashboardRepository.getKaryawanDashboard() }
+                val poinDef = async { dashboardRepository.getPoinKinerja() }
+                val jadwalDef = async {
+                    val now = java.time.LocalDate.now()
+                    jadwalRepository.getJadwals(bulan = now.monthValue, tahun = now.year)
+                }
 
-    /**
-     * Melakukan checkin atau checkout via API.
-     */
+                val karyawanRes = karyawanDef.await()
+                val presensiRes = presensiDef.await()
+                val tugasRes = tugasDef.await()
+                val dashboardRes = dashboardDef.await()
+                val poinRes = poinDef.await()
+                val jadwalRes = jadwalDef.await()
+
+                var firstError: String? = null
+
+                _uiState.update { currentState ->
+                    var newState = currentState
+
+                    karyawanRes.onSuccess { karyawan ->
+                        newState = newState.copy(
+                            employeeInfo = newState.employeeInfo.copy(
+                                id = karyawan.id,
+                                nama = karyawan.namaLengkap,
+                                jabatan = karyawan.user?.role?.namaRole ?: "Staff",
+                                fotoUrl = karyawan.fotoProfil
+                            ),
+                            sisaCuti = karyawan.sisaCuti ?: 0
+                        )
+                    }.onFailure { firstError = firstError ?: it.message }
+
+                    poinRes.onSuccess { poinData ->
+                        newState = newState.copy(
+                            employeeInfo = newState.employeeInfo.copy(poinPerforma = poinData.totalPoin),
+                            poinKinerja = poinData.totalPoin
+                        )
+                    }.onFailure { firstError = firstError ?: it.message }
+
+                    presensiRes.onSuccess { today ->
+                        val status = when {
+                            today.sudahCheckin && today.sudahCheckout -> AbsensiStatus.COMPLETED
+                            today.sudahCheckin -> AbsensiStatus.CHECKED_IN
+                            else -> AbsensiStatus.CHECKED_OUT
+                        }
+                        val time = when (status) {
+                            AbsensiStatus.COMPLETED -> "${today.presensi?.jamCheckin ?: "-"} - ${today.presensi?.jamCheckout ?: "-"}"
+                            AbsensiStatus.CHECKED_IN -> today.presensi?.jamCheckin
+                            else -> null
+                        }
+                        newState = newState.copy(
+                            absensiStatus = status,
+                            absensiTime = time,
+                            statusKeterangan = today.presensi?.statusKeterangan,
+                            jamCheckinStandar = today.jamCheckinStandar,
+                            jamCheckoutStandar = today.jamCheckoutStandar
+                        )
+                    }.onFailure { firstError = firstError ?: it.message }
+
+                    tugasRes.onSuccess { tugasList ->
+                        newState = newState.copy(
+                            totalTugas = tugasList.size,
+                            tugasSelesai = tugasList.count { it.status == "selesai" },
+                            daftarTugas = tugasList.map {
+                                TugasItem(
+                                    id = it.id,
+                                    judul = it.judul,
+                                    tenggat = it.tenggat ?: "-",
+                                    isSelesai = it.status == "selesai",
+                                    urgency = it.urgency,
+                                    poin = it.poin,
+                                    isTugasKhusus = it.isTemplate != true
+                                )
+                            }
+                        )
+                    }.onFailure { firstError = firstError ?: it.message }
+
+                    dashboardRes.onSuccess { data ->
+                        newState = newState.copy(
+                            roleMenuItems = data.roleMenuItems?.map { RoleMenuItem(it.id, it.label, it.icon, it.route) } ?: emptyList(),
+                            additionalContent = data.additionalContent?.map { AdditionalMenuItem(it.id, it.label, it.icon, it.route) } ?: emptyList()
+                        )
+                    }.onFailure { firstError = firstError ?: it.message }
+
+                    jadwalRes.onSuccess {
+                        newState = newState.copy(jadwalList = it)
+                    }.onFailure { firstError = firstError ?: it.message }
+
+                    newState.copy(isLoading = false, errorMessage = firstError)
+                }
+            }
+        } catch (e: Exception) {
+            _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+        }
+    }
+
     fun toggleAbsensi() {
+        if (!isProcessingAbsensi.compareAndSet(false, true)) return
         viewModelScope.launch {
             val current = _uiState.value.absensiStatus
-            if (current == AbsensiStatus.COMPLETED) return@launch
-            
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
-            if (current == AbsensiStatus.CHECKED_OUT) {
-                // Checkin
-                presensiRepository.checkin()
-                    .onSuccess { presensi ->
-                        _uiState.value = _uiState.value.copy(
-                            absensiStatus = AbsensiStatus.CHECKED_IN,
-                            absensiTime = presensi.jamCheckin?.let { "$it WIB" },
-                            isLoading = false
-                        )
+            if (current == AbsensiStatus.COMPLETED) {
+                isProcessingAbsensi.set(false)
+                return@launch
+            }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                when (current) {
+                    AbsensiStatus.CHECKED_OUT -> {
+                        presensiRepository.checkin().onSuccess { p ->
+                            _uiState.update { it.copy(absensiStatus = AbsensiStatus.CHECKED_IN, absensiTime = p.jamCheckin, statusKeterangan = p.statusKeterangan, isLoading = false) }
+                        }.onFailure { e -> _uiState.update { it.copy(isLoading = false, errorMessage = e.message) } }
                     }
-                    .onFailure { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = error.message
-                        )
+                    AbsensiStatus.CHECKED_IN -> {
+                        presensiRepository.checkout().onSuccess { p ->
+                            _uiState.update { it.copy(absensiStatus = AbsensiStatus.COMPLETED, absensiTime = "${p.jamCheckin ?: "-"} - ${p.jamCheckout ?: "-"}", isLoading = false) }
+                        }.onFailure { e -> _uiState.update { it.copy(isLoading = false, errorMessage = e.message) } }
                     }
-            } else if (current == AbsensiStatus.CHECKED_IN) {
-                // Checkout
-                presensiRepository.checkout()
-                    .onSuccess { presensi ->
-                        val checkinTime = presensi.jamCheckin ?: "-"
-                        val checkoutTime = presensi.jamCheckout ?: "-"
-                        _uiState.value = _uiState.value.copy(
-                            absensiStatus = AbsensiStatus.COMPLETED,
-                            absensiTime = "$checkinTime - $checkoutTime",
-                            isLoading = false
-                        )
-                    }
-                    .onFailure { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = error.message
-                        )
-                    }
+                    else -> {}
+                }
+            } finally {
+                isProcessingAbsensi.set(false)
             }
         }
     }
 
-    // ─── Bottom Navigation ─────────────────────────────────────
+    fun toggleJadwalDialog(show: Boolean) = _uiState.update { it.copy(showJadwalDialog = show) }
+    fun toggleTugasDialog(show: Boolean) = _uiState.update { it.copy(showTugasDialog = show) }
+    fun onBottomNavSelected(index: Int) = _uiState.update { it.copy(selectedBottomNav = index) }
 
-    fun onBottomNavSelected(index: Int) {
-        _uiState.value = _uiState.value.copy(selectedBottomNav = index)
+    private fun startUnreadMessagesPolling() {
+        unreadCheckJob?.cancel()
+        unreadCheckJob = viewModelScope.launch {
+            while (true) {
+                chatRepository.getContacts().onSuccess { groups ->
+                    val totalUnread = groups.sumOf { it.contacts.sumOf { c -> c.unreadCount } }
+                    _uiState.update { it.copy(hasUnreadMessages = totalUnread > 0) }
+                }
+                delay(15_000L)
+            }
+        }
     }
 
-    // ─── Error Handling ────────────────────────────────────────
-
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
-    }
+    fun clearError() = _uiState.update { it.copy(errorMessage = null) }
 }

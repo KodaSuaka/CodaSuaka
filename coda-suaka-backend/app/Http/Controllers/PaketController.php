@@ -23,6 +23,7 @@ class PaketController extends Controller
     public function index()
     {
         $pakets = paket::where('is_active', true)->orderBy('harga', 'asc')->get();
+
         return $this->success($pakets);
     }
 
@@ -32,6 +33,7 @@ class PaketController extends Controller
     public function store(StorepaketRequest $request)
     {
         $paket = paket::create($request->all());
+
         return $this->success($paket, 'Paket berhasil ditambahkan', 201);
     }
 
@@ -49,6 +51,7 @@ class PaketController extends Controller
     public function update(UpdatepaketRequest $request, paket $paket)
     {
         $paket->update($request->all());
+
         return $this->success($paket, 'Paket berhasil diperbarui');
     }
 
@@ -58,6 +61,7 @@ class PaketController extends Controller
     public function destroy(paket $paket)
     {
         $paket->update(['is_active' => false]);
+
         return $this->success(null, 'Paket berhasil dinonaktifkan');
     }
 }

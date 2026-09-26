@@ -255,6 +255,20 @@ class KeuanganRepositoryImpl(
         }
     }
 
+    override suspend fun exportTemplateLaporan(
+        jenis: String,
+        tipeUsaha: String,
+        bulan: Int,
+        tahun: Int
+    ): Result<okhttp3.ResponseBody> = runCatching {
+        val response = apiService.exportTemplateLaporan(jenis, tipeUsaha, bulan, tahun)
+        if (response.isSuccessful) {
+            response.body() ?: throw Exception("File template laporan kosong")
+        } else {
+            throw Exception("Gagal mengekspor template laporan: ${response.code()}")
+        }
+    }
+
     // ─── Approval Transaksi ──────────────────────────────────────
 
     override suspend fun getApprovalPending(

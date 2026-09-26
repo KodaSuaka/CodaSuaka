@@ -21,15 +21,15 @@ class AuditService
         $request = request();
 
         return AuditLog::create([
-            'instansi_id'   => $model->instansi_id ?? $user?->instansi_id,
+            'instansi_id' => $model->instansi_id ?? $user?->instansi_id,
             'auditable_type' => get_class($model),
-            'auditable_id'   => $model->getKey(),
-            'event'          => $event,
-            'old_values'     => $oldValues,
-            'new_values'     => $newValues,
-            'user_id'        => $user?->id ?? $request?->user()?->id,
-            'ip_address'     => $request?->ip(),
-            'user_agent'     => $request?->userAgent(),
+            'auditable_id' => $model->getKey(),
+            'event' => $event,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'user_id' => $user?->id ?? $request?->user()?->id,
+            'ip_address' => $request?->ip(),
+            'user_agent' => $request?->userAgent(),
         ]);
     }
 

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class ApprovalLog extends Model
 {
@@ -13,6 +13,7 @@ class ApprovalLog extends Model
 
     protected $fillable = [
         'transaksi_kas_id',
+        'instansi_id',
         'diajukan_oleh',
         'disetujui_oleh',
         'status',

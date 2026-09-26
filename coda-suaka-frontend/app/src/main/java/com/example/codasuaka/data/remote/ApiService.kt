@@ -1,6 +1,8 @@
 package com.example.codasuaka.data.remote
 
 import com.example.codasuaka.data.remote.dto.*
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -35,10 +37,16 @@ interface ApiService {
     @GET("api/karyawan/dashboard")
     suspend fun getKaryawanDashboard(): Response<KaryawanDashboardResponse>
 
+    @GET("api/karyawan/poin-kinerja")
+    suspend fun getPoinKinerja(): Response<PoinKinerjaResponse>
+
     // ─── Instansi ─────────────────────────────────────────────
 
     @GET("api/instansi")
     suspend fun getInstansi(): Response<InstansiResponse>
+
+    @PUT("api/instansi")
+    suspend fun updateInstansi(@Body request: UpdateInstansiRequest): Response<InstansiResponse>
 
     // ─── Outlet ───────────────────────────────────────────────
 
@@ -221,6 +229,38 @@ interface ApiService {
     @DELETE("api/penugasans/{id}")
     suspend fun deletePenugasan(@Path("id") id: Int): Response<ApiStatusResponse>
 
+    @PUT("api/penugasans/{id}/accept")
+    suspend fun acceptPenugasan(@Path("id") id: Int): Response<PenugasanSingleResponse>
+
+    @PUT("api/penugasans/{id}/complete")
+    suspend fun completePenugasan(@Path("id") id: Int): Response<PenugasanSingleResponse>
+
+    @PUT("api/penugasans/{id}/validasi")
+    suspend fun validasiPenugasan(
+        @Path("id") id: Int,
+        @Body body: Map<String, Boolean>
+    ): Response<PenugasanSingleResponse>
+
+    // ─── Template Penugasan (maks 10 per instansi) ─────────────
+
+    @GET("api/template-penugasans")
+    suspend fun getTemplatePenugasans(): Response<TemplatePenugasanListResponse>
+
+    @GET("api/template-penugasans/{id}")
+    suspend fun getTemplatePenugasan(@Path("id") id: Int): Response<TemplatePenugasanSingleResponse>
+
+    @POST("api/template-penugasans")
+    suspend fun createTemplatePenugasan(@Body request: CreateTemplatePenugasanRequest): Response<TemplatePenugasanSingleResponse>
+
+    @PUT("api/template-penugasans/{id}")
+    suspend fun updateTemplatePenugasan(
+        @Path("id") id: Int,
+        @Body request: UpdateTemplatePenugasanRequest
+    ): Response<TemplatePenugasanSingleResponse>
+
+    @DELETE("api/template-penugasans/{id}")
+    suspend fun deleteTemplatePenugasan(@Path("id") id: Int): Response<ApiStatusResponse>
+
     // ─── Chat / Kontak ────────────────────────────────────────
 
     @GET("api/chat/contacts")
@@ -374,6 +414,19 @@ interface ApiService {
         @Query("outlet_id") outletId: Int? = null
     ): Response<ResponseBody>
 
+    /**
+     * Export template Laba Rugi / Arus Kas (format divisi keuangan, ter-prefill).
+     * jenis: "laba_rugi" | "arus_kas"; tipeUsaha: "barang" | "jasa".
+     */
+    @GET("api/laporan-keuangan/template/export")
+    @Streaming
+    suspend fun exportTemplateLaporan(
+        @Query("jenis") jenis: String,
+        @Query("tipe_usaha") tipeUsaha: String,
+        @Query("bulan") bulan: Int,
+        @Query("tahun") tahun: Int
+    ): Response<ResponseBody>
+
     // ─── Approval Transaksi ─────────────────────────────────────
     @GET("api/approval/pending")
     suspend fun getApprovalPending(
@@ -408,4 +461,119 @@ interface ApiService {
         @Path("approvalLogId") approvalLogId: Int,
         @Body catatan: Map<String, String>
     ): Response<ApprovalSingleResponse>
+
+    // ─── Notifikasi ──────────────────────────────────────────────
+
+    @GET("api/notifications")
+    suspend fun getNotifications(
+        @Query("page") page: Int? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<NotificationListResponse>
+
+    @GET("api/notifications/unread-count")
+    suspend fun getUnreadCount(): Response<UnreadCountResponse>
+
+    @PUT("api/notifications/read/{id}")
+    suspend fun markNotificationRead(
+        @Path("id") id: Int
+    ): Response<ApiStatusResponse>
+
+    @PUT("api/notifications/read-all")
+    suspend fun markAllNotificationsRead(): Response<ApiStatusResponse>
+
+    @DELETE("api/notifications/{id}")
+    suspend fun deleteNotification(
+        @Path("id") id: Int
+    ): Response<ApiStatusResponse>
+
+    // ─── Kasir: Barang/Jasa ───────────────────────────────────────
+
+    @GET("api/barang-jasas")
+    suspend fun getBarangJasaList(
+        @Query("page") page: Int? = null,
+        @Query("jenis") jenis: String? = null,
+        @Query("is_active") isActive: Boolean? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<BarangJasaListResponse>
+
+    @POST("api/barang-jasas")
+    suspend fun createBarangJasa(@Body request: BarangJasaRequest): Response<BarangJasaSingleResponse>
+
+    @PUT("api/barang-jasas/{id}")
+    suspend fun updateBarangJasa(@Path("id") id: Int, @Body request: BarangJasaRequest): Response<BarangJasaSingleResponse>
+
+    @DELETE("api/barang-jasas/{id}")
+    suspend fun deleteBarangJasa(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    // ─── Kasir: Nota ──────────────────────────────────────────────
+
+    @GET("api/notas")
+    suspend fun getNotaList(
+        @Query("page") page: Int? = null,
+        @Query("tipe") tipe: String? = null,
+        @Query("outlet_id") outletId: Int? = null,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null,
+        @Query("status") status: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<NotaListResponse>
+
+    @POST("api/notas")
+    suspend fun createNota(@Body request: CreateNotaRequest): Response<NotaSingleResponse>
+
+    @GET("api/notas/{id}")
+    suspend fun getNotaDetail(@Path("id") id: Int): Response<NotaSingleResponse>
+
+    @DELETE("api/notas/{id}")
+    suspend fun deleteNota(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    @GET("api/notas/{id}/pdf")
+    @Streaming
+    suspend fun getNotaPdf(@Path("id") id: Int): Response<ResponseBody>
+
+    // ─── Stok (Bahan Baku / Barang Produksi) ─────────────────────
+
+    @GET("api/stoks")
+    suspend fun getStokList(
+        @Query("page") page: Int? = null,
+        @Query("kategori") kategori: String? = null,
+        @Query("is_active") isActive: Boolean? = null,
+        @Query("search") search: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<StokListResponse>
+
+    @POST("api/stoks")
+    suspend fun createStok(@Body request: StokRequest): Response<StokSingleResponse>
+
+    @GET("api/stoks/{id}")
+    suspend fun getStokDetail(@Path("id") id: Int): Response<StokSingleResponse>
+
+    @PUT("api/stoks/{id}")
+    suspend fun updateStok(@Path("id") id: Int, @Body request: StokRequest): Response<StokSingleResponse>
+
+    @DELETE("api/stoks/{id}")
+    suspend fun deleteStok(@Path("id") id: Int): Response<ApiStatusResponse>
+
+    @POST("api/stoks/{id}/mutasi")
+    suspend fun mutateStok(@Path("id") id: Int, @Body request: StokMutationRequest): Response<StokMutationSingleResponse>
+
+    @GET("api/stoks/{id}/riwayat")
+    suspend fun getStokRiwayat(
+        @Path("id") id: Int,
+        @Query("page") page: Int? = null,
+        @Query("jenis") jenis: String? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<StokMutationListResponse>
+
+    @Multipart
+    @POST("api/notas/import")
+    suspend fun importNotaPembelian(
+        @Part file: MultipartBody.Part,
+        @Part("tanggal") tanggal: RequestBody,
+        @Part("outlet_id") outletId: RequestBody? = null,
+        @Part("pihak_terkait") pihakTerkait: RequestBody? = null,
+        @Part("metode_pembayaran") metodePembayaran: RequestBody? = null,
+        @Part("kategori_transaksi_id") kategoriTransaksiId: RequestBody? = null,
+        @Part("catatan") catatan: RequestBody? = null
+    ): Response<NotaSingleResponse>
 }

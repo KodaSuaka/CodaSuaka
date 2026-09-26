@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\TransaksiKas;
-use App\Models\KategoriTransaksi;
+use App\Services\PermissionService;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LaporanController extends Controller
 {
@@ -21,10 +20,15 @@ class LaporanController extends Controller
     {
         $user = $request->user();
 
+        // Otorisasi: hanya user dengan view:laporan yang bisa mengakses
+        if (! app(PermissionService::class)->userHasPermission($user, 'view:laporan')) {
+            return $this->error('Anda tidak memiliki akses ke laporan keuangan.', 403);
+        }
+
         $request->validate([
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'outlet_id' => 'nullable|exists:outlets,id,instansi_id,' . $user->instansi_id,
+            'outlet_id' => 'nullable|exists:outlets,id,instansi_id,'.$user->instansi_id,
         ]);
 
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
@@ -33,18 +37,22 @@ class LaporanController extends Controller
         // Hitung saldo awal (sebelum start_date)
         $saldoAwal = TransaksiKas::where('instansi_id', $user->instansi_id)
             ->where('tanggal', '<', $startDate)
-            ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id))
+            ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id))
             ->selectRaw(
                 "COALESCE(SUM(CASE WHEN tipe = 'masuk' THEN nominal ELSE 0 END), 0) -
                  COALESCE(SUM(CASE WHEN tipe = 'keluar' THEN nominal ELSE 0 END), 0) as saldo"
             )
             ->value('saldo') ?? 0;
 
-        // Query transaksi dalam periode
-        $transaksiQuery = TransaksiKas::with('kategoriTransaksi')
-            ->where('instansi_id', $user->instansi_id)
+        // Query transaksi dalam periode — select kolom yang dibutuhkan
+        $transaksiQuery = TransaksiKas::with([
+            'kategoriTransaksi' => fn ($q) => $q->select(['id', 'nama_kategori']),
+        ])->select([
+            'id', 'tanggal', 'tipe', 'nominal', 'kategori_transaksi_id',
+            'keterangan', 'metode_pembayaran',
+        ])->where('instansi_id', $user->instansi_id)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->when($request->outlet_id, fn($q) => $q->where('outlet_id', $request->outlet_id));
+            ->when($request->outlet_id, fn ($q) => $q->where('outlet_id', $request->outlet_id));
 
         $transaksis = $transaksiQuery->get();
 
@@ -108,10 +116,26 @@ class LaporanController extends Controller
     public function ringkasanKeuangan(Request $request)
     {
         $user = $request->user();
-        $tahun = $request->tahun ?? Carbon::now()->year;
+
+        // Otorisasi: hanya user dengan view:laporan yang bisa mengakses
+        if (! app(PermissionService::class)->userHasPermission($user, 'view:laporan')) {
+            return $this->error('Anda tidak memiliki akses ke laporan keuangan.', 403);
+        }
+
+        // Cast ke int: dari query string nilainya string ("2026") sedangkan
+        // dari default-nya int, jadi field 'tahun' di response bisa berganti
+        // tipe tergantung ada/tidaknya parameter — client bertipe ketat
+        // (React/TS) akan tersandung.
+        $tahun = (int) ($request->tahun ?: Carbon::now()->year);
+
+        // Range biasa, bukan whereYear(): membungkus kolom dalam fungsi
+        // membuat query non-sargable sehingga index (instansi_id, tanggal)
+        // tidak terpakai.
+        $awalTahun = Carbon::create($tahun, 1, 1)->toDateString();
+        $akhirTahun = Carbon::create($tahun, 12, 31)->toDateString();
 
         $series = TransaksiKas::where('instansi_id', $user->instansi_id)
-            ->whereYear('tanggal', $tahun)
+            ->whereBetween('tanggal', [$awalTahun, $akhirTahun])
             ->selectRaw(
                 "DATE_FORMAT(tanggal, '%Y-%m') as bulan,
                  COALESCE(SUM(CASE WHEN tipe = 'masuk' THEN nominal ELSE 0 END), 0) as pendapatan,
@@ -145,13 +169,17 @@ class LaporanController extends Controller
         // Pendanaan: setoran modal, prive, pinjaman
         $keywordsPendanaan = ['modal', 'prive', 'pinjaman', 'dividen', 'saham', 'investor'];
         foreach ($keywordsPendanaan as $kw) {
-            if (str_contains($nama, $kw)) return 'pendanaan';
+            if (str_contains($nama, $kw)) {
+                return 'pendanaan';
+            }
         }
 
         // Investasi: aset tetap, properti, kendaraan, peralatan (untuk pembelian aset jangka panjang)
         $keywordsInvestasi = ['aset', 'tanah', 'bangunan', 'kendaraan', 'mesin', 'peralatan', 'investasi'];
         foreach ($keywordsInvestasi as $kw) {
-            if (str_contains($nama, $kw)) return 'investasi';
+            if (str_contains($nama, $kw)) {
+                return 'investasi';
+            }
         }
 
         // Default: operasi
@@ -166,12 +194,13 @@ class LaporanController extends Controller
         $grouped = [];
         foreach ($details as $d) {
             $key = $d['kategori'];
-            if (!isset($grouped[$key])) {
+            if (! isset($grouped[$key])) {
                 $grouped[$key] = ['kategori' => $key, 'masuk' => 0, 'keluar' => 0];
             }
             $grouped[$key]['masuk'] += $d['masuk'];
             $grouped[$key]['keluar'] += $d['keluar'];
         }
+
         return array_values($grouped);
     }
 }

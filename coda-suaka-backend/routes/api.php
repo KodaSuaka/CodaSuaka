@@ -1,29 +1,35 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\OutletController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\RolePermissionController;
-use App\Http\Controllers\KaryawanController;
-use App\Http\Controllers\DivisiController;
 use App\Http\Controllers\AnggotaDivisiController;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AttandenceController;
-use App\Http\Controllers\PengajuanController;
-use App\Http\Controllers\JadwalController;
-use App\Http\Controllers\PenugasanController;
-use App\Http\Controllers\PaketController;
-use App\Http\Controllers\TransaksiPaketController;
-use App\Http\Controllers\InstansiController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BarangJasaController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\DivisiController;
+use App\Http\Controllers\InstansiController;
+use App\Http\Controllers\JadwalController;
+use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriTransaksiController;
-use App\Http\Controllers\TransaksiKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanExportController;
-use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\LaporanKeuanganController;
+use App\Http\Controllers\NotaController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OutletController;
+use App\Http\Controllers\PaketController;
+use App\Http\Controllers\PengajuanController;
+use App\Http\Controllers\PenugasanController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\StokController;
+use App\Http\Controllers\TemplatePenugasanController;
+use App\Http\Controllers\TransaksiKasController;
+use App\Http\Controllers\TransaksiPaketController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,10 +40,10 @@ use App\Http\Controllers\ApprovalController;
 |--------------------------------------------------------------------------
 */
 
-// ─── Public Routes (tanpa auth) ─────────────────────────────────
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/register-super-admin', [AuthController::class, 'registerSuperAdmin']);
-Route::post('/login', [AuthController::class, 'login']);
+// ─── Public Routes (tanpa auth + rate limiting) ────────────────
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/register-super-admin', [AuthController::class, 'registerSuperAdmin'])->middleware('throttle:register-super-admin');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 // ─── Protected Routes (memerlukan token Sanctum) ──────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -47,7 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return response()->json([
             'status' => 'success',
-            'data' => $request->user()->load(['role', 'profilKaryawan', 'outlet'])
+            'data' => $request->user()->load(['role', 'profilKaryawan', 'outlet']),
         ]);
     });
 
@@ -73,6 +79,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Karyawan CRUD ────────────────────────────────────────
     Route::get('/karyawans/me', [KaryawanController::class, 'me']);
     Route::apiResource('/karyawans', KaryawanController::class);
+
+    // ─── Stok (bahan baku / barang produksi) ─────────────────
+    // Izin: view:stok | manage:stok (dicek lewat StokPolicy)
+    Route::get('/stoks', [StokController::class, 'index']);
+    Route::post('/stoks', [StokController::class, 'store']);
+    Route::get('/stoks/{stok}', [StokController::class, 'show']);
+    Route::put('/stoks/{stok}', [StokController::class, 'update']);
+    Route::delete('/stoks/{stok}', [StokController::class, 'destroy']);
+    Route::post('/stoks/{stok}/mutasi', [StokController::class, 'mutasi']);
+    Route::get('/stoks/{stok}/riwayat', [StokController::class, 'riwayat']);
 
     // ─── Divisi CRUD ──────────────────────────────────────────
     Route::apiResource('/divisis', DivisiController::class);
@@ -103,6 +119,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Penugasan / Tugas ────────────────────────────────────
     Route::apiResource('/penugasans', PenugasanController::class);
+    Route::put('/penugasans/{penugasan}/accept', [PenugasanController::class, 'accept']);
+    Route::put('/penugasans/{penugasan}/complete', [PenugasanController::class, 'complete']);
+    Route::put('/penugasans/{penugasan}/validasi', [PenugasanController::class, 'validasi']);
+
+    // ─── Template Penugasan (maks 10 per instansi) ────────────
+    Route::apiResource('/template-penugasans', TemplatePenugasanController::class);
+
+    // ─── Poin Kinerja Karyawan ────────────────────────────────
+    Route::get('/karyawan/poin-kinerja', [DashboardController::class, 'poinKinerja']);
 
     // ─── Paket ─────────────────────────────────────────────────
     // Regular users: read-only. Write only via Super Admin routes below.
@@ -117,6 +142,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Keuangan: Kategori Transaksi ─────────────────────────
     Route::apiResource('/kategori-transaksis', KategoriTransaksiController::class);
+
+    // ─── Kasir: Katalog Barang/Jasa ────────────────────────────
+    Route::apiResource('/barang-jasas', BarangJasaController::class);
+
+    // ─── Kasir: Nota Penjualan/Pembelian ───────────────────────
+    // 'notas' (jamak) supaya konsisten dengan barang-jasas, penugasans,
+    // presensis, transaksi-kas. Aman diganti: belum ada client yang memakai
+    // endpoint kasir.
+    Route::prefix('notas')->group(function () {
+        Route::get('/', [NotaController::class, 'index']);
+        Route::post('/', [NotaController::class, 'store']);
+        Route::post('/import', [NotaController::class, 'import']);
+        Route::get('/{nota}', [NotaController::class, 'show']);
+        Route::get('/{nota}/pdf', [NotaController::class, 'cetak']);
+        Route::delete('/{nota}', [NotaController::class, 'destroy']);
+    });
 
     // ─── Keuangan: Buku Kas (Transaksi Kas) ───────────────────
     Route::prefix('transaksi-kas')->group(function () {
@@ -140,7 +181,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/arus-kas/export/excel', [LaporanExportController::class, 'exportArusKasExcel']);
     });
 
-    // ─── Keuangan: Approval Workflow ─────────────────────────
+    // Template laporan keuangan (Laba Rugi / Arus Kas) mengikuti format divisi
+    // keuangan, ter-prefill dari transaksi. Izin: export:laporan-keuangan.
+    Route::prefix('laporan-keuangan')->group(function () {
+        Route::get('/template/export', [LaporanKeuanganController::class, 'exportTemplate']);
+    });
+
+    // Bug #8: Approval Workflow — diaktifkan untuk persetujuan transaksi keuangan
     Route::prefix('approval')->group(function () {
         Route::get('/pending', [ApprovalController::class, 'pending']);
         Route::get('/riwayat', [ApprovalController::class, 'riwayat']);
@@ -155,6 +202,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/messages/{user}', [ChatController::class, 'messages']);
         Route::post('/send', [ChatController::class, 'send']);
         Route::put('/read/{user}', [ChatController::class, 'markAsRead']);
+    });
+
+    // ─── Notifikasi ──────────────────────────────────────────
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::put('/read/{id}', [NotificationController::class, 'markAsRead']);
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -185,5 +241,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/pakets', [SuperAdminController::class, 'storePaket']);
         Route::put('/pakets/{paket}', [SuperAdminController::class, 'updatePaket']);
         Route::delete('/pakets/{paket}', [SuperAdminController::class, 'destroyPaket']);
+
+        // ─── Data Logging (Trace Request) ──────────────────────
+        Route::get('/request-logs', [SuperAdminController::class, 'indexRequestLog']);
+        Route::get('/request-logs/{requestLog}', [SuperAdminController::class, 'showRequestLog']);
+        Route::delete('/request-logs/{requestLog}', [SuperAdminController::class, 'destroyRequestLog']);
+
+        // ─── Invoice Pembelian Paket (transaksi_paket) ─────────
+        Route::get('/transaksi-pakets', [SuperAdminController::class, 'indexTransaksiPaket']);
+        Route::post('/transaksi-pakets', [SuperAdminController::class, 'storeTransaksiPaket']);
+        Route::get('/transaksi-pakets/{id}/invoice', [SuperAdminController::class, 'invoicePaketPdf']);
+        Route::get('/transaksi-pakets/{id}', [SuperAdminController::class, 'showTransaksiPaket']);
+        Route::put('/transaksi-pakets/{id}', [SuperAdminController::class, 'updateTransaksiPaket']);
     });
 });

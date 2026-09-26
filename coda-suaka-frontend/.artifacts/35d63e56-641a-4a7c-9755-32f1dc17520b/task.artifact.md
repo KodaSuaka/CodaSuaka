@@ -1,0 +1,4 @@
+- [x] Perbaiki bug referensi `msg` di `ErrorMessageMapper.kt`
+- [x] Bersihkan regex dan variabel tidak terpakai
+- [x] Hapus fungsi utilitas yang tidak digunakan
+- [x] Verifikasi hasil perbaikan dengan `analyze_file`

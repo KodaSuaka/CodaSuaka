@@ -32,9 +32,8 @@ fun MonthYearPickerDialog(
     var selectedMonth by remember { mutableStateOf(initialMonth) }
     var selectedYear by remember { mutableStateOf(initialYear) }
     
-    val currentYear = java.time.LocalDate.now().year
-    val years = (2024..currentYear + 1).toList() // Logika Progresif
-    val months = Month.values()
+    val years = (2020..2040).toList()
+    val months = Month.entries.toTypedArray()
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -80,7 +79,7 @@ fun MonthYearPickerDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = month.getDisplayName(TextStyle.FULL, Locale("id", "ID")),
+                                text = month.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("id-ID")),
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) OnPrimary else OnSurface,
                                 style = MaterialTheme.typography.bodySmall

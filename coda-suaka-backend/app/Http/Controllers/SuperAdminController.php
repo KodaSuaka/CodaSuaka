@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreinstansiRequest;
+use App\Http\Requests\StoreInstansiRequest;
 use App\Http\Requests\StoreOwnerRequest;
-use App\Http\Requests\UpdateOwnerRequest;
-use App\Http\Requests\UpdateInstansiRequest;
 use App\Http\Requests\StorepaketRequest;
+use App\Http\Requests\UpdateInstansiRequest;
+use App\Http\Requests\UpdateOwnerRequest;
 use App\Http\Requests\UpdatepaketRequest;
-use App\Models\User;
-use App\Models\instansi;
-use App\Models\paket;
+use App\Models\Instansi;
 use App\Models\karyawan;
+use App\Models\paket;
+use App\Models\RequestLog;
 use App\Models\role;
+use App\Models\Scopes\TenantScope;
+use App\Models\transaksi_paket;
+use App\Models\User;
 use App\Traits\ApiResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -21,9 +26,7 @@ class SuperAdminController extends Controller
 {
     use ApiResponse;
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     // ══════════════════════════════════════════════════════════════
     //  CRUD INSTANSI
@@ -35,9 +38,9 @@ class SuperAdminController extends Controller
      */
     public function indexInstansi()
     {
-        $instansis = instansi::with(['paket', 'users' => function ($q) {
-            $q->whereHas('role', fn($r) => $r->where('nama_role', 'Owner'))
-              ->with('profilKaryawan');
+        $instansis = Instansi::with(['paket', 'users' => function ($q) {
+            $q->whereHas('role', fn ($r) => $r->where('nama_role', 'Owner'))
+                ->with('profilKaryawan');
         }])->withCount('outlets')->orderBy('created_at', 'desc')->get();
 
         return $this->success($instansis);
@@ -47,7 +50,7 @@ class SuperAdminController extends Controller
      * GET /api/super-admin/instansis/{instansi}
      * Detail satu instansi.
      */
-    public function showInstansi(instansi $instansi)
+    public function showInstansi(Instansi $instansi)
     {
         $instansi->load(['paket', 'users' => function ($q) {
             $q->with('profilKaryawan');
@@ -60,17 +63,17 @@ class SuperAdminController extends Controller
      * POST /api/super-admin/instansis
      * Membuat instansi baru beserta owner-nya.
      */
-    public function storeInstansi(StoreinstansiRequest $request)
+    public function storeInstansi(StoreInstansiRequest $request)
     {
         // Buat instansi
-        $instansi = instansi::create([
+        $instansi = Instansi::create([
             'nama_instansi' => $request->nama_instansi,
             'paket_id' => $request->paket_id,
         ]);
 
         // Buat owner
         $roleOwner = role::where('nama_role', 'Owner')->first();
-        if (!$roleOwner) {
+        if (! $roleOwner) {
             return $this->error('Role Owner belum tersedia', 500);
         }
 
@@ -90,7 +93,7 @@ class SuperAdminController extends Controller
             'foto_profil' => null,
         ]);
 
-        $instansi->load(['paket', 'users' => fn($q) => $q->with('profilKaryawan')]);
+        $instansi->load(['paket', 'users' => fn ($q) => $q->with('profilKaryawan')]);
 
         return $this->success($instansi, 'Instansi dan Owner berhasil dibuat', 201);
     }
@@ -99,7 +102,7 @@ class SuperAdminController extends Controller
      * PUT /api/super-admin/instansis/{instansi}
      * Update data instansi.
      */
-    public function updateInstansi(UpdateInstansiRequest $request, instansi $instansi)
+    public function updateInstansi(UpdateInstansiRequest $request, Instansi $instansi)
     {
         $instansi->update($request->only(['nama_instansi', 'paket_id']));
 
@@ -112,7 +115,7 @@ class SuperAdminController extends Controller
      * DELETE /api/super-admin/instansis/{instansi}
      * Hapus instansi (soft — hapus semua data terkait).
      */
-    public function destroyInstansi(instansi $instansi)
+    public function destroyInstansi(Instansi $instansi)
     {
         // Hapus semua user terkait
         $instansi->users()->delete();
@@ -134,7 +137,7 @@ class SuperAdminController extends Controller
      */
     public function indexOwner(Request $request)
     {
-        $query = User::whereHas('role', fn($q) => $q->where('nama_role', 'Owner'))
+        $query = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Owner'))
             ->with(['instansi', 'profilKaryawan']);
 
         if ($request->instansi_id) {
@@ -152,7 +155,7 @@ class SuperAdminController extends Controller
      */
     public function showOwner(User $user)
     {
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
+        if (! $user->role || $user->role->nama_role !== 'Owner') {
             return $this->error('User bukan seorang Owner', 404);
         }
 
@@ -168,7 +171,7 @@ class SuperAdminController extends Controller
     public function storeOwner(StoreOwnerRequest $request)
     {
         $roleOwner = role::where('nama_role', 'Owner')->first();
-        if (!$roleOwner) {
+        if (! $roleOwner) {
             return $this->error('Role Owner belum tersedia', 500);
         }
 
@@ -199,7 +202,7 @@ class SuperAdminController extends Controller
      */
     public function updateOwner(UpdateOwnerRequest $request, User $user)
     {
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
+        if (! $user->role || $user->role->nama_role !== 'Owner') {
             return $this->error('User bukan seorang Owner', 404);
         }
 
@@ -213,7 +216,7 @@ class SuperAdminController extends Controller
         // Update nama_lengkap di profil karyawan jika name diubah
         if ($request->filled('name')) {
             karyawan::where('user_id', $user->id)->update([
-                'nama_lengkap' => $request->name
+                'nama_lengkap' => $request->name,
             ]);
         }
 
@@ -228,7 +231,7 @@ class SuperAdminController extends Controller
      */
     public function destroyOwner(User $user)
     {
-        if (!$user->role || $user->role->nama_role !== 'Owner') {
+        if (! $user->role || $user->role->nama_role !== 'Owner') {
             return $this->error('User bukan seorang Owner', 404);
         }
 
@@ -309,11 +312,11 @@ class SuperAdminController extends Controller
      */
     public function dashboard()
     {
-        $totalInstansi = instansi::count();
-        $totalOwner = User::whereHas('role', fn($q) => $q->where('nama_role', 'Owner'))->count();
+        $totalInstansi = Instansi::count();
+        $totalOwner = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Owner'))->count();
         $totalPaket = paket::count();
         $totalPaketAktif = paket::where('is_active', true)->count();
-        $totalKaryawan = User::whereHas('role', fn($q) => $q->where('nama_role', 'Karyawan'))->count();
+        $totalKaryawan = User::whereHas('role', fn ($q) => $q->where('nama_role', 'Karyawan'))->count();
 
         return $this->success([
             'total_instansi' => $totalInstansi,
@@ -322,5 +325,202 @@ class SuperAdminController extends Controller
             'total_paket_aktif' => $totalPaketAktif,
             'total_karyawan' => $totalKaryawan,
         ]);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  DATA LOGGING (Trace Request) — hanya Super Admin
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET /api/super-admin/request-logs
+     * Daftar trace request API dengan filter (instansi, user, method,
+     * status, path, rentang tanggal). Endpoint ini TIDAK tercatat sendiri
+     * oleh middleware logging (path request-logs di-skip).
+     */
+    public function indexRequestLog(Request $request)
+    {
+        $query = RequestLog::query()->with('user:id,name,email');
+
+        if ($request->filled('instansi_id')) {
+            $query->where('instansi_id', $request->input('instansi_id'));
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        if ($request->filled('method')) {
+            $query->where('method', strtoupper($request->input('method')));
+        }
+
+        if ($request->filled('status_code')) {
+            $query->where('status_code', (int) $request->input('status_code'));
+        }
+
+        if ($request->filled('path')) {
+            $query->where('path', 'like', '%'.$request->input('path').'%');
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->input('date_to'));
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        return $this->paginated($query->paginate($request->integer('per_page', 20)));
+    }
+
+    /**
+     * GET /api/super-admin/request-logs/{requestLog}
+     * Detail satu trace request (termasuk body & query params).
+     */
+    public function showRequestLog(RequestLog $requestLog)
+    {
+        $requestLog->load('user:id,name,email');
+
+        return $this->success($requestLog);
+    }
+
+    /**
+     * DELETE /api/super-admin/request-logs/{requestLog}
+     * Hapus satu log.
+     */
+    public function destroyRequestLog(RequestLog $requestLog)
+    {
+        $requestLog->delete();
+
+        return $this->success(null, 'Log berhasil dihapus');
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  INVOICE PEMBELIAN PAKET (transaksi_paket) — Super Admin
+    //  Alur hybrid: owner UMKM bisa mengajukan pembelian (status
+    //  'pending') lewat endpoint owner /transaksi-pakets. Super admin
+    //  punya kendali penuh di sini: lihat semua instansi (bypass
+    //  TenantScope), terbitkan, verifikasi/aktifkan, dan cetak PDF.
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * GET /api/super-admin/transaksi-pakets
+     * Semua invoice pembelian paket lintas instansi.
+     */
+    public function indexTransaksiPaket(Request $request)
+    {
+        $query = transaksi_paket::withoutGlobalScope(TenantScope::class)
+            ->with(['instansi', 'paket']);
+
+        if ($request->filled('instansi_id')) {
+            $query->where('instansi_id', $request->input('instansi_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        return $this->paginated($query->paginate($request->integer('per_page', 20)));
+    }
+
+    /**
+     * GET /api/super-admin/transaksi-pakets/{id}
+     */
+    public function showTransaksiPaket(string $id)
+    {
+        $trx = transaksi_paket::withoutGlobalScope(TenantScope::class)
+            ->with(['instansi', 'paket'])
+            ->findOrFail($id);
+
+        return $this->success($trx);
+    }
+
+    /**
+     * POST /api/super-admin/transaksi-pakets
+     * Super admin menerbitkan invoice pembelian paket untuk instansi.
+     * total_harga & tanggal_berakhir diturunkan dari paket.
+     */
+    public function storeTransaksiPaket(Request $request)
+    {
+        $data = $request->validate([
+            'instansi_id' => 'required|exists:instansis,id',
+            'paket_id' => 'required|exists:pakets,id',
+            'tanggal_mulai' => 'nullable|date',
+            'status' => 'sometimes|in:pending,aktif,kedaluwarsa,dibatalkan',
+        ]);
+
+        $paket = paket::findOrFail($data['paket_id']);
+        $mulai = Carbon::parse($data['tanggal_mulai'] ?? now());
+        $berakhir = (clone $mulai)->addDays((int) ($paket->durasi_hari ?? 30));
+
+        $trx = transaksi_paket::create([
+            'instansi_id' => $data['instansi_id'],
+            'paket_id' => $paket->id,
+            'tanggal_mulai' => $mulai->toDateString(),
+            'tanggal_berakhir' => $berakhir->toDateString(),
+            'total_harga' => $paket->harga,
+            'status' => $data['status'] ?? 'pending',
+        ]);
+
+        // Saat langsung diaktifkan, sinkronkan paket aktif instansi.
+        if ($trx->status === 'aktif') {
+            Instansi::whereKey($data['instansi_id'])->update(['paket_id' => $paket->id]);
+        }
+
+        $trx->load(['instansi', 'paket']);
+
+        return $this->success($trx, 'Invoice pembelian paket berhasil dibuat', 201);
+    }
+
+    /**
+     * PUT /api/super-admin/transaksi-pakets/{id}
+     * Verifikasi / aktifkan / batalkan invoice. Saat status 'aktif',
+     * paket aktif instansi otomatis disinkronkan.
+     */
+    public function updateTransaksiPaket(Request $request, string $id)
+    {
+        $trx = transaksi_paket::withoutGlobalScope(TenantScope::class)->findOrFail($id);
+
+        $data = $request->validate([
+            'status' => 'required|in:pending,aktif,kedaluwarsa,dibatalkan',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_berakhir' => 'nullable|date|after_or_equal:tanggal_mulai',
+        ]);
+
+        $trx->update($data);
+
+        if ($data['status'] === 'aktif') {
+            Instansi::whereKey($trx->instansi_id)->update(['paket_id' => $trx->paket_id]);
+        }
+
+        $trx->load(['instansi', 'paket']);
+
+        return $this->success($trx, 'Invoice pembelian paket berhasil diperbarui');
+    }
+
+    /**
+     * GET /api/super-admin/transaksi-pakets/{id}/invoice
+     * Unduh PDF invoice pembelian paket.
+     */
+    public function invoicePaketPdf(string $id)
+    {
+        $trx = transaksi_paket::withoutGlobalScope(TenantScope::class)
+            ->with(['instansi.users' => fn ($q) => $q->whereHas('role', fn ($r) => $r->where('nama_role', 'Owner')), 'paket'])
+            ->findOrFail($id);
+
+        $owner = $trx->instansi?->users?->first();
+        $nomorInvoice = sprintf('INV/PKT/%s/%04d', Carbon::parse($trx->created_at)->format('Y'), $trx->id);
+
+        $pdf = Pdf::loadView('invoice.paket_pdf', [
+            'trx' => $trx,
+            'owner' => $owner,
+            'nomor_invoice' => $nomorInvoice,
+            'tanggal_cetak' => now()->translatedFormat('d M Y H:i'),
+        ]);
+
+        return $pdf->download("invoice-paket-{$trx->id}.pdf");
     }
 }

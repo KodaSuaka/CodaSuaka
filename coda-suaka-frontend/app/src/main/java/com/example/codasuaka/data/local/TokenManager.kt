@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Manajer penyimpanan token dan data pengguna terenkripsi.
@@ -51,6 +54,23 @@ class TokenManager(private val context: Context) {
     /** Mengembalikan token dari cache — cocok untuk OkHttp Interceptor. */
     fun getCachedToken(): String? = cachedToken
 
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Emit saat server membalas 401, agar UI bisa kembali ke Login. */
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
+
+    /**
+     * Menghapus token & memberi sinyal session expired.
+     * Dipanggil dari [com.example.codasuaka.data.remote.interceptor.AuthInterceptor]
+     * yang berjalan di thread OkHttp (bukan coroutine), sehingga method ini
+     * sengaja dibuat non-suspend.
+     */
+    fun clearTokenAndNotifyExpired() {
+        prefs.edit().clear().commit()
+        cachedToken = null
+        _sessionExpired.tryEmit(Unit)
+    }
+
     /**
      * Memuat token dari penyimpanan terenkripsi ke cache in-memory.
      * Harus dipanggil sekali di awal aplikasi (misalnya dari splash / AuthViewModel).
@@ -90,6 +110,17 @@ class TokenManager(private val context: Context) {
     suspend fun getToken(): String? = prefs.getString(KEY_TOKEN, null)
 
     /**
+     * Mengembalikan user ID dari penyimpanan terenkripsi (synchronous).
+     */
+    fun getUserIdSync(): String? = prefs.getString(KEY_USER_ID, null)
+
+    /**
+     * Mengembalikan user ID dari penyimpanan terenkripsi (synchronous).
+     * Digunakan oleh Flow / coroutine yang memanggil .first().
+     */
+    suspend fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
+
+    /**
      * Mengembalikan email user dari penyimpanan terenkripsi (synchronous).
      */
     suspend fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
@@ -116,7 +147,9 @@ class TokenManager(private val context: Context) {
      * Menghapus seluruh data autentikasi (saat logout).
      */
     suspend fun clearAuthData() {
-        prefs.edit().clear().apply()
+        // Gunakan commit() agar data benar-benar terhapus sebelum
+        // ada read berikutnya (mencegah race condition dengan cachedToken).
+        prefs.edit().clear().commit()
         cachedToken = null
     }
 }

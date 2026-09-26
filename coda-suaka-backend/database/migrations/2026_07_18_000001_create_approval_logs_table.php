@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('approval_logs')) {
+            return;
+        }
+
         Schema::create('approval_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('transaksi_kas_id')

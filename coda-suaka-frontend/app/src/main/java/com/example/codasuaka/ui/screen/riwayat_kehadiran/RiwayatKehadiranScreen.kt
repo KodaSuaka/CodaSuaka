@@ -1,5 +1,6 @@
 package com.example.codasuaka.ui.screen.riwayat_kehadiran
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -12,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +33,7 @@ import com.example.codasuaka.ui.components.YearPickerDialog
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.screen.kelola_outlet.Outlet
 import com.example.codasuaka.ui.theme.*
+import com.example.codasuaka.util.DateTimeUtil
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -41,6 +45,7 @@ fun RiwayatKehadiranScreen(
     viewModel: RiwayatKehadiranViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -58,27 +63,33 @@ fun RiwayatKehadiranScreen(
             )
         }
     ) { innerPadding ->
-        if (uiState.isLoading && uiState.presensiList.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Primary)
-            }
-            return@Scaffold
-        }
-
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = { viewModel.onRefresh() },
+            state = pullRefreshState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Tertiary)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(Tertiary),
+            contentAlignment = Alignment.TopCenter
         ) {
+            if (uiState.isLoading && uiState.presensiList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Primary)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Tertiary)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
             // ── Success Message ──
             if (uiState.successMessage != null) {
                 item {
@@ -181,8 +192,7 @@ fun RiwayatKehadiranScreen(
             // ═════════════════════════════════════
             item {
                 RecapSection(
-                    rekap = uiState.rekapBulanan,
-                    recapMonthOffset = uiState.recapMonthOffset,
+                    uiState = uiState,
                     onPrevMonth = viewModel::onRecapPrevMonth,
                     onNextMonth = viewModel::onRecapNextMonth,
                     onMonthYearSelected = viewModel::onRecapMonthYearSelected
@@ -190,6 +200,8 @@ fun RiwayatKehadiranScreen(
             }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
+                }
+            }
         }
     }
 }
@@ -239,23 +251,39 @@ private fun OutletFilterDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        CustomTextField(
+        // Mengembalikan CustomTextField (Design lama) dengan perbaikan warna Navy
+        OutlinedTextField(
             value = selectedOutlet?.namaOutlet ?: "Semua Outlet",
             onValueChange = {},
             readOnly = true,
-            label = "Pilih Outlet",
+            enabled = true, // Dipaksa True agar teks tidak pudar
+            label = { Text("Pilih Outlet", color = Secondary.copy(alpha = 0.7f)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(),
+            shape = RoundedCornerShape(12.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = Secondary, 
+                fontWeight = FontWeight.Bold
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary,
+                unfocusedBorderColor = NeutralBorder,
+                focusedContainerColor = InputBackground,
+                unfocusedContainerColor = InputBackground,
+                focusedTextColor = Secondary,
+                unfocusedTextColor = Secondary
+            )
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Surface)
         ) {
             DropdownMenuItem(
-                text = { Text("Semua Outlet") },
+                text = { Text("Semua Outlet", color = Secondary, fontWeight = FontWeight.Medium) },
                 onClick = {
                     onOutletSelected(null)
                     expanded = false
@@ -263,7 +291,7 @@ private fun OutletFilterDropdown(
             )
             outlets.forEach { outlet ->
                 DropdownMenuItem(
-                    text = { Text(outlet.namaOutlet) },
+                    text = { Text(outlet.namaOutlet, color = Secondary, fontWeight = FontWeight.Medium) },
                     onClick = {
                         onOutletSelected(outlet.id)
                         expanded = false
@@ -289,25 +317,41 @@ private fun DatePickerField(
             try {
                 val parts = selectedDate.split("-")
                 val ld = LocalDate.of(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
-                ld.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                ld.atStartOfDay(java.time.ZoneId.of("UTC")).toInstant().toEpochMilli()
             } catch (_: Exception) {
                 null
             }
         } else null
     )
 
-    CustomTextField(
+    // Menggunakan OutlinedTextField langsung agar warna bisa dipaksa (tidak pudar)
+    OutlinedTextField(
         value = selectedDate.ifEmpty { LocalDate.now().toString() },
         onValueChange = {},
         readOnly = true,
-        enabled = false,
-        label = "Pilih Tanggal",
+        enabled = true, // Dipaksa True agar teks tidak pudar
+        label = { Text("Pilih Tanggal", color = Secondary.copy(alpha = 0.7f)) },
         trailingIcon = {
-            Icon(Icons.Default.CalendarMonth, "Pilih tanggal", tint = Primary)
+            IconButton(onClick = { showDatePicker = true }) {
+                Icon(Icons.Default.CalendarMonth, "Pilih tanggal", tint = Primary)
+            }
         },
         modifier = modifier
             .fillMaxWidth()
-            .clickable { showDatePicker = true }
+            .clickable { showDatePicker = true },
+        shape = RoundedCornerShape(12.dp),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = Secondary, 
+            fontWeight = FontWeight.Bold
+        ),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Primary,
+            unfocusedBorderColor = NeutralBorder,
+            focusedContainerColor = InputBackground,
+            unfocusedContainerColor = InputBackground,
+            focusedTextColor = Secondary,
+            unfocusedTextColor = Secondary
+        )
     )
 
     if (showDatePicker) {
@@ -319,7 +363,7 @@ private fun DatePickerField(
                 primary = Primary,
                 onPrimary = OnPrimary,
                 surface = Color.White,
-                onSurface = Color.Black,
+                onSurface = Secondary,
                 onSurfaceVariant = Color.Gray,
                 secondary = Secondary
             )
@@ -331,14 +375,14 @@ private fun DatePickerField(
                         onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
                                 val ld = java.time.Instant.ofEpochMilli(millis)
-                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .atZone(java.time.ZoneOffset.UTC)
                                     .toLocalDate()
                                 onDateSelected(ld.toString())
                             }
                             showDatePicker = false
                         }
                     ) {
-                        Text("Pilih", color = Primary, fontWeight = FontWeight.ExtraBold)
+                        Text("Pilih", color = Secondary, fontWeight = FontWeight.ExtraBold)
                     }
                 },
                 dismissButton = {
@@ -352,17 +396,17 @@ private fun DatePickerField(
             ) {
                 if (showYearPicker) {
                     val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(java.time.ZoneId.systemDefault())
+                        .atZone(java.time.ZoneOffset.UTC)
                         .toLocalDate()
                         
                     YearPickerDialog(
                         selectedYear = displayMonth.year,
                         onYearSelected = { year ->
-                            val cal = java.util.Calendar.getInstance().apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                                set(java.util.Calendar.YEAR, year)
-                            }
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(java.time.ZoneOffset.UTC)
+                                .toLocalDate()
+                            val targetMonth = currentMonth.withYear(year)
+                            datePickerState.displayedMonthMillis = targetMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                             showYearPicker = false
                         },
                         onDismiss = { showYearPicker = false }
@@ -371,7 +415,7 @@ private fun DatePickerField(
 
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     val displayMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
-                        .atZone(java.time.ZoneId.systemDefault())
+                        .atZone(java.time.ZoneOffset.UTC)
                         .toLocalDate()
                     
                     val monthTitle = remember(displayMonth) { displayMonth.format(formatter) }
@@ -379,18 +423,20 @@ private fun DatePickerField(
                     CustomCalendarNavigation(
                         title = monthTitle.replaceFirstChar { it.uppercase() },
                         onPrevClick = {
-                            val cal = java.util.Calendar.getInstance().apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                            }
-                            cal.add(java.util.Calendar.MONTH, -1)
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(java.time.ZoneOffset.UTC)
+                                .toLocalDate()
+                                .withDayOfMonth(1)
+                            val prevMonth = currentMonth.minusMonths(1)
+                            datePickerState.displayedMonthMillis = prevMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                         },
                         onNextClick = {
-                            val cal = java.util.Calendar.getInstance().apply {
-                                timeInMillis = datePickerState.displayedMonthMillis
-                            }
-                            cal.add(java.util.Calendar.MONTH, 1)
-                            datePickerState.displayedMonthMillis = cal.timeInMillis
+                            val currentMonth = java.time.Instant.ofEpochMilli(datePickerState.displayedMonthMillis)
+                                .atZone(java.time.ZoneOffset.UTC)
+                                .toLocalDate()
+                                .withDayOfMonth(1)
+                            val nextMonth = currentMonth.plusMonths(1)
+                            datePickerState.displayedMonthMillis = nextMonth.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
                         },
                         onTitleClick = { showYearPicker = true },
                         modifier = Modifier.padding(horizontal = 12.dp)
@@ -410,22 +456,22 @@ private fun DatePickerField(
                             headline = null,
                             showModeToggle = false,
                             colors = DatePickerDefaults.colors(
-                                containerColor = Color.White,
-                                titleContentColor = Secondary,
-                                headlineContentColor = Secondary,
-                                weekdayContentColor = Color.Gray,
-                                subheadContentColor = Color.Gray,
-                                yearContentColor = Color.DarkGray,
-                                currentYearContentColor = Primary,
-                                selectedYearContentColor = Color.White,
-                                selectedYearContainerColor = Primary,
-                                dayContentColor = Color.Black,
-                                selectedDayContentColor = Color.White,
-                                selectedDayContainerColor = Primary,
-                                todayContentColor = Primary,
-                                todayDateBorderColor = Primary
-                            ),
-                            modifier = Modifier.offset(y = (-48).dp)
+                    containerColor = Color.White,
+                    titleContentColor = Secondary,
+                    headlineContentColor = Secondary,
+                    weekdayContentColor = Secondary.copy(alpha = 0.6f),
+                    subheadContentColor = Secondary.copy(alpha = 0.6f),
+                    yearContentColor = Secondary.copy(alpha = 0.7f),
+                    currentYearContentColor = Primary,
+                    selectedYearContentColor = Color.White,
+                    selectedYearContainerColor = Primary,
+                    dayContentColor = OnSurface,
+                    selectedDayContentColor = Color.White,
+                    selectedDayContainerColor = Primary,
+                    todayContentColor = Secondary,
+                    todayDateBorderColor = Primary
+                ),
+                modifier = Modifier.offset(y = (-48).dp)
                         )
                     }
                 }
@@ -797,18 +843,18 @@ private val CustomWarning = Color(0xFFD69E2E)
 
 @Composable
 private fun RecapSection(
-    rekap: RekapBulanan,
-    recapMonthOffset: Int,
+    uiState: RiwayatKehadiranUiState,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onMonthYearSelected: (Int, Int) -> Unit
 ) {
     var showMonthYearPicker by remember { mutableStateOf(false) }
+    val rekap = uiState.rekapBulanan
 
     if (showMonthYearPicker) {
         MonthYearPickerDialog(
-            initialMonth = rekap.bulan,
-            initialYear = rekap.tahun,
+            initialMonth = uiState.currentRecapMonth.monthValue - 1,
+            initialYear = uiState.currentRecapMonth.year,
             onMonthYearSelected = { m, y ->
                 onMonthYearSelected(m, y)
                 showMonthYearPicker = false
@@ -818,16 +864,16 @@ private fun RecapSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        val monthName = try {
-            val month = java.time.Month.of(rekap.bulan + 1)
-            "${month.getDisplayName(java.time.format.TextStyle.FULL, Locale("id", "ID"))} ${rekap.tahun}"
-        } catch (_: Exception) {
-            "Bulan ${rekap.tahun}"
+        // Use currentRecapMonth directly for the title to ensure it's reactive
+        val monthName = remember(uiState.currentRecapMonth) {
+            uiState.currentRecapMonth.format(
+                java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("id-ID"))
+            )
         }
 
         SectionHeaderNavigation(
             title = "📊 Rekap Bulanan",
-            monthYearText = monthName,
+            monthYearText = monthName.replaceFirstChar { it.uppercase() },
             onPrevClick = onPrevMonth,
             onNextClick = onNextMonth,
             onMonthYearClick = { showMonthYearPicker = true }

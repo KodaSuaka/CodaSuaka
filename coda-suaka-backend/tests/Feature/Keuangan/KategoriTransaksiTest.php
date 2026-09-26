@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Keuangan;
 
-use App\Models\User;
-use App\Models\instansi;
+use App\Models\Instansi;
 use App\Models\KategoriTransaksi;
 use App\Models\role;
-use Database\Factories\KategoriTransaksiFactory;
+use App\Models\role_permission;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,18 +15,38 @@ class KategoriTransaksiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
-    private instansi $instansi;
+
+    private Instansi $instansi;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         // Buat data test minimal
-        $this->instansi = instansi::factory()->create();
-        $role = role::factory()->create(['nama_role' => 'Owner']);
+        $this->instansi = Instansi::factory()->create();
+        $role = role::firstOrCreate(
+            ['nama_role' => 'Owner'],
+            ['deskripsi' => 'Owner']
+        );
+
+        // Setup permission untuk Owner agar bisa akses keuangan
+        role_permission::firstOrCreate(
+            ['role_id' => $role->id, 'permission' => 'view:keuangan'],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+        role_permission::firstOrCreate(
+            ['role_id' => $role->id, 'permission' => 'manage:keuangan'],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+        role_permission::firstOrCreate(
+            ['role_id' => $role->id, 'permission' => 'delete:keuangan'],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
+
         $this->user = User::factory()->create([
             'instansi_id' => $this->instansi->id,
             'role_id' => $role->id,
+            'email_verified_at' => now(),
         ]);
     }
 
@@ -99,7 +119,7 @@ class KategoriTransaksiTest extends TestCase
     public function test_user_tidak_bisa_melihat_kategori_instansi_lain()
     {
         // Arrange
-        $instansiLain = instansi::factory()->create();
+        $instansiLain = Instansi::factory()->create();
         $kategoriLain = KategoriTransaksi::factory()->create([
             'instansi_id' => $instansiLain->id,
         ]);

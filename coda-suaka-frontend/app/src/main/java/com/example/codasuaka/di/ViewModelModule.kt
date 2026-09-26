@@ -12,11 +12,23 @@ import com.example.codasuaka.ui.screen.divisi.DivisiViewModel
 import com.example.codasuaka.ui.screen.kalender.KalenderViewModel
 import com.example.codasuaka.ui.screen.kelola_karyawan.KelolaKaryawanViewModel
 import com.example.codasuaka.ui.screen.kelola_outlet.KelolaOutletViewModel
+import com.example.codasuaka.ui.screen.kelola_barang_jasa.KelolaBarangJasaViewModel
+import com.example.codasuaka.ui.screen.stok.StokViewModel
 import com.example.codasuaka.ui.screen.login.LoginViewModel
 import com.example.codasuaka.ui.screen.register.RegisterViewModel
 import com.example.codasuaka.ui.screen.laporan_keuangan.LaporanKeuanganViewModel
 import com.example.codasuaka.ui.screen.approval_keuangan.ApprovalKeuanganViewModel
+import com.example.codasuaka.ui.screen.notifikasi.NotificationViewModel
+import com.example.codasuaka.ui.screen.poin_kinerja.PoinKinerjaViewModel
+import com.example.codasuaka.ui.screen.penugasan.PenugasanViewModel
+import com.example.codasuaka.ui.screen.jam_operasional.JamOperasionalViewModel
+import com.example.codasuaka.ui.screen.kasir.KasirViewModel
 import com.example.codasuaka.ui.screen.riwayat_kehadiran.RiwayatKehadiranViewModel
+import com.example.codasuaka.ui.screen.nota_pembelian.NotaPembelianViewModel
+import com.example.codasuaka.ui.screen.riwayat_nota.RiwayatNotaViewModel
+import com.example.codasuaka.ui.screen.nota_detail.NotaDetailViewModel
+import com.example.codasuaka.ui.screen.receipt_settings.ReceiptSettingsViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -27,11 +39,12 @@ val viewModelModule = module {
     // Auth
     viewModel { LoginViewModel(loginUseCase = get()) }
     viewModel { RegisterViewModel(registerUseCase = get()) }
-    viewModel { AuthViewModel(authRepository = get(), tokenManager = get()) }
+    viewModel { AuthViewModel(authRepository = get(), tokenManager = get(), apiService = get()) }
 
     // Dashboard
     viewModel { DashboardViewModel(
         dashboardRepository = get(),
+        chatRepository = get(),
         tokenManager = get()
     ) }
 
@@ -40,8 +53,9 @@ val viewModelModule = module {
         presensiRepository = get(),
         penugasanRepository = get(),
         karyawanRepository = get(),
-        pengajuanRepository = get(),
-        dashboardRepository = get()
+        dashboardRepository = get(),
+        jadwalRepository = get(),
+        chatRepository = get()
     ) }
 
     // Kelola Outlet
@@ -79,13 +93,59 @@ val viewModelModule = module {
         ChatDetailViewModel(
             userId = params.get(),
             userName = params.get(),
-            chatRepository = get<ChatRepository>()
+            chatRepository = get<ChatRepository>(),
+            tokenManager = get()
         )
     }
 
     // Keuangan
-    viewModel { LaporanKeuanganViewModel(keuanganRepository = get()) }
+    viewModel { LaporanKeuanganViewModel(keuanganRepository = get(), context = androidContext()) }
 
     // Approval Keuangan
     viewModel { ApprovalKeuanganViewModel(keuanganRepository = get()) }
+
+    // Poin Kinerja
+    viewModel { PoinKinerjaViewModel(dashboardRepository = get()) }
+
+    // Penugasan
+    viewModel { PenugasanViewModel(
+        penugasanRepository = get(),
+        divisiRepository = get(),
+        karyawanRepository = get(),
+        tokenManager = get(),
+        apiService = get()
+    ) }
+
+    // Jam Operasional
+    viewModel { JamOperasionalViewModel(apiService = get()) }
+
+    // Kasir
+    viewModel { KasirViewModel(kasirRepository = get()) }
+
+    // Kelola Barang/Jasa
+    viewModel { KelolaBarangJasaViewModel(kasirRepository = get()) }
+
+    // Stok
+    viewModel { StokViewModel(stokRepository = get()) }
+
+    // Nota Pembelian
+    viewModel { NotaPembelianViewModel(kasirRepository = get(), outletRepository = get(), stokRepository = get()) }
+
+    // Riwayat Nota
+    viewModel { RiwayatNotaViewModel(kasirRepository = get(), outletRepository = get()) }
+
+    // Detail Nota
+    viewModel { params ->
+        NotaDetailViewModel(
+            notaId = params.get(),
+            kasirRepository = get(),
+            context = androidContext()
+        )
+    }
+
+    // Notifikasi
+    viewModel { NotificationViewModel(notificationRepository = get()) }
+
+    // Pengaturan Struk
+    viewModel { ReceiptSettingsViewModel(preferenceManager = get()) }
 }

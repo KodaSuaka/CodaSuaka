@@ -1,0 +1,12 @@
+# =============================================================================
+# Git Attributes for CodaSuaka Frontend (Android)
+# =============================================================================
+# Memastikan permission file executable tetap terjaga di semua OS
+# dan di GitHub Actions CI/CD
+
+# Gradle wrapper - pastikan executable permission tetap terjaga
+gradlew text eol=lf
+gradlew filter=unset
+
+# Gradle wrapper batch file untuk Windows
+gradlew.bat text eol=crlf
