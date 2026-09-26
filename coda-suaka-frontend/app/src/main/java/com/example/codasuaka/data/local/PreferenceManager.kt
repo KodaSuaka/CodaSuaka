@@ -16,6 +16,7 @@ class PreferenceManager(context: Context) {
         private const val KEY_TAGLINE = "receipt_tagline"
         private const val KEY_FOOTER_1 = "receipt_footer_1"
         private const val KEY_FOOTER_2 = "receipt_footer_2"
+        private const val KEY_PRIVACY_ACCEPTED = "privacy_policy_accepted"
 
         // Default values
         private const val DEFAULT_HEADER = "CODA SUAKA"
@@ -28,6 +29,12 @@ class PreferenceManager(context: Context) {
     fun getTaglineText(): String = prefs.getString(KEY_TAGLINE, DEFAULT_TAGLINE) ?: DEFAULT_TAGLINE
     fun getFooterText1(): String = prefs.getString(KEY_FOOTER_1, DEFAULT_FOOTER_1) ?: DEFAULT_FOOTER_1
     fun getFooterText2(): String = prefs.getString(KEY_FOOTER_2, DEFAULT_FOOTER_2) ?: DEFAULT_FOOTER_2
+
+    fun isPrivacyAccepted(): Boolean = prefs.getBoolean(KEY_PRIVACY_ACCEPTED, false)
+
+    fun setPrivacyAccepted(accepted: Boolean) {
+        prefs.edit().putBoolean(KEY_PRIVACY_ACCEPTED, accepted).apply()
+    }
 
     fun saveReceiptSettings(header: String, tagline: String, footer1: String, footer2: String) {
         prefs.edit()

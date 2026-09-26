@@ -2,6 +2,7 @@ package com.example.codasuaka.ui.screen.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.codasuaka.data.local.PreferenceManager
 import com.example.codasuaka.domain.usecase.LoginUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,15 +15,27 @@ data class LoginUiState(
     val errorMessage: String? = null,
     val loginSuccess: Boolean = false,
     val userRole: String? = null,
-    val userPermissions: List<String>? = null
+    val userPermissions: List<String>? = null,
+    val showPrivacyPopup: Boolean = false
 )
 
 class LoginViewModel(
-    private val loginUseCase: LoginUseCase
+    private val loginUseCase: LoginUseCase,
+    private val preferenceManager: PreferenceManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState
+
+    init {
+        val isAccepted = preferenceManager.isPrivacyAccepted()
+        _uiState.value = _uiState.value.copy(showPrivacyPopup = !isAccepted)
+    }
+
+    fun acceptPrivacyPolicy() {
+        preferenceManager.setPrivacyAccepted(true)
+        _uiState.value = _uiState.value.copy(showPrivacyPopup = false)
+    }
 
     fun onEmailChange(email: String) {
         _uiState.value = _uiState.value.copy(email = email, errorMessage = null)

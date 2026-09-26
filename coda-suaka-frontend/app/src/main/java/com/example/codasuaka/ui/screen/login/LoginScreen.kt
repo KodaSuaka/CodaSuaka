@@ -20,6 +20,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.codasuaka.ui.screen.components.CodaSuakaLogo
 import com.example.codasuaka.ui.screen.components.CustomTextField
 import com.example.codasuaka.ui.components.NotificationBannerStatic
@@ -37,6 +39,112 @@ fun LoginScreen(
     LaunchedEffect(uiState.loginSuccess, uiState.userRole) {
         if (uiState.loginSuccess && uiState.userRole != null) {
             onLoginSuccess(uiState.userRole!!, uiState.userPermissions)
+        }
+    }
+
+    // Mandatory Privacy Policy Popup once per app install before login (Fully Scrollable Custom Dialog)
+    if (uiState.showPrivacyPopup) {
+        var agreeChecked by remember { mutableStateOf(false) }
+
+        Dialog(
+            onDismissRequest = { /* Cannot dismiss without agreeing */ },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+            )
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .fillMaxHeight(0.85f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp)
+                ) {
+                    // Title
+                    Text(
+                        text = "KEBIJAKAN PRIVASI (PRIVACY POLICY)\nCodaSuaka - Sistem Manajemen Bisnis All-in-One",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Secondary
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Scrollable text container taking remaining vertical space
+                    val scrollState = rememberScrollState()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(scrollState)
+                        ) {
+                            Text(
+                                text = PRIVACY_POLICY_TEXT,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Checkbox agreement
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = agreeChecked,
+                            onCheckedChange = { agreeChecked = it },
+                            colors = CheckboxDefaults.colors(checkedColor = Primary)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Saya telah membaca, memahami, dan menyetujui seluruh ketentuan dalam Kebijakan Privasi ini.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Confirm Button
+                    Button(
+                        onClick = { viewModel.acceptPrivacyPolicy() },
+                        enabled = agreeChecked,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Primary,
+                            disabledContainerColor = Primary.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Text(
+                            text = "Setuju & Lanjutkan",
+                            fontWeight = FontWeight.Bold,
+                            color = OnPrimary
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -120,15 +228,13 @@ fun LoginScreen(
             // Login Button
             Button(
                 onClick = { viewModel.login() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = !uiState.isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Primary,
                     contentColor = OnPrimary,
-                    disabledContainerColor = Primary.copy(alpha = 0.5f)
+                    disabledContainerColor = Primary.copy(alpha = 0.4f)
                 )
             ) {
                 if (uiState.isLoading) {
@@ -141,7 +247,8 @@ fun LoginScreen(
                     Text(
                         text = "Masuk",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        color = OnPrimary
                     )
                 }
             }
@@ -161,7 +268,7 @@ fun LoginScreen(
                 Text(
                     text = "Daftar Sekarang",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = Primary,
                     modifier = Modifier.clickable { onNavigateToRegister() }
                 )

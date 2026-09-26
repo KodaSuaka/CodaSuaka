@@ -37,7 +37,7 @@ import org.koin.dsl.module
  */
 val viewModelModule = module {
     // Auth
-    viewModel { LoginViewModel(loginUseCase = get()) }
+    viewModel { LoginViewModel(loginUseCase = get(), preferenceManager = get()) }
     viewModel { RegisterViewModel(registerUseCase = get()) }
     viewModel { AuthViewModel(authRepository = get(), tokenManager = get(), apiService = get()) }
 
